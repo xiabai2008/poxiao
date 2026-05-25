@@ -8,6 +8,8 @@ import httpx
 
 from .tech_stack import TechStackDetector, TechFingerprint
 from .sensitive import SensitivePathDetector, PathFind
+from .version_extract import VersionExtractor, VersionInfo
+from .cve_match import CVEMatcher, VulnMatch
 
 
 @dataclass
@@ -22,6 +24,8 @@ class ScanResult:
     # 信息收集
     tech: TechFingerprint = field(default_factory=TechFingerprint)
     tech_tags: list[str] = field(default_factory=list)
+    versions: list[VersionInfo] = field(default_factory=list)
+    cve_matches: list[VulnMatch] = field(default_factory=list)
     sensitive_paths: list[PathFind] = field(default_factory=list)
     # 摘要
     error: str = ""
@@ -36,6 +40,15 @@ class ScanResult:
             "duration_sec": round(self.duration_sec, 1),
             "tech": self.tech.known,
             "tech_tags": self.tech_tags,
+            "versions": {v.component: v.version for v in self.versions},
+            "cve_matches": [
+                {
+                    "cve": m.cve_id,
+                    "severity": m.severity,
+                    "description": m.description[:150],
+                }
+                for m in self.cve_matches
+            ],
             "sensitive_paths": [
                 {
                     "url": p.url,
@@ -67,6 +80,11 @@ class ScanResult:
         good = self.interesting_count
         if good:
             parts.append(f"found={good}")
+        if self.versions:
+            parts.append(f"v={len(self.versions)}")
+        if self.cve_matches:
+            crit = len([m for m in self.cve_matches if m.is_critical])
+            parts.append(f"cve={len(self.cve_matches)}c/{crit}")
         return "  ".join(parts)
 
 
@@ -83,6 +101,8 @@ class ScanEngine:
         self.concurrency = concurrency
         self.enable_sensitive = enable_sensitive
         self.tech_detector = TechStackDetector()
+        self.version_extractor = VersionExtractor()
+        self.cve_matcher = CVEMatcher()
         self.sensitive_detector = SensitivePathDetector(timeout=timeout)
 
     async def scan_one(self, url: str) -> ScanResult:
@@ -116,7 +136,16 @@ class ScanEngine:
             )
             result.tech_tags = self.tech_detector.as_tags(result.tech)
 
-            # Step 3: 敏感路径检测（可选）
+            # Step 3: 版本号提取 + CVE 匹配
+            result.versions = self.version_extractor.extract(headers, html)
+            if result.versions:
+                ver_dict = {v.component: v.version for v in result.versions}
+                result.cve_matches = self.cve_matcher.match_batch(ver_dict)
+            # 即使没有精确版本，也根据识别的技术栈做匹配
+            for tag in result.tech_tags:
+                result.cve_matches.extend(self.cve_matcher.match(tag))
+
+            # Step 4: 敏感路径检测（可选）
             if self.enable_sensitive:
                 tech_key = result.tech.cms or result.tech.language or ""
                 result.sensitive_paths = await self.sensitive_detector.scan(
