@@ -1,1 +1,3 @@
-"""报告生成与 SRC 平台对接"""
+"""报告系统 — 渐进式 JSON + Markdown 输出"""
+
+from .reporter import Reporter

@@ -3,3 +3,10 @@ name = "poxiao"
 version = "0.1.0"
 description = "破晓 — Bug Bounty 辅助工具"
 requires-python = ">=3.10"
+
+[project.scripts]
+poxiao = "src.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["src*"]
