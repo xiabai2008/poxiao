@@ -60,43 +60,60 @@ class TechStackDetector:
     # ── 语言指纹 ──────────────────────────────────
 
     LANGUAGE_PATTERNS = [
-        ("php",     r"php[/\d.]*", "x-powered-by"),
-        ("java",    r"jsp|servlet|jsessionid|jakarta", "any"),
-        ("python",  r"python[/\d.]*|wsgi|django|flask|tornado", "any"),
-        ("asp.net", r"asp\.net|x-aspnet|__viewstate|\.aspx", "any"),
-        ("node.js", r"node\.js|express|koa|next\.js", "any"),
-        ("go",      r"go[/\d.]*|gin[/\d.]*", "any"),
-        ("ruby",    r"rails|rack|ruby[/\d.]*", "any"),
+        # (name, pattern, field)
+        # field: "server" = only Server header
+        #        "x-powered-by" = only X-Powered-By header
+        #        "cookie" = only cookies
+        #        "html" = only in HTML body
+        #        "header" = any header (Server, X-Powered-By, Set-Cookie, etc.)
+        ("php",     r"\bphp[/\d.]*\b", "x-powered-by"),
+        ("java",    r"jsp\b|servlet\b|jsessionid", "header"),
+        ("java",    r"jsessionid", "cookie"),
+        ("python",  r"\bwsgi\b|\bdjango\b|\bflask\b|\btornado\b", "header"),
+        ("asp.net", r"x-aspnet|__viewstate|\.aspx\b", "header"),
+        ("node.js", r"\bexpress\b|\bkoa\b", "header"),
+        # go only if Server header explicitly contains "go" (e.g., Caddy/Go-based)
+        ("go",      r"\bgo[/\d.]+\b", "server"),
+        ("ruby",    r"\brails\b|\brack\b", "header"),
+        # supplement: check HTML for language hints
+        ("php",     r"\.php\b|\bphp\b", "html"),
+        ("asp.net", r"\.aspx\b", "html"),
     ]
 
     def detect_language(self, headers: dict, cookies: dict, html: str = "", url: str = "") -> str:
-        """识别后端语言"""
+        """识别后端语言 — 优先 header 证据，html 仅作辅助"""
         clues = []
         for name, pattern, field in self.LANGUAGE_PATTERNS:
-            # 检查 HTTP 头
-            if field in ("any", "x-powered-by"):
-                powered = headers.get("x-powered-by", "")
-                server = headers.get("server", "")
-                all_headers = " ".join([f"{k}: {v}" for k, v in headers.items()])
-                if re.search(pattern, f"{powered} {server} {all_headers}", re.IGNORECASE):
+            if field == "server":
+                v = headers.get("server", "")
+                if re.search(pattern, v, re.IGNORECASE):
                     clues.append(name)
                     continue
-            # 检查 cookie
-            if field == "any" and cookies:
-                cookie_str = " ".join([f"{k}={v}" for k, v in cookies.items()])
-                if re.search(pattern, cookie_str, re.IGNORECASE):
+            elif field == "x-powered-by":
+                v = headers.get("x-powered-by", "")
+                if re.search(pattern, v, re.IGNORECASE):
                     clues.append(name)
                     continue
-            # 检查 HTML
-            if field == "any" and html:
-                if re.search(pattern, html, re.IGNORECASE):
+            elif field == "cookie":
+                if cookies:
+                    for k in cookies:
+                        if re.search(pattern, k, re.IGNORECASE):
+                            clues.append(name)
+                            break
+                    continue
+            elif field == "header":
+                for h in ("server", "x-powered-by", "set-cookie", "x-aspnet-version"):
+                    v = headers.get(h, "")
+                    if re.search(pattern, v, re.IGNORECASE):
+                        clues.append(name)
+                        break
+                continue
+            elif field == "html":
+                if html and re.search(pattern, html[:5000], re.IGNORECASE):
                     clues.append(name)
                     continue
-            # 检查 URL
-            if field == "any" and url:
-                if re.search(pattern, url, re.IGNORECASE):
-                    clues.append(name)
-                    continue
+
+        # HTML 匹配仅作为辅助（权重低于 header）
         return clues[0] if clues else ""
 
     # ── CMS 指纹 ──────────────────────────────────

@@ -50,6 +50,11 @@ class ScanResult:
         }
 
     @property
+    def interesting_count(self) -> int:
+        """真正有意思的发现数"""
+        return len([p for p in self.sensitive_paths if p.is_interesting])
+
+    @property
     def summary_line(self) -> str:
         """一行摘要"""
         parts = [
@@ -59,8 +64,9 @@ class ScanResult:
         if self.tech.known:
             tags = self.tech_tags[:3]
             parts.append(f"tech={'+'.join(tags)}")
-        if self.sensitive_paths:
-            parts.append(f"sensitive={len(self.sensitive_paths)}")
+        good = self.interesting_count
+        if good:
+            parts.append(f"found={good}")
         return "  ".join(parts)
 
 
