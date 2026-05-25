@@ -13,6 +13,7 @@ from src.reporter.reporter import Reporter
 from src.reporter.src_reporter import SRCReporter
 from src.collector.shuangyue import ShuangYue
 from src.verifier.jingzhe import JingZhe
+from src.monitor import import_from_summary, start_server, get_stats
 import json
 
 
@@ -84,6 +85,14 @@ def main():
     subdomain_parser.add_argument("--no-alive", action="store_true", help="跳过存活验证")
     subdomain_parser.add_argument("-o", "--output", help="输出文件（URL列表格式）")
 
+    # ── monitor 命令 ───────────────────────────
+    monitor_parser = sub.add_parser("monitor", help="资产监控平台（观星）")
+    mon_subs = monitor_parser.add_subparsers(dest="mon_action")
+    mon_subs.add_parser("serve", help="启动 Web 面板")
+    mon_import = mon_subs.add_parser("import", help="导入扫描结果")
+    mon_import.add_argument("path", help="扫描汇总 JSON 文件")
+    mon_subs.add_parser("stats", help="查看统计")
+
     # ── verify 命令 ────────────────────────────
     verify_parser = sub.add_parser("verify", help="漏洞自动验证（惊蛰）")
     verify_parser.add_argument("target", help="目标URL 或 扫描汇总JSON文件")
@@ -112,6 +121,8 @@ def main():
         _cmd_subdomain(args)
     elif args.command == "verify":
         _cmd_verify(args)
+    elif args.command == "monitor":
+        _cmd_monitor(args)
     elif args.command == "report":
         _cmd_report(args)
 
@@ -329,6 +340,26 @@ def _cmd_subdomain(args):
         urls = [s.to_url() for s in subs if s.alive]
         out.write_text("\n".join(urls), encoding="utf-8")
         print(f"\n存活URL已保存: {out}")
+
+
+def _cmd_monitor(args):
+    """观星 资产监控"""
+    if args.mon_action == "serve":
+        start_server(port=5099)
+    elif args.mon_action == "import":
+        print(f"导入: {args.path}")
+        import_from_summary(args.path)
+        stats = get_stats()
+        print(f"  目标: {stats['total']} | 存活: {stats['alive']} | 有发现: {stats['with_findings']}")
+        print(f"  启动面板: poxiao monitor serve")
+    elif args.mon_action == "stats":
+        stats = get_stats()
+        print(f"总目标: {stats['total']}")
+        print(f"存活:   {stats['alive']}")
+        print(f"有发现: {stats['with_findings']}")
+        print(f"技术栈: {dict(sorted(stats['tech_distribution'].items(), key=lambda x:-x[1])[:8])}")
+    else:
+        print("用法: poxiao monitor {serve|import|stats}")
 
 
 def _cmd_verify(args):
