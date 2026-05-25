@@ -12,6 +12,7 @@ from src.scanner.engine import ScanEngine
 from src.reporter.reporter import Reporter
 from src.reporter.src_reporter import SRCReporter
 from src.collector.shuangyue import ShuangYue
+from src.verifier.jingzhe import JingZhe
 import json
 
 
@@ -83,6 +84,11 @@ def main():
     subdomain_parser.add_argument("--no-alive", action="store_true", help="跳过存活验证")
     subdomain_parser.add_argument("-o", "--output", help="输出文件（URL列表格式）")
 
+    # ── verify 命令 ────────────────────────────
+    verify_parser = sub.add_parser("verify", help="漏洞自动验证（惊蛰）")
+    verify_parser.add_argument("target", help="目标URL 或 扫描汇总JSON文件")
+    verify_parser.add_argument("--from-scan", action="store_true", help="从扫描汇总JSON批量验证")
+
     # ── report 命令 ─────────────────────────────
     report_parser = sub.add_parser("report", help="从扫描结果生成 SRC 报告")
     report_parser.add_argument("summary", nargs="?", help="扫描汇总 JSON 文件")
@@ -104,6 +110,8 @@ def main():
         _cmd_discover(args)
     elif args.command == "subdomain":
         _cmd_subdomain(args)
+    elif args.command == "verify":
+        _cmd_verify(args)
     elif args.command == "report":
         _cmd_report(args)
 
@@ -321,6 +329,36 @@ def _cmd_subdomain(args):
         urls = [s.to_url() for s in subs if s.alive]
         out.write_text("\n".join(urls), encoding="utf-8")
         print(f"\n存活URL已保存: {out}")
+
+
+def _cmd_verify(args):
+    """漏洞验证"""
+    import asyncio
+    jz = JingZhe(timeout=8.0)
+
+    if args.from_scan:
+        print(f"从扫描汇总验证: {args.target}")
+        findings = asyncio.run(jz.verify_from_scan(args.target))
+    else:
+        print(f"验证目标: {args.target}")
+        findings = asyncio.run(jz.verify(args.target))
+
+    exploitable = [f for f in findings if f.exploitable]
+    suspicious = [f for f in findings if not f.exploitable]
+
+    print(f"\n验证结果: {len(findings)} 个发现")
+    print(f"  可利用: {len(exploitable)}")
+    print(f"  可疑: {len(suspicious)}")
+    print()
+
+    for f in exploitable:
+        print(f"  🔥 [{f.confidence}] {f.url}")
+        print(f"      类型: {f.finding_type} | {f.evidence}")
+        print(f"      详情: {f.detail}")
+        print()
+
+    for f in suspicious:
+        print(f"  ⚠️ [{f.confidence}] {f.url} — {f.evidence}")
 
 
 def _cmd_report(args):
