@@ -377,9 +377,12 @@ def _cmd_verify(args):
     exploitable = [f for f in findings if f.exploitable]
     suspicious = [f for f in findings if not f.exploitable]
 
+    score = jz.score(findings)
+
     print(f"\n验证结果: {len(findings)} 个发现")
     print(f"  可利用: {len(exploitable)}")
     print(f"  可疑: {len(suspicious)}")
+    print(f"  风险评分: {score['summary']}")
     print()
 
     for f in exploitable:

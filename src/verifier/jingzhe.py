@@ -204,9 +204,12 @@ class JingZhe:
                 content = resp.content
                 if len(content) < 20:
                     continue
-                # 排除 HTML 假阳性
+                # 排除 HTML/JS 假阳性（CDN、反爬、验证码页面）
                 preview = content[:200].decode('utf-8', errors='ignore').lower()
-                if preview.startswith("<!doctype") or "<html" in preview:
+                if any(preview.startswith(t) for t in
+                       ("<!doctype", "<html", "<script", "<?xml")):
+                    continue
+                if "x5secdata" in preview or "tmd" in preview:
                     continue
                 accessible.append(path)
             except Exception:
@@ -285,10 +288,13 @@ class JingZhe:
                 )
                 if resp.status_code not in (200, 401, 403):
                     continue
-                # 200 时排除 HTML/CDN 假阳性
+                # 200 时排除 HTML/CDN/反爬 假阳性
                 if resp.status_code == 200:
                     preview = resp.text[:200].lower()
-                    if preview.startswith("<!doctype") or "<html" in preview:
+                    if any(preview.startswith(t) for t in
+                           ("<!doctype", "<html", "<script", "<?xml")):
+                        continue
+                    if "x5secdata" in preview or "tmd" in preview:
                         continue
                     if len(resp.content) < 20:
                         continue
@@ -305,6 +311,101 @@ class JingZhe:
                 evidence=f"Actuator 端点存在: {', '.join(accessible)}",
                 detail="Spring Boot Actuator 端点暴露，可能泄露运行环境信息",
             )
+        return None
+
+    # ═══════════════════════════════════════════════
+    # 模块 7: API 端点探测
+    # ═══════════════════════════════════════════════
+
+    async def _check_api_endpoints(
+        self, base_url: str, client: httpx.AsyncClient
+    ) -> list[VerifiedFinding]:
+        """探测常见 API 端点"""
+        findings = []
+        api_paths = [
+            ("/api/user", "用户接口"),
+            ("/api/login", "登录接口"),
+            ("/api/v1/users", "用户列表"),
+            ("/api/admin", "管理接口"),
+            ("/graphql", "GraphQL"),
+            ("/api/graphql", "GraphQL"),
+        ]
+        for path, desc in api_paths:
+            try:
+                resp = await client.get(
+                    f"{base_url.rstrip('/')}{path}", timeout=self.timeout
+                )
+                if resp.status_code == 200 and len(resp.content) > 80:
+                    preview = resp.text[:200].lower()
+                    # 排除 HTML/JS/CDN 假阳性
+                    if any(preview.startswith(t) for t in
+                           ("<!doctype", "<html", "<script", "<?xml")):
+                        continue
+                    if "x5secdata" in preview or "tmd" in preview:
+                        continue
+                    # 排除 "模块不存在" 等通用错误
+                    if "没有找到" in resp.text or "not found" in preview \
+                       or "not exist" in preview:
+                        continue
+                    findings.append(VerifiedFinding(
+                        url=f"{base_url.rstrip('/')}{path}",
+                        finding_type="api",
+                        exploitable=True,
+                        confidence="MEDIUM",
+                        evidence=f"API 端点可访问: {desc}",
+                        detail=f"返回 {len(resp.content)}B 数据",
+                    ))
+            except:
+                pass
+        return findings
+
+    # ═══════════════════════════════════════════════
+    # 模块 8: phpinfo 解析
+    # ═══════════════════════════════════════════════
+
+    def _parse_phpinfo(self, html: str) -> dict:
+        """从 phpinfo 输出中提取关键信息"""
+        info = {}
+        patterns = {
+            "php_version": r"PHP Version</td[^>]*><td[^>]*>([^<]+)",
+            "server_api": r"Server API</td[^>]*><td[^>]*>([^<]+)",
+            "doc_root": r"DOCUMENT_ROOT</td[^>]*><td[^>]*>([^<]+)",
+            "extensions": r"<h2[^>]*>\s*(\w+)\s*</h2>",
+        }
+        for key, pat in patterns.items():
+            m = re.findall(pat, html)
+            if m:
+                info[key] = m[0] if key != "extensions" else m[:10]
+        return info
+
+    # ═══════════════════════════════════════════════
+    # 模块 9: 服务端信息提取
+    # ═══════════════════════════════════════════════
+
+    async def _check_server_info(
+        self, base_url: str, client: httpx.AsyncClient
+    ) -> Optional[VerifiedFinding]:
+        """从响应头提取服务端信息"""
+        try:
+            resp = await client.get(base_url, timeout=self.timeout)
+            info_bits = []
+            for header in ["server", "x-powered-by", "x-aspnet-version",
+                          "x-generator", "x-drupal-cache"]:
+                val = resp.headers.get(header, "")
+                if val:
+                    info_bits.append(f"{header}: {val}")
+
+            if len(info_bits) >= 2:  # 至少2个才算有意义的泄露
+                return VerifiedFinding(
+                    url=base_url,
+                    finding_type="info_leak",
+                    exploitable=False,
+                    confidence="LOW",
+                    evidence="服务端信息泄露",
+                    detail=" | ".join(info_bits[:5]),
+                )
+        except:
+            pass
         return None
 
     # ═══════════════════════════════════════════════
@@ -367,7 +468,11 @@ class JingZhe:
                 self._check_git(base, client),
                 self._check_swagger(base, client),
                 self._check_actuator(base, client),
+                self._check_server_info(base, client),
             ]
+            # API 端点探测
+            api_findings = await self._check_api_endpoints(base, client)
+            findings.extend(api_findings)
             for r in await asyncio.gather(*tasks):
                 if r:
                     findings.append(r)
@@ -378,6 +483,7 @@ class JingZhe:
                 "/admin/login", "/admin", "/login",
                 "/config.php", "/.env", "/web.config",
                 "/backup.zip", "/wwwroot.zip",
+                "/phpinfo.php", "/info.php", "/test.php",
             ]
             for path in check_paths:
                 full_url = f"{base}{path}"
@@ -406,7 +512,12 @@ class JingZhe:
 
                     # ── .gitignore ──
                     if path == "/.gitignore" and size > 50:
-                        if not text.lower().startswith("<!doctype"):
+                        tlow = text.lower()
+                        if any(tlow.startswith(t) for t in
+                               ("<!doctype", "<html", "<script")):
+                            continue
+                        if "x5secdata" in tlow:
+                            continue
                             lines = [l.strip() for l in text.splitlines()
                                      if l.strip() and not l.startswith('#')]
                             if lines:
@@ -449,11 +560,29 @@ class JingZhe:
                     if path in ("/admin/login", "/admin", "/login"):
                         if any(kw in text.lower() for kw in
                                ["<form", "password", "登录", "login"]):
+                            # 尝试默认口令
+                            cred_results = await self._check_default_creds(full_url, client)
+                            if cred_results:
+                                findings.extend(cred_results)
+                            else:
+                                findings.append(VerifiedFinding(
+                                    url=full_url, finding_type="admin",
+                                    exploitable=False, confidence="LOW",
+                                    evidence="存在登录表单（默认口令测试未通过）",
+                                    detail=f"登录页面可访问 ({size}B)",
+                                ))
+                            continue
+
+                    # ── phpinfo ──
+                    if path in ("/phpinfo.php", "/info.php"):
+                        info = self._parse_phpinfo(text)
+                        if info:
                             findings.append(VerifiedFinding(
-                                url=full_url, finding_type="admin",
-                                exploitable=False, confidence="LOW",
-                                evidence="存在登录表单",
-                                detail=f"登录页面可访问 ({size}B)",
+                                url=full_url, finding_type="debug",
+                                exploitable=True, confidence="HIGH",
+                                evidence=f"phpinfo 泄露: PHP {info.get('php_version','?')}",
+                                detail=f"Server API: {info.get('server_api','?')} | "
+                                       f"DocRoot: {info.get('doc_root','?')}",
                             ))
                             continue
 
@@ -478,6 +607,23 @@ class JingZhe:
             all_findings.extend(findings)
 
         return all_findings
+
+    def score(self, findings: list[VerifiedFinding]) -> dict:
+        """对验证结果评分"""
+        high = sum(1 for f in findings if f.confidence == "HIGH" and f.exploitable)
+        med = sum(1 for f in findings if f.confidence == "MEDIUM" and f.exploitable)
+        low = sum(1 for f in findings if f.confidence == "LOW")
+        total_score = high * 10 + med * 5 + low * 2
+
+        risk = "🟢 安全" if total_score == 0 else \
+               "🔵 低风险" if total_score < 10 else \
+               "🟡 中风险" if total_score < 25 else "🔴 高风险"
+
+        return {
+            "high": high, "medium": med, "low": low,
+            "total_score": total_score, "risk": risk,
+            "summary": f"{risk} (评分: {total_score})",
+        }
 
     def verify_sync(self, target_url: str) -> list[VerifiedFinding]:
         """同步版"""
