@@ -28,58 +28,31 @@ class DomainDiscovery:
     def __init__(self, timeout: float = 5.0, enable_search: bool = True):
         self.timeout = timeout
         self.enable_search = enable_search
+        self.KNOWN_BRANDS = self._load_brands()
 
-    KNOWN_BRANDS = {
-        "中国人寿": "chinalife.com.cn",
-        "哈尔滨银行": "hrbccb.com.cn",
-        "南京银行": "njcb.com.cn",
-        "桂林银行": "guilinbank.com.cn",
-        "华泰人寿": "htlife.com.cn",
-        "北大方正人寿": "pkufi.com",
-        "德华安顾人寿": "ergo-life.com.cn",
-        "国联人寿": "guolianlife.com",
-        "君龙人寿": "junlonglife.com",
-        "昆仑健康保险": "kunlunhealth.com",
-        "泰山财产保险": "taishan-ins.com.cn",
-        "大特保": "datebao.com",
-        "长安基金": "changanfund.com",
-        "汇添富基金": "99fund.com",
-        "华宝信托": "huabaotrust.com",
-        "财富证券": "cfzq.com",
-        "渤海商品交易所": "bohai.com",
-        "拉卡拉": "lakala.com",
-        "韵达": "yundaex.com",
-        "特步": "xtep.com.cn",
-        "银泰": "yintai.com",
-        "人人乐": "rrl.com.cn",
-        "曲美家具": "qumei.com",
-        "红蜻蜓": "cnhongqingting.com",
-        "心动网络": "xd.com",
-        "盛大": "snda.com",
-        "极光推送": "jpush.cn",
-        "美橙互联": "cndns.com",
-        "中威科技": "sinowaysoft.com",
-        "YzmCMS": "yzmcms.com",
-        "东风日产": "dongfeng-nissan.com.cn",
-        "乐学一百": "lexue100.com",
-        "闵行区教育局": "mhedu.sh.cn",
-        "东华理工大学": "ecit.cn",
-        "浙江越秀外国语学院": "zyufl.edu.cn",
-        "北方民族大学": "nwsni.edu.cn",
-        "重庆工商职业学院": "cqtbi.edu.cn",
-        "陕西工业职业技术学院": "sxpi.edu.cn",
-        "中国电信学院": "ctelecom.com.cn",
-        "北京外企人力": "fesco.com.cn",
-        "校友邦": "xybservice.com",
-        "南通市政府": "nantong.gov.cn",
-        "温州人社": "hrss.wenzhou.gov.cn",
-        "大众网": "dzwww.com",
-        "华夏幸福": "cfldcn.com",
-        # 新增从补天列表
-        "银泰网": "yintai.com",
-        "七彩鲜花": "qicaixianhua.com",
-        "美橙": "cndns.com",
-    }
+    @staticmethod
+    def _load_brands() -> dict[str, str]:
+        """从 configs/brands.json 加载品牌映射"""
+        import json
+        from pathlib import Path
+        path = Path(__file__).parent.parent.parent / "configs" / "brands.json"
+        if path.exists():
+            try:
+                data = json.loads(path.read_text(encoding="utf-8"))
+                brands = {}
+                for items in data.get("brands", {}).values():
+                    brands.update(items)
+                return brands
+            except Exception:
+                pass
+        # fallback 最小集
+        return {
+            "中国人寿": "chinalife.com.cn",
+            "南京银行": "njcb.com.cn",
+            "乐学一百": "lexue100.com",
+            "美橙互联": "cndns.com",
+            "YzmCMS": "yzmcms.com",
+        }
 
     # ── 搜索引擎 ─────────────────────────────────
 
