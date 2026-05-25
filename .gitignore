@@ -1,0 +1,30 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+.eggs/
+
+# 环境
+.venv/
+venv/
+env/
+.env
+
+# 系统
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+
+# 扫描结果（不提交到仓库）
+scan_results/
+*.log
+*.json
+
+# 敏感配置
+configs/local/
+*.secret.*
