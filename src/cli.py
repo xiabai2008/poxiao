@@ -11,6 +11,7 @@ from src.target.discovery import DomainDiscovery
 from src.scanner.engine import ScanEngine
 from src.reporter.reporter import Reporter
 from src.reporter.src_reporter import SRCReporter
+from src.collector.shuangyue import ShuangYue
 import json
 
 
@@ -74,6 +75,14 @@ def main():
     # ── check 命令 ────────────────────────────────
     check_parser = sub.add_parser("check", help="检测目标是否存活")
     check_parser.add_argument("target", help="目标文件")
+    # ── subdomain 命令 ─────────────────────────
+    subdomain_parser = sub.add_parser("subdomain", help="子域名收集（crt.sh + DNS爆破）")
+    subdomain_parser.add_argument("domain", help="目标域名")
+    subdomain_parser.add_argument("--no-crtsh", action="store_true", help="跳过 crt.sh")
+    subdomain_parser.add_argument("--no-brute", action="store_true", help="跳过 DNS 爆破")
+    subdomain_parser.add_argument("--no-alive", action="store_true", help="跳过存活验证")
+    subdomain_parser.add_argument("-o", "--output", help="输出文件（URL列表格式）")
+
     # ── report 命令 ─────────────────────────────
     report_parser = sub.add_parser("report", help="从扫描结果生成 SRC 报告")
     report_parser.add_argument("summary", nargs="?", help="扫描汇总 JSON 文件")
@@ -93,6 +102,8 @@ def main():
         _cmd_scan(args)
     elif args.command == "discover":
         _cmd_discover(args)
+    elif args.command == "subdomain":
+        _cmd_subdomain(args)
     elif args.command == "report":
         _cmd_report(args)
 
@@ -270,6 +281,46 @@ def _cmd_discover(args):
 
     finally:
         dd.close()
+
+
+def _cmd_subdomain(args):
+    """子域名收集"""
+    import asyncio
+    sy = ShuangYue(timeout=5.0)
+
+    print(f"收集 {args.domain} 的子域名...")
+    print(f"  crt.sh: {'启用' if not args.no_crtsh else '跳过'}")
+    print(f"  DNS爆破: {'启用' if not args.no_brute else '跳过'}")
+    print(f"  存活验证: {'启用' if not args.no_alive else '跳过'}")
+    print()
+
+    subs = asyncio.run(sy.collect(
+        domain=args.domain,
+        use_crtsh=not args.no_crtsh,
+        use_brute=not args.no_brute,
+        check_alive=not args.no_alive,
+    ))
+
+    alive = [s for s in subs if s.alive]
+    dead = [s for s in subs if not s.alive]
+
+    print(f"共收集 {len(subs)} 个子域名")
+    print(f"  存活: {len(alive)}")
+    print(f"  其他: {len(dead)}")
+    print()
+
+    for s in alive:
+        print(f"  ✅ {s.domain:45s} [{s.status_code}] {s.title[:40]} ({s.source})")
+    for s in dead:
+        print(f"  ❌ {s.domain:45s} ({s.source})")
+
+    # 保存
+    if args.output:
+        out = Path(args.output)
+        out.parent.mkdir(parents=True, exist_ok=True)
+        urls = [s.to_url() for s in subs if s.alive]
+        out.write_text("\n".join(urls), encoding="utf-8")
+        print(f"\n存活URL已保存: {out}")
 
 
 def _cmd_report(args):
