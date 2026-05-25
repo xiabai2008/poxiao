@@ -321,25 +321,31 @@ def _cmd_subdomain(args):
     ))
 
     alive = [s for s in subs if s.alive]
-    dead = [s for s in subs if not s.alive]
 
-    print(f"共收集 {len(subs)} 个子域名")
-    print(f"  存活: {len(alive)}")
-    print(f"  其他: {len(dead)}")
+    # 摘要
+    print(sy.summary(subs))
     print()
 
+    # 按类别分组显示
+    from collections import defaultdict
+    by_cat = defaultdict(list)
     for s in alive:
-        print(f"  ✅ {s.domain:45s} [{s.status_code}] {s.title[:40]} ({s.source})")
-    for s in dead:
-        print(f"  ❌ {s.domain:45s} ({s.source})")
+        by_cat[s.category].append(s)
+
+    for cat in ["admin", "dev", "api", "portal", "mail", "biz", "internal"]:
+        items = by_cat.get(cat, [])
+        if items:
+            print(f"  [{cat}]")
+            for s in items[:6]:
+                icon = "🔥" if s.status_code == 200 else "⚡"
+                print(f"    {icon} {s.domain:40s} [{s.status_code}] {s.title[:35]}")
+            if len(items) > 6:
+                print(f"    ... 共 {len(items)} 个")
 
     # 保存
     if args.output:
-        out = Path(args.output)
-        out.parent.mkdir(parents=True, exist_ok=True)
-        urls = [s.to_url() for s in subs if s.alive]
-        out.write_text("\n".join(urls), encoding="utf-8")
-        print(f"\n存活URL已保存: {out}")
+        sy.to_target_file(subs, args.output)
+        print(f"\n存活URL已保存: {args.output}")
 
 
 def _cmd_monitor(args):

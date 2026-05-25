@@ -1,11 +1,12 @@
-"""霜月 — 子域名收集器
+"""霜月 — 子域名收集器 v2
 
-技术: crt.sh 证书透明日志 + DNS 字典爆破 + 存活验证
+技术: crt.sh + certspotter + AlienVault + DNS字典爆破 + 泛解析检测
 """
 
 import asyncio
 import re
-from dataclasses import dataclass
+from collections import defaultdict
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Optional
 
@@ -17,76 +18,145 @@ import dns.resolver
 class Subdomain:
     """子域名"""
     domain: str
-    source: str = ""        # crtsh / dns_brute / search
+    source: str = ""
     ip: str = ""
     alive: bool = False
     status_code: int = 0
     title: str = ""
+    category: str = ""  # admin / dev / api / portal / cdn / mail / unknown
 
     def to_url(self) -> str:
         return f"https://{self.domain}"
 
 
-# ── 常见子域名字典 ─────────────────────────────────
+# ── 分类映射 ────────────────────────────────────
+
+_CATEGORY_MAP = {
+    "admin": ["admin", "manage", "manager", "sys", "system", "console",
+              "dashboard", "control", "panel", "cpanel", "webmaster"],
+    "dev": ["dev", "test", "demo", "staging", "stage", "uat", "qa",
+            "beta", "alpha", "sandbox", "pre", "preview", "lab", "debug"],
+    "api": ["api", "open", "openapi", "service", "services", "ws",
+            "webservice", "rest", "gateway", "graphql"],
+    "portal": ["app", "m", "mobile", "wap", "touch", "h5", "www"],
+    "cdn": ["static", "assets", "cdn", "img", "images", "image",
+            "upload", "download", "dl", "media", "video", "vod"],
+    "mail": ["mail", "webmail", "email", "smtp", "pop", "imap",
+             "mx", "mail2", "mails", "email2"],
+    "biz": ["blog", "bbs", "forum", "community", "club", "wiki",
+            "help", "support", "faq", "docs", "doc", "manual",
+            "shop", "store", "mall", "buy", "pay", "order",
+            "member", "user", "account", "passport", "login", "sso",
+            "job", "jobs", "hr", "career", "about", "news"],
+    "internal": ["erp", "oa", "crm", "vpn", "remote", "secure",
+                 "ssl", "auth", "oauth", "sso", "ns1", "ns2", "dns"],
+}
+
+
+def _classify(subdomain: str) -> str:
+    """根据前缀分类"""
+    prefix = subdomain.split(".")[0].lower()
+    for cat, prefixes in _CATEGORY_MAP.items():
+        if prefix in prefixes:
+            return cat
+    return "unknown"
+
+
+# ── 子域名字典（扩展版）──────────────────────────
 
 COMMON_SUBDOMAINS = [
-    # 通用
-    "www", "mail", "ftp", "smtp", "pop", "imap", "ns1", "ns2",
-    "dns", "dns1", "dns2", "mx", "smtp", "webmail", "email",
-    # 管理
+    # 通用服务
+    "www", "mail", "webmail", "email", "smtp", "pop", "imap", "mx",
+    "ftp", "sftp", "ns1", "ns2", "dns", "dns1", "dns2",
+    # 管理后台
     "admin", "manage", "manager", "sys", "system", "console",
     "dashboard", "control", "panel", "cpanel", "webmaster",
-    # 开发/测试
+    # 开发测试
     "dev", "test", "demo", "staging", "stage", "uat", "qa",
-    "beta", "alpha", "sandbox", "pre", "preview", "lab",
-    # API/服务
-    "api", "api2", "api3", "open", "openapi", "service",
-    "services", "ws", "webservice", "rest", "gateway",
-    # 应用
-    "app", "apps", "m", "mobile", "wap", "touch", "h5",
-    "static", "assets", "cdn", "img", "images", "image",
-    "upload", "download", "dl", "media", "video", "vod",
-    # 业务
+    "beta", "alpha", "sandbox", "pre", "preview", "lab", "debug",
+    "gray", "canary", "dev2", "test2", "beta2", "test3",
+    # API / 微服务
+    "api", "api2", "api3", "open", "openapi", "service", "services",
+    "ws", "webservice", "rest", "gateway", "graphql", "rpc", "grpc",
+    # 前端 / 移动端
+    "app", "apps", "m", "mobile", "wap", "touch", "h5", "pc",
+    "static", "assets", "cdn", "cdn1", "cdn2", "image", "images",
+    "img", "upload", "download", "dl", "media", "video", "vod", "live",
+    # 业务系统
     "blog", "bbs", "forum", "community", "club", "wiki",
-    "help", "support", "faq", "docs", "doc", "manual",
-    "shop", "store", "mall", "buy", "pay", "order",
-    "member", "user", "account", "passport", "login", "sso",
-    "job", "jobs", "hr", "career", "about", "news",
+    "help", "support", "faq", "docs", "doc", "manual", "kb",
+    "shop", "store", "mall", "buy", "pay", "order", "trade",
+    "member", "user", "account", "passport", "login", "sso", "uc",
+    "job", "jobs", "hr", "career", "about", "news", "press",
+    "data", "report", "bi", "monitor", "log", "elk", "grafana",
     # 安全
-    "vpn", "remote", "secure", "ssl", "auth", "oauth",
-    # 国内特色
-    "erp", "oa", "crm", "mail2", "mails", "email2",
-    "test2", "dev2", "beta2", "app2", "m2", "wap2",
+    "vpn", "remote", "secure", "ssl", "auth", "oauth", "sso",
+    # 中国企业特色
+    "erp", "oa", "crm", "scm", "wms", "mes", "ehr",
+    "mail2", "mails", "email2", "app2", "m2", "wap2",
+    "ec", "b2b", "b2c", "c2c", "o2o",
+    "wechat", "wx", "mp", "miniapp",
+    # 其他
+    "backup", "backup2", "old", "new", "v2", "v3",
+    "en", "cn", "global", "intl", "hk", "us",
+    "jenkins", "gitlab", "git", "svn", "nexus", "harbor",
+    "kibana", "prometheus", "alertmanager", "zabbix", "nagios",
+    "jira", "confluence", "wiki2",
 ]
 
 
 class ShuangYue:
-    """霜月 — 子域名收集器"""
+    """霜月 — 子域名收集器 v2"""
 
     def __init__(self, timeout: float = 5.0):
         self.timeout = timeout
         self.resolver = dns.resolver.Resolver()
         self.resolver.timeout = 3
         self.resolver.lifetime = 5
+        self._wildcard_ips: set[str] = set()
 
-    # ── crt.sh 证书透明 ──────────────────────────
+    # ── 泛解析检测 ──────────────────────────────
+
+    def _detect_wildcard(self, domain: str) -> bool:
+        """检测 DNS 泛解析"""
+        rand_sub = f"_shuangyue_wildcard_test_{id(self)}.{domain}"
+        try:
+            answers = self.resolver.resolve(rand_sub, "A")
+            for a in answers:
+                self._wildcard_ips.add(str(a))
+            return len(self._wildcard_ips) > 0
+        except Exception:
+            return False
+
+    def _is_wildcard(self, subdomain: str) -> bool:
+        """判断是否是泛解析"""
+        if not self._wildcard_ips:
+            return False
+        try:
+            answers = self.resolver.resolve(subdomain, "A")
+            for a in answers:
+                if str(a) in self._wildcard_ips:
+                    return True
+        except Exception:
+            pass
+        return False
+
+    # ── 证书透明源 ──────────────────────────────
 
     def _crt_sh(self, domain: str) -> list[str]:
-        """通过 crt.sh 证书透明日志获取子域名"""
+        """crt.sh + certspotter 证书透明"""
         subdomains = set()
 
-        # 尝试多个 crt.sh URL 格式
-        urls = [
+        # crt.sh
+        for url in [
             f"https://crt.sh/?q=%25.{domain}&output=json",
             f"https://crt.sh/?q=%.{domain}&output=json",
-        ]
-        for url in urls:
+        ]:
             try:
                 resp = httpx.get(url, timeout=15, follow_redirects=True,
                                  headers={"User-Agent": "Mozilla/5.0"})
                 if resp.status_code != 200:
                     continue
-
                 data = resp.json()
                 for entry in data:
                     name = entry.get("name_value", entry.get("common_name", ""))
@@ -96,11 +166,26 @@ class ShuangYue:
                             line = line[2:]
                         if line.endswith(f".{domain}") or line == domain:
                             subdomains.add(line)
-                break  # 成功就不用试第二个 URL 了
+                break
             except Exception:
                 continue
 
-        # 备用: 通过 AlienVault OTX
+        # certspotter (备用)
+        if not subdomains:
+            try:
+                url = f"https://api.certspotter.com/v1/issuances?domain={domain}&expand=dns_names"
+                resp = httpx.get(url, timeout=15,
+                                 headers={"User-Agent": "Mozilla/5.0"})
+                if resp.status_code == 200:
+                    for entry in resp.json():
+                        for name in entry.get("dns_names", []):
+                            name = name.strip().lower().rstrip(".")
+                            if name.endswith(f".{domain}") or name == domain:
+                                subdomains.add(name)
+            except Exception:
+                pass
+
+        # AlienVault OTX
         if not subdomains:
             try:
                 url = f"https://otx.alienvault.com/api/v1/indicators/domain/{domain}/passive_dns"
@@ -116,29 +201,44 @@ class ShuangYue:
 
         return list(subdomains)
 
-    # ── DNS 字典爆破 ─────────────────────────────
+    # ── DNS 字典爆破（异步）─────────────────────
 
-    def _dns_brute(self, domain: str, wordlist: list[str] = None) -> list[str]:
-        """DNS 字典爆破"""
+    async def _dns_brute(self, domain: str, wordlist: list[str] = None) -> list[str]:
+        """DNS 字典爆破（带泛解析过滤，异步）"""
         if wordlist is None:
             wordlist = COMMON_SUBDOMAINS
 
-        found = []
-        for prefix in wordlist:
-            target = f"{prefix}.{domain}"
+        import concurrent.futures
+
+        def _resolve_one(target: str) -> Optional[str]:
             try:
                 answers = self.resolver.resolve(target, "A")
-                for a in answers:
-                    found.append(target)
-                    break  # 一个就够了
+                ips = [str(a) for a in answers]
+                if self._wildcard_ips and all(ip in self._wildcard_ips for ip in ips):
+                    return None
+                return target
             except Exception:
-                pass
+                return None
+
+        loop = asyncio.get_event_loop()
+        found = []
+        sem = asyncio.Semaphore(20)  # 并发 DNS 查询
+
+        async def worker(prefix: str):
+            async with sem:
+                target = f"{prefix}.{domain}"
+                result = await loop.run_in_executor(None, _resolve_one, target)
+                if result:
+                    found.append(result)
+
+        await asyncio.gather(*[worker(p) for p in wordlist])
         return found
 
     # ── 存活验证 ─────────────────────────────────
 
-    async def _check_alive(self, subdomain: str, client: httpx.AsyncClient) -> Optional[Subdomain]:
-        """异步检测子域名 http/https 是否存活"""
+    async def _check_alive(self, subdomain: str,
+                           client: httpx.AsyncClient) -> Optional[Subdomain]:
+        """异步检测 http/https 存活"""
         for scheme in ["https", "http"]:
             url = f"{scheme}://{subdomain}"
             try:
@@ -148,7 +248,6 @@ class ShuangYue:
                 if m:
                     title = m.group(1).strip()
 
-                # 解析 IP
                 ip = ""
                 try:
                     answers = self.resolver.resolve(subdomain, "A")
@@ -162,6 +261,7 @@ class ShuangYue:
                     status_code=resp.status_code,
                     title=title[:80],
                     ip=ip,
+                    category=_classify(subdomain),
                 )
             except Exception:
                 continue
@@ -180,7 +280,10 @@ class ShuangYue:
         all_subs: set[str] = set()
         sources: dict[str, str] = {}
 
-        # 1. crt.sh
+        # 0. 泛解析检测
+        has_wildcard = self._detect_wildcard(domain)
+
+        # 1. 证书透明
         if use_crtsh:
             crt_results = self._crt_sh(domain)
             for s in crt_results:
@@ -189,70 +292,73 @@ class ShuangYue:
 
         # 2. DNS 爆破
         if use_brute:
-            brute_results = self._dns_brute(domain)
+            brute_results = await self._dns_brute(domain)
             for s in brute_results:
                 if s not in all_subs:
                     all_subs.add(s)
                     sources[s] = "dns_brute"
 
-        results = []
-
         # 3. 存活验证
         if check_alive and all_subs:
             async with httpx.AsyncClient(verify=False, timeout=self.timeout) as client:
-                sem = asyncio.Semaphore(10)
+                sem = asyncio.Semaphore(15)
 
                 async def verify(sub: str):
                     async with sem:
                         alive = await self._check_alive(sub, client)
                         if alive:
                             alive.source = sources.get(sub, "unknown")
+                            if self._wildcard_ips and alive.ip in self._wildcard_ips:
+                                alive.alive = False  # 泛解析降级
                             return alive
-                        return Subdomain(domain=sub, source=sources.get(sub, "unknown"))
+                        return Subdomain(
+                            domain=sub,
+                            source=sources.get(sub, "unknown"),
+                            category=_classify(sub),
+                        )
 
                 tasks = [verify(s) for s in all_subs]
                 results = await asyncio.gather(*tasks)
         else:
             results = [
-                Subdomain(domain=s, source=sources.get(s, "unknown"))
+                Subdomain(domain=s, source=sources.get(s, "unknown"),
+                          category=_classify(s))
                 for s in all_subs
             ]
 
-        # 按存活优先排序
         results.sort(key=lambda x: (-x.alive, x.domain))
         return results
 
     def collect_sync(self, domain: str, **kwargs) -> list[Subdomain]:
-        """同步版"""
         return asyncio.run(self.collect(domain, **kwargs))
 
+    # ── 导出 ────────────────────────────────────
 
-# ── 命令行 ─────────────────────────────────────
+    def to_target_file(self, subs: list[Subdomain], output_path: str):
+        """导出为破晓扫描目标格式"""
+        alive = [s for s in subs if s.alive]
+        lines = []
+        for s in alive:
+            lines.append(f"{s.to_url():50s} # {s.title[:30] if s.title else s.category}")
+        Path(output_path).parent.mkdir(parents=True, exist_ok=True)
+        Path(output_path).write_text("\n".join(lines), encoding="utf-8")
 
-if __name__ == "__main__":
-    import sys
+    def summary(self, subs: list[Subdomain]) -> str:
+        """生成摘要"""
+        alive = [s for s in subs if s.alive]
+        by_cat = defaultdict(list)
+        for s in alive:
+            by_cat[s.category].append(s)
 
-    if len(sys.argv) < 2:
-        print("用法: python shuangyue.py <domain> [--no-alive]")
-        sys.exit(1)
-
-    domain = sys.argv[1]
-    check = "--no-alive" not in sys.argv
-
-    sy = ShuangYue()
-    subs = asyncio.run(sy.collect(domain, check_alive=check))
-
-    alive = [s for s in subs if s.alive]
-    dead = [s for s in subs if not s.alive]
-
-    print(f"\n{sys.argv[1]} — 共 {len(subs)} 个子域名")
-    print(f"  存活: {len(alive)}")
-    print(f"  未验证/不可达: {len(dead)}")
-    print()
-
-    for s in alive:
-        print(f"  ✅ {s.domain:40s} [{s.status_code}] {s.title[:50]} ({s.source})")
-    for s in dead[:10]:
-        print(f"  ❌ {s.domain:40s} ({s.source})")
-    if len(dead) > 10:
-        print(f"  ... 共 {len(dead)} 个")
+        lines = [
+            f"共 {len(subs)} 个子域名 | 存活 {len(alive)}",
+            f"  证书透明: {sum(1 for s in subs if s.source == 'crtsh')}",
+            f"  DNS 爆破: {sum(1 for s in subs if s.source == 'dns_brute')}",
+            f"  泛解析: {'是' if self._wildcard_ips else '否'}",
+            "",
+            "按类别:",
+        ]
+        for cat in ["admin", "dev", "api", "portal", "mail", "biz", "internal", "cdn", "unknown"]:
+            if cat in by_cat:
+                lines.append(f"  {cat:10s}: {len(by_cat[cat])} 个")
+        return "\n".join(lines)
