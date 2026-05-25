@@ -1,0 +1,63 @@
+# RayScan Batch Targets - 补天公益前100家厂商 已确认域名
+# 启动: python -m wvs batch targets_100.txt -t 3
+# 日志: scan_batch100.log
+
+# ── 第1批 (1-10) ──
+https://www.chinajoy.net           # 汉威信恒展览(ChinaJoy主办方)
+https://guilinbank.com.cn           # 桂林银行
+https://www.cfzq.com                # 财富证券(现财信证券)
+http://hrss.wenzhou.gov.cn          # 温州人社信息中心
+https://pkufi.com                   # 北大方正人寿
+https://dzwww.com                   # 大众网(山东新闻)
+https://www.yundaex.com             # 韵达速递
+https://www.xtep.com.cn             # 特步
+https://www.dongfeng-nissan.com.cn  # 东风日产
+https://xd.com                      # 心动网络
+
+# ── 第2批 (11-20) ──
+https://www.fesco.com.cn            # 北京外企人力(FESCO)
+https://www.lakala.com              # 拉卡拉
+https://www.cndns.com               # 美橙互联
+http://www.rrl.com.cn               # 人人乐连锁商业
+https://www.yintai.com              # 银泰网
+https://www.hrbccb.com.cn           # 哈尔滨银行
+http://mhedu.sh.cn                  # 闵行区教育局
+https://www.99fund.com              # 汇添富基金
+https://www.snda.com                # 盛大游戏
+https://www.htlife.com.cn           # 华泰人寿
+
+# ── 第3批 (21-30) ──
+https://www.njcb.com.cn             # 南京银行
+https://www.ecit.cn                 # 东华理工大学
+https://www.qumei.com               # 曲美家具
+https://www.lexue100.com            # 乐学一百
+https://www.chinalife.com.cn        # 中国人寿
+https://www.kunlunhealth.com        # 昆仑健康保险
+https://www.huabaotrust.com         # 华宝信托
+https://www.guolianlife.com         # 国联人寿
+https://www.taishan-ins.com.cn      # 泰山财产保险
+https://www.changanfund.com         # 长安基金
+
+# ── 第4批 (31-40) ──
+https://www.datebao.com             # 大特保
+https://www.jpush.cn                # 深圳市和讯华谷(极光)
+http://www.sxpi.edu.cn              # 陕西工业职业技术学院
+https://www.sinowaysoft.com         # 江苏中威科技
+https://www.cfldcn.com              # 华夏幸福基业
+http://nantong.gov.cn               # 南通市政府
+https://www.yzmcms.com              # YzmCMS
+https://cnhongqingting.com          # 浙江红蜻蜓鞋业
+https://www.xybservice.com          # 浙江校友邦人力
+https://www.ergo-life.com.cn        # 德华安顾人寿
+
+# ── 第5批 (41-50) ──
+https://www.kaola.com               # 考拉海购(测试)
+https://www.cqtbi.edu.cn            # 重庆工商职业学院
+https://www.junlonglife.com         # 君龙人寿
+https://www.nwsni.edu.cn            # 北方民族大学
+https://www.zyufl.edu.cn            # 浙江越秀外国语学院
+https://chat711.com                 # chat711约克英语
+https://www.ctelecom.com.cn         # 中国电信学院
+https://www.bohai.com               # 渤海商品交易所(测试)
+https://www.xtep.com                # 特步(备用)
+https://www.yundaex.com             # 韵达(去重)

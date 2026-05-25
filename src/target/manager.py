@@ -61,6 +61,9 @@ class TargetManager:
             line = line.strip()
             if not line or line.startswith("#"):
                 continue
+            # 去掉行内注释（URL 后面的 # 注释）
+            if " #" in line:
+                line = line.split(" #")[0].strip()
             # 自动补全协议
             if not line.startswith("http"):
                 line = f"https://{line}"

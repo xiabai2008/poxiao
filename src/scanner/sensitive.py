@@ -1,7 +1,8 @@
-"""敏感路径/文件发现"""
+"""敏感路径/文件发现 — 带 CDN/CloudFront 假阳性降噪"""
 
 import asyncio
 from dataclasses import dataclass
+from itertools import groupby
 from typing import Optional
 
 import httpx
@@ -14,25 +15,20 @@ class PathFind:
     status: int
     size: int = 0
     content_type: str = ""
-    category: str = ""  # config/backup/debug/git/admin/api
-    is_catchall: bool = False  # CDN/WAF 把所有请求都返回 200
+    category: str = ""          # config/backup/debug/git/admin/api/source/db
+    content_preview: str = ""   # 响应体前 200 字节，用于内容相似度检测
+    is_catchall: bool = False   # CDN/WAF 假阳性标记
 
     @property
     def is_interesting(self) -> bool:
-        """判断是否值得关注"""
-        # 跳过信息类（robots.txt 等在大多数网站都有）
         if self.category == "info":
             return False
-        # 跳过 CDN 假阳性
         if self.is_catchall:
             return False
-        # 200 + 有实际内容（非空页面）才值得关注
         if self.status == 200 and self.size > 100:
             return True
-        # 403 可能有价值（目录存在但被拒绝）
         if self.status == 403:
             return True
-        # 301/302 redirect 到明显非预期位置的不算
         return False
 
 
@@ -158,27 +154,20 @@ class SensitivePathDetector:
 
     async def _check_one(
         self, base_url: str, path: str, category: str,
-        client: httpx.AsyncClient, known_catchall_size: int = -1,
+        client: httpx.AsyncClient,
     ) -> Optional[PathFind]:
-        """检测单个路径"""
+        """检测单个路径 — 不做单点判断，把原始数据返回，统一在 scan() 里降噪"""
         full_url = f"{base_url.rstrip('/')}/{path.lstrip('/')}"
         try:
             resp = await client.get(full_url, timeout=self.timeout)
             if resp.status_code in (200, 301, 302, 403):
                 size = len(resp.content)
-                # 检测 CDN catch-all: 如果状态码是 200 但内容是 HTML 页面
-                # 且篇幅与已知 catch-all 一样或相近，标记为假阳性
-                is_catch = False
-                if resp.status_code == 200:
-                    ct = resp.headers.get("content-type", "")
-                    if "html" in ct.lower() and category in ("config", "backup", "debug"):
-                        # 如果 body 包含 <html> 标签，几乎确定是 catch-all
-                        body = resp.content[:200].decode("utf-8", errors="ignore").lower()
-                        if "<html" in body or "<!doctype" in body:
-                            is_catch = True
-                    # 如果大小跟已知 catchall 接近（±20%），也标记
-                    if known_catchall_size > 0 and abs(size - known_catchall_size) < size * 0.3:
-                        is_catch = True
+                # 捕获前 200 字节用于内容相似度分析
+                preview = ""
+                try:
+                    preview = resp.content[:200].decode("utf-8", errors="ignore")
+                except Exception:
+                    pass
 
                 return PathFind(
                     url=full_url,
@@ -186,59 +175,104 @@ class SensitivePathDetector:
                     size=size,
                     content_type=resp.headers.get("content-type", ""),
                     category=category,
-                    is_catchall=is_catch,
+                    content_preview=preview,
+                    is_catchall=False,  # 扫描阶段不判定，留到降噪
                 )
         except Exception:
             pass
         return None
 
     async def scan(self, base_url: str, tech: str = "") -> list[PathFind]:
-        """扫描目标"""
+        """扫描目标 — 三层降噪"""
         paths = self.get_paths(tech)
         sem = asyncio.Semaphore(self.concurrency)
         results: list[PathFind] = []
 
         async with httpx.AsyncClient(verify=False, timeout=self.timeout) as client:
-            # 先探测一个不可能存在的路径来校准 catch-all
-            catchall_size = -1
+            # ── 校准探测器: 访问一个不可能存在的随机路径 ──
+            catchall_preview = ""
+            catchall_size = 0
             try:
                 probe = await client.get(
                     f"{base_url.rstrip('/')}/_poxiao_no_such_8472_test_"
                 )
                 if probe.status_code == 200:
-                    ct = probe.headers.get("content-type", "")
-                    if "html" in ct.lower():
-                        catchall_size = len(probe.content)
+                    catchall_size = len(probe.content)
+                    try:
+                        catchall_preview = probe.content[:200].decode("utf-8", errors="ignore")
+                    except Exception:
+                        pass
             except Exception:
                 pass
 
             async def _worker(p: str, cat: str):
                 async with sem:
-                    found = await self._check_one(base_url, p, cat, client, catchall_size)
+                    found = await self._check_one(base_url, p, cat, client)
                     if found:
                         results.append(found)
 
             tasks = [_worker(p, cat) for p, cat in paths]
             await asyncio.gather(*tasks)
 
-        # 过滤噪声：相同尺寸+状态码聚类
-        from collections import Counter
-        # 403 聚类 — 同一尺寸出现 3+ 次，或尺寸在 ±5% 范围内合并计数
-        sizes_403 = [r.size for r in results if r.status == 403]
+        # ═══════════════════════════════════════════════════════
+        # 降噪层 1: 内容特征 — 不该返回 HTML 但返回了 HTML
+        # ═══════════════════════════════════════════════════════
+        html_categories = {"config", "backup", "git", "source", "api", "db"}
         for r in results:
-            if r.status == 403:
-                similar = sum(1 for s in sizes_403 if abs(s - r.size) < max(50, r.size * 0.05))
-                if similar >= 3:
+            if r.status == 200 and r.category in html_categories:
+                preview = r.content_preview.lower().lstrip()  # 去掉前导空白
+                # 配置文件不应该以 <html / <!doctype / <script 开头
+                if (preview.startswith("<!doctype") or
+                    preview.startswith("<html") or
+                    preview.startswith("<script")):
                     r.is_catchall = True
 
-        # 200 聚类 — 多个配置/备份/源码路径都返回 200 且同尺寸 → CDN catch-all
-        sizes_200 = Counter(r.size for r in results if r.status == 200 and r.category in ("config","backup","source","git"))
+        # ═══════════════════════════════════════════════════════
+        # 降噪层 2: 尺寸聚类 — 多个同状态路径尺寸高度相似
+        # ═══════════════════════════════════════════════════════
+        # 按 (status, category_group) 分组
+        # group: "data" = config/backup/git/source — 这些不可能同尺寸
+        # group: "web" = admin/login/api — 这些有相似尺寸也算可疑
         for r in results:
-            if r.status == 200 and r.category in ("config","backup","source","git"):
-                if sizes_200.get(r.size, 0) >= 2:
-                    r.is_catchall = True
+            if r.is_catchall:
+                continue
+            # 只有 200/403 做聚类
+            if r.status not in (200, 403):
+                continue
+            # 排除正常类别
+            if r.category == "info":
+                continue
 
-        # 只返回 interesting 的
+            # 统计与当前路径 size 接近（±8% 或 ±80 字节）的同状态结果数
+            tol = max(80, int(r.size * 0.08))
+            similar = sum(
+                1 for other in results
+                if other.status == r.status
+                and other.category != "info"
+                and abs(other.size - r.size) <= tol
+            )
+            # 3+ 个不同路径返回同尺寸 → 几乎确定是统一错误页
+            if similar >= 3:
+                r.is_catchall = True
+
+        # ═══════════════════════════════════════════════════════
+        # 降噪层 3: 校准路径匹配 — 如果探测路径返回 200 且有内容
+        #           所有与它尺寸接近的 200 路径都标记
+        # ═══════════════════════════════════════════════════════
+        if catchall_size > 0:
+            for r in results:
+                if r.status == 200 and r.category != "info":
+                    if abs(r.size - catchall_size) <= max(100, catchall_size * 0.12):
+                        r.is_catchall = True
+            # 额外检查：如果探测路径的内容前缀跟其他路径一致
+            if catchall_preview:
+                for r in results:
+                    if r.status == 200 and not r.is_catchall:
+                        # 简单内容相似度：前 80 字符一致
+                        common_len = min(len(catchall_preview), len(r.content_preview), 80)
+                        if common_len > 30 and catchall_preview[:common_len] == r.content_preview[:common_len]:
+                            r.is_catchall = True
+
         return [r for r in results if r.is_interesting]
 
     def scan_sync(self, base_url: str, tech: str = "") -> list[PathFind]:
