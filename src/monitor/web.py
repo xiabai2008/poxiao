@@ -76,15 +76,15 @@ def dashboard():
 
     recent_targets = "".join(
         f"""<tr>
-            <td><a href="/target/{t['id']}">{t['host'][:30]}</a></td>
+            <td><a href="/target/{t['id']}">{t['host'][:35]}</a></td>
             <td><span class="badge {'bg-success' if t['status']=='alive' else 'bg-secondary'}">{t['status']}</span></td>
             <td>{' '.join(f'<span class="tech-tag">{x}</span>' for x in (t.get('tech_stack',[]) or [])[:3])}</td>
-            <td>{t['sensitive_count']}</td>
-            <td>{t['cve_count']}</td>
-            <td>{t['last_seen'][:16]}</td>
+            <td><span class="badge {'bg-warning text-dark' if t['sensitive_count']>0 else 'bg-light text-muted'}">{t['sensitive_count']}</span></td>
+            <td><span class="badge {'bg-danger' if t['cve_count']>0 else 'bg-light text-muted'}">{t['cve_count']}</span></td>
+            <td class="text-muted small">{t['last_seen'][:16]}</td>
         </tr>"""
         for t in targets
-    ) or '<tr><td colspan="6" class="text-center text-muted">暂无数据</td></tr>'
+    ) or '<tr><td colspan="6" class="text-center text-muted">暂无数据 — 运行 poxiao scan 后自动导入</td></tr>'
 
     changes_html = "".join(
         f"""<tr>
@@ -95,14 +95,19 @@ def dashboard():
         for c in changes
     ) or '<tr><td colspan="3" class="text-center text-muted">暂无变更</td></tr>'
 
+    alive_pct = round(stats['alive']/max(stats['total'],1)*100)
+    found_pct = round(stats['with_findings']/max(stats['total'],1)*100)
     content = f"""
     <div class="row">
         <div class="col-md-3"><div class="card stat-card">
-            <div class="stat-value">{stats['total']}</div><div class="stat-label">监控目标</div></div></div>
+            <div class="stat-value">{stats['total']}</div><div class="stat-label">监控目标</div>
+            <div class="progress mt-2" style="height:4px"><div class="progress-bar bg-primary" style="width:100%"></div></div></div></div>
         <div class="col-md-3"><div class="card stat-card">
-            <div class="stat-value text-success">{stats['alive']}</div><div class="stat-label">存活</div></div></div>
+            <div class="stat-value text-success">{stats['alive']}<small class="fs-6"> / {alive_pct}%</small></div><div class="stat-label">存活</div>
+            <div class="progress mt-2" style="height:4px"><div class="progress-bar bg-success" style="width:{alive_pct}%"></div></div></div></div>
         <div class="col-md-3"><div class="card stat-card">
-            <div class="stat-value text-warning">{stats['with_findings']}</div><div class="stat-label">有发现</div></div></div>
+            <div class="stat-value text-warning">{stats['with_findings']}<small class="fs-6"> / {found_pct}%</small></div><div class="stat-label">有发现</div>
+            <div class="progress mt-2" style="height:4px"><div class="progress-bar bg-warning" style="width:{found_pct}%"></div></div></div></div>
         <div class="col-md-3"><div class="card stat-card">
             <div class="stat-value text-info">{stats['recent_changes']}</div><div class="stat-label">7日内变更</div></div></div>
     </div>
@@ -132,22 +137,49 @@ def dashboard():
 
 @app.route("/targets")
 def targets_list():
+    q = request.args.get("q", "").strip()
+    status = request.args.get("status", "")
     targets = get_targets(limit=200)
+
+    # 过滤
+    if q:
+        targets = [t for t in targets if q.lower() in t.get("host","").lower()
+                   or q.lower() in t.get("url","").lower()]
+    if status:
+        targets = [t for t in targets if t.get("status") == status]
+
     rows = "".join(
         f"""<tr>
             <td><a href="/target/{t['id']}">{t['host'][:35]}</a></td>
             <td><code>{t['url'][:40]}</code></td>
             <td><span class="badge {'bg-success' if t['status']=='alive' else 'bg-secondary'}">{t['status']}</span></td>
             <td>{' '.join(f'<span class="tech-tag">{x}</span>' for x in (t.get('tech_stack',[]) or [])[:4])}</td>
-            <td>{t['sensitive_count']}</td>
-            <td>{t['cve_count']}</td>
-            <td>{t['last_seen'][:16]}</td>
+            <td><span class="badge {'bg-warning text-dark' if t['sensitive_count']>0 else 'bg-light text-muted'}">{t['sensitive_count']}</span></td>
+            <td><span class="badge {'bg-danger' if t['cve_count']>0 else 'bg-light text-muted'}">{t['cve_count']}</span></td>
+            <td class="text-muted small">{t['last_seen'][:16]}</td>
         </tr>"""
         for t in targets
-    ) or '<tr><td colspan="7" class="text-center text-muted">暂无目标，请先导入扫描结果</td></tr>'
+    ) or '<tr><td colspan="7" class="text-center text-muted">无匹配结果</td></tr>'
 
     content = f"""
     <h4>🎯 所有目标 ({len(targets)})</h4>
+    <div class="card mb-3"><div class="card-body py-2">
+    <form method="GET" class="row g-2">
+        <div class="col-md-6">
+            <input type="text" name="q" class="form-control form-control-sm" placeholder="搜索域名或URL..." value="{q}">
+        </div>
+        <div class="col-md-3">
+            <select name="status" class="form-select form-select-sm">
+                <option value="">全部状态</option>
+                <option value="alive" {'selected' if status=='alive' else ''}>存活</option>
+                <option value="dead" {'selected' if status=='dead' else ''}>不可达</option>
+            </select>
+        </div>
+        <div class="col-md-3">
+            <button type="submit" class="btn btn-sm btn-primary w-100">筛选</button>
+        </div>
+    </form>
+    </div></div>
     <div class="card"><div class="card-body">
     <table class="table table-hover table-sm">
     <thead><tr><th>域名</th><th>URL</th><th>状态</th><th>技术栈</th><th>发现</th><th>CVE</th><th>最近</th></tr></thead>

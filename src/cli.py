@@ -209,6 +209,15 @@ def _cmd_scan(args):
     print(f"  Markdown:  {md_path}")
     print(f"  单目标报告: {reporter.output_dir}/")
 
+    # 自动导入到观星（如果数据库已初始化）
+    try:
+        from src.monitor.db import import_from_summary, get_stats
+        import_from_summary(summary_path)
+        stats = get_stats()
+        print(f"\n🔭 观星已同步: {stats['total']} 目标 | 启动面板: poxiao monitor serve")
+    except Exception:
+        pass  # 观星未初始化时静默跳过
+
     # 生成 SRC 报告
     if alive_targets:
         src = SRCReporter()
