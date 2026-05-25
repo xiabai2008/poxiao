@@ -1,0 +1,5 @@
+https://download.guilinbank.com.cn                 # 404 Not Found
+https://mail.guilinbank.com.cn                     # 404 Not Found
+https://mobile.guilinbank.com.cn                   # portal
+https://vpn.guilinbank.com.cn                      # aTrust 2.0
+https://www.guilinbank.com.cn                      # portal

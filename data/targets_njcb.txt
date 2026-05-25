@@ -1,0 +1,10 @@
+https://job.njcb.com.cn                            # 南京银行
+https://mail.njcb.com.cn                           # mail
+https://mail2.njcb.com.cn                          # mail
+https://njcb.com.cn                                # 南京银行
+https://oa.njcb.com.cn                             # 403 Forbidden
+https://open.njcb.com.cn                           # Welcome to nginx!
+https://openapi.njcb.com.cn                        # 302 Found
+https://static.njcb.com.cn                         # cdn
+https://wap.njcb.com.cn                            # 南京银行
+https://www.njcb.com.cn                            # 南京银行

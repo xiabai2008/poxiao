@@ -1,0 +1,6 @@
+https://en.sxpi.edu.cn                             # 陕西工业职业技术大学国际教育学院 国际合作与交流中心（港澳台
+https://lyuap.sxpi.edu.cn                          # 统一身份认证平台
+https://mail.sxpi.edu.cn                           # 陕西工业职业技术学院
+https://old.sxpi.edu.cn                            # 403 Forbidden
+https://sxpi.edu.cn                                # 403 Forbidden
+https://www.sxpi.edu.cn                            # 陕西工业职业技术大学
