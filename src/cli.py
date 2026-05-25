@@ -10,6 +10,8 @@ from src.target.manager import TargetManager
 from src.target.discovery import DomainDiscovery
 from src.scanner.engine import ScanEngine
 from src.reporter.reporter import Reporter
+from src.reporter.src_reporter import SRCReporter
+import json
 
 
 def main():
@@ -72,6 +74,11 @@ def main():
     # ── check 命令 ────────────────────────────────
     check_parser = sub.add_parser("check", help="检测目标是否存活")
     check_parser.add_argument("target", help="目标文件")
+    # ── report 命令 ─────────────────────────────
+    report_parser = sub.add_parser("report", help="从扫描结果生成 SRC 报告")
+    report_parser.add_argument("summary", nargs="?", help="扫描汇总 JSON 文件")
+    report_parser.add_argument("-o", "--output", default="scan_results", help="输出目录")
+
     check_parser.add_argument("-c", "--concurrency", type=int, default=10)
 
     args = parser.parse_args()
@@ -86,6 +93,8 @@ def main():
         _cmd_scan(args)
     elif args.command == "discover":
         _cmd_discover(args)
+    elif args.command == "report":
+        _cmd_report(args)
 
 
 def _cmd_scan(args):
@@ -170,6 +179,23 @@ def _cmd_scan(args):
     print(f"  Markdown:  {md_path}")
     print(f"  单目标报告: {reporter.output_dir}/")
 
+    # 生成 SRC 报告
+    if alive_targets:
+        src = SRCReporter()
+        all_dicts = [r.to_dict() for r in scan_results]
+        src_result = src.generate_batch(all_dicts, output_dir=reporter.output_dir)
+        if src_result["total"] > 0:
+            print(f"\n📋 SRC 报告: {src_result['total']} 个")
+            print(f"  目录: {src_result['output_dir']}")
+            print(f"  索引: {src_result['index']}")
+            for r in src_result["reports"][:3]:
+                sev_icon = "🔴" if r["severity"] in ("CRITICAL","HIGH") else "🟡"
+                print(f"  {sev_icon} {r['title'][:60]}")
+            if src_result["total"] > 3:
+                print(f"  ... 共 {src_result['total']} 个")
+        else:
+            print(f"\n  (无可用于SRC提交的发现)")
+
 
 def _cmd_check(args):
     """存活检测命令"""
@@ -244,6 +270,37 @@ def _cmd_discover(args):
 
     finally:
         dd.close()
+
+
+def _cmd_report(args):
+    """SRC 报告生成"""
+    src = SRCReporter()
+
+    # 找最新的 summary JSON
+    import glob
+    summary_path = args.summary
+    if not summary_path:
+        candidates = sorted(glob.glob(f"scan_results/summary_*.json"), reverse=True)
+        if not candidates:
+            print("未找到扫描汇总文件。请先运行 poxiao scan ...")
+            return
+        summary_path = candidates[0]
+        print(f"使用最近汇总: {summary_path}")
+
+    if not Path(summary_path).exists():
+        print(f"文件不存在: {summary_path}")
+        return
+
+    data = json.loads(Path(summary_path).read_text(encoding="utf-8"))
+    targets = data.get("targets", [])
+
+    result = src.generate_batch(targets, output_dir=args.output)
+    print(f"\n生成 {result['total']} 个 SRC 报告")
+    print(f"目录: {result['output_dir']}")
+    print(f"索引: {result['index']}")
+    for r in result["reports"]:
+        sev_icon = "🔴" if r["severity"] in ("CRITICAL", "HIGH") else "🟡"
+        print(f"  {sev_icon} [{r['severity']}] {r['title'][:60]}")
 
 
 if __name__ == "__main__":
