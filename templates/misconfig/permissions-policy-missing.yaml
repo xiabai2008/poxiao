@@ -1,0 +1,21 @@
+id: permissions-policy-missing
+info:
+  name: Permissions-Policy 缺失
+  severity: info
+  description: 未设置 Permissions-Policy 响应头
+  tags: permissions,headers,info
+  author: poxiao
+
+http:
+  - method: GET
+    path:
+      - "{{BaseURL}}/"
+    matchers-condition: and
+    matchers:
+      - type: status
+        status: [200]
+      - type: regex
+        regex:
+          - "Permissions-Policy"
+        negative: true
+        part: header

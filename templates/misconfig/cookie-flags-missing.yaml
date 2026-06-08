@@ -1,0 +1,26 @@
+id: cookie-flags-missing
+info:
+  name: Cookie 安全标志缺失
+  severity: medium
+  description: Cookie 未设置 HttpOnly/Secure/SameSite 标志
+  tags: cookie,security,medium
+  author: poxiao
+
+http:
+  - method: GET
+    path:
+      - "{{BaseURL}}/"
+    matchers-condition: or
+    matchers:
+      - type: regex
+        regex:
+          - "Set-Cookie:(?!.*HttpOnly)"
+        part: header
+      - type: regex
+        regex:
+          - "Set-Cookie:(?!.*Secure)"
+        part: header
+      - type: regex
+        regex:
+          - "Set-Cookie:(?!.*SameSite)"
+        part: header

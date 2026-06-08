@@ -1,0 +1,20 @@
+id: options-method-enabled
+info:
+  name: HTTP OPTIONS 方法启用
+  severity: low
+  description: HTTP OPTIONS 方法启用，泄露支持的 HTTP 方法
+  tags: options,method,info
+  author: poxiao
+
+http:
+  - method: OPTIONS
+    path:
+      - "{{BaseURL}}/"
+    matchers-condition: and
+    matchers:
+      - type: status
+        status: [200, 204]
+      - type: regex
+        regex:
+          - "Allow:\\s*(?:GET|POST|PUT|DELETE|PATCH|OPTIONS|HEAD)"
+        part: header

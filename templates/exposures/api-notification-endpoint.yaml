@@ -1,0 +1,29 @@
+id: api-notification-endpoint
+info:
+  name: Notification API 端点检测
+  severity: info
+  description: 检测 Notification API 端点
+  tags: api,notification,info
+  author: poxiao
+
+http:
+  - method: POST
+    path:
+      - "{{BaseURL}}/api/v1/notifications"
+      - "{{BaseURL}}/api/notifications"
+      - "{{BaseURL}}/notifications"
+    headers:
+      Content-Type: "application/json"
+    body: '{"message":"test","to":"user@example.com"}'
+    matchers-condition: and
+    matchers:
+      - type: status
+        status: [200, 201, 400, 404]
+      - type: word
+        words:
+          - "notification"
+          - "Notification"
+          - "message"
+          - "sent"
+        condition: or
+        part: body

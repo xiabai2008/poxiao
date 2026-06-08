@@ -1,0 +1,27 @@
+id: api-resource-endpoint
+info:
+  name: Resource API 端点检测
+  severity: info
+  description: 检测 Resource API 端点
+  tags: api,resource,info
+  author: poxiao
+
+http:
+  - method: GET
+    path:
+      - "{{BaseURL}}/api/v1/resources"
+      - "{{BaseURL}}/api/resources"
+      - "{{BaseURL}}/resources"
+    matchers-condition: and
+    matchers:
+      - type: status
+        status: [200, 404]
+      - type: word
+        words:
+          - "resource"
+          - "Resource"
+          - "id"
+          - "type"
+          - "links"
+        condition: or
+        part: body

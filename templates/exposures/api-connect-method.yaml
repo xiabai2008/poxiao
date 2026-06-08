@@ -1,0 +1,17 @@
+id: api-connect-method
+info:
+  name: API CONNECT 方法支持
+  severity: info
+  description: 检测 API CONNECT 方法支持
+  tags: api,connect,info
+  author: poxiao
+
+http:
+  - method: CONNECT
+    path:
+      - "{{BaseURL}}/api/v1"
+      - "{{BaseURL}}/api"
+    matchers-condition: and
+    matchers:
+      - type: status
+        status: [200, 405]

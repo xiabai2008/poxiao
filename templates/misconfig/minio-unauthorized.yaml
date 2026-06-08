@@ -1,0 +1,24 @@
+id: minio-unauthorized
+info:
+  name: MinIO 未授权访问
+  severity: high
+  description: MinIO 对象存储未授权访问
+  tags: minio,unauthorized,cloud,high
+  author: poxiao
+
+http:
+  - method: GET
+    path:
+      - "{{BaseURL}}/minio/health/live"
+      - "{{BaseURL}}/minio/health/ready"
+    matchers-condition: and
+    matchers:
+      - type: status
+        status: [200]
+      - type: word
+        words:
+          - "OK"
+          - "success"
+          - "MinIO"
+        condition: or
+        part: body

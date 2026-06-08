@@ -1,0 +1,25 @@
+id: x-request-id-exposure
+info:
+  name: X-Request-ID 响应头泄露
+  severity: info
+  description: X-Request-ID 响应头泄露请求追踪信息
+  tags: request-id,tracing,headers,info
+  author: poxiao
+
+http:
+  - method: GET
+    path:
+      - "{{BaseURL}}/"
+    matchers-condition: and
+    matchers:
+      - type: status
+        status: [200]
+      - type: regex
+        regex:
+          - "X-Request-ID:\\s*[a-zA-Z0-9-]+"
+        part: header
+    extractors:
+      - type: kval
+        kval:
+          - "X-Request-ID"
+        name: request_id

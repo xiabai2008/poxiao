@@ -1,0 +1,17 @@
+id: api-head-method
+info:
+  name: API HEAD 方法支持
+  severity: info
+  description: 检测 API HEAD 方法支持
+  tags: api,head,info
+  author: poxiao
+
+http:
+  - method: HEAD
+    path:
+      - "{{BaseURL}}/api/v1"
+      - "{{BaseURL}}/api"
+    matchers-condition: and
+    matchers:
+      - type: status
+        status: [200]

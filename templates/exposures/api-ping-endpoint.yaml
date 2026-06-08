@@ -1,0 +1,29 @@
+id: api-ping-endpoint
+info:
+  name: Ping API 端点检测
+  severity: info
+  description: 检测 Ping API 端点
+  tags: api,ping,info
+  author: poxiao
+
+http:
+  - method: GET
+    path:
+      - "{{BaseURL}}/api/v1/ping"
+      - "{{BaseURL}}/api/ping"
+      - "{{BaseURL}}/ping"
+      - "{{BaseURL}}/pong"
+    matchers-condition: and
+    matchers:
+      - type: status
+        status: [200]
+      - type: word
+        words:
+          - "pong"
+          - "Pong"
+          - "ping"
+          - "Ping"
+          - "ok"
+          - "alive"
+        condition: or
+        part: body

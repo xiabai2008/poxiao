@@ -1,0 +1,20 @@
+id: http2-detect
+info:
+  name: HTTP/2 协议检测
+  severity: info
+  description: 检测目标是否支持 HTTP/2 协议
+  tags: http2,protocol,info
+  author: poxiao
+
+http:
+  - method: GET
+    path:
+      - "{{BaseURL}}/"
+    matchers-condition: and
+    matchers:
+      - type: status
+        status: [200]
+      - type: regex
+        regex:
+          - "HTTP/2"
+        part: header

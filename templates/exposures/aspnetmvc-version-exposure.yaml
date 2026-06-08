@@ -1,0 +1,25 @@
+id: x-aspnetmvc-version-exposure
+info:
+  name: ASP.NET MVC 版本泄露
+  severity: info
+  description: ASP.NET MVC 版本信息泄露
+  tags: aspnet,mvc,version,info
+  author: poxiao
+
+http:
+  - method: GET
+    path:
+      - "{{BaseURL}}/"
+    matchers-condition: and
+    matchers:
+      - type: status
+        status: [200]
+      - type: regex
+        regex:
+          - "X-AspNetMvc-Version:\\s*[0-9.]+"
+        part: header
+    extractors:
+      - type: kval
+        kval:
+          - "X-AspNetMvc-Version"
+        name: aspnetmvc_version

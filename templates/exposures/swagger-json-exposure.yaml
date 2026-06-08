@@ -1,0 +1,35 @@
+id: swagger-json-exposure
+info:
+  name: Swagger JSON 配置泄露
+  severity: medium
+  description: Swagger/OpenAPI JSON 配置文件泄露 API 接口信息
+  tags: swagger,api,exposure,medium
+  author: poxiao
+
+http:
+  - method: GET
+    path:
+      - "{{BaseURL}}/v2/api-docs"
+      - "{{BaseURL}}/v3/api-docs"
+      - "{{BaseURL}}/swagger.json"
+      - "{{BaseURL}}/openapi.json"
+      - "{{BaseURL}}/api-docs"
+    matchers-condition: and
+    matchers:
+      - type: status
+        status: [200]
+      - type: word
+        words:
+          - "\"swagger\""
+          - "\"openapi\""
+          - "\"paths\""
+          - "\"info\""
+        condition: or
+        part: body
+    extractors:
+      - type: json
+        json:
+          - "info.title"
+          - "info.version"
+          - "host"
+        name: api_info

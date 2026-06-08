@@ -1,0 +1,28 @@
+id: api-graphql-endpoint
+info:
+  name: GraphQL API 端点检测
+  severity: info
+  description: 检测 GraphQL API 端点
+  tags: api,graphql,info
+  author: poxiao
+
+http:
+  - method: POST
+    path:
+      - "{{BaseURL}}/graphql"
+      - "{{BaseURL}}/graphQL"
+      - "{{BaseURL}}/api/graphql"
+      - "{{BaseURL}}/api/graphQL"
+    headers:
+      Content-Type: "application/json"
+    body: '{"query":"{ __typename }"}'
+    matchers-condition: and
+    matchers:
+      - type: status
+        status: [200]
+      - type: word
+        words:
+          - "__typename"
+          - "Query"
+        condition: or
+        part: body

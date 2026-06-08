@@ -1,0 +1,21 @@
+id: x-frame-options-missing
+info:
+  name: X-Frame-Options 缺失
+  severity: low
+  description: 未设置 X-Frame-Options 响应头
+  tags: x-frame-options,headers,low
+  author: poxiao
+
+http:
+  - method: GET
+    path:
+      - "{{BaseURL}}/"
+    matchers-condition: and
+    matchers:
+      - type: status
+        status: [200]
+      - type: regex
+        regex:
+          - "X-Frame-Options"
+        negative: true
+        part: header

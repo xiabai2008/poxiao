@@ -1,0 +1,22 @@
+id: trace-method-enabled
+info:
+  name: HTTP TRACE 方法启用
+  severity: medium
+  description: HTTP TRACE 方法启用，可能导致 XST 攻击
+  tags: trace,method,xst,medium
+  author: poxiao
+
+http:
+  - method: TRACE
+    path:
+      - "{{BaseURL}}/"
+    matchers-condition: and
+    matchers:
+      - type: status
+        status: [200]
+      - type: word
+        words:
+          - "TRACE"
+          - "TRACE / HTTP"
+        condition: or
+        part: body

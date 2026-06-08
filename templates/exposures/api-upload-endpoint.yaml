@@ -1,0 +1,31 @@
+id: api-upload-endpoint
+info:
+  name: Upload API 端点检测
+  severity: info
+  description: 检测 Upload API 端点
+  tags: api,upload,info
+  author: poxiao
+
+http:
+  - method: POST
+    path:
+      - "{{BaseURL}}/api/v1/upload"
+      - "{{BaseURL}}/api/upload"
+      - "{{BaseURL}}/upload"
+      - "{{BaseURL}}/api/v1/files"
+      - "{{BaseURL}}/api/files"
+    headers:
+      Content-Type: "multipart/form-data"
+    matchers-condition: and
+    matchers:
+      - type: status
+        status: [200, 201, 400, 404, 413, 415]
+      - type: word
+        words:
+          - "upload"
+          - "Upload"
+          - "file"
+          - "File"
+          - "multipart"
+        condition: or
+        part: all

@@ -1,0 +1,26 @@
+id: api-tag-endpoint
+info:
+  name: Tag API 端点检测
+  severity: info
+  description: 检测 Tag API 端点
+  tags: api,tag,info
+  author: poxiao
+
+http:
+  - method: GET
+    path:
+      - "{{BaseURL}}/api/v1/tags"
+      - "{{BaseURL}}/api/tags"
+      - "{{BaseURL}}/tags"
+    matchers-condition: and
+    matchers:
+      - type: status
+        status: [200, 404]
+      - type: word
+        words:
+          - "tag"
+          - "Tag"
+          - "name"
+          - "slug"
+        condition: or
+        part: body

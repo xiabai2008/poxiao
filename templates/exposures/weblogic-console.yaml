@@ -1,0 +1,28 @@
+id: weblogic-console-exposure
+info:
+  name: WebLogic 控制台暴露
+  severity: high
+  description: Oracle WebLogic 控制台暴露
+  tags: weblogic,exposure,java,high
+  author: poxiao
+
+http:
+  - method: GET
+    path:
+      - "{{BaseURL}}/console/"
+      - "{{BaseURL}}/console/login/LoginForm.jsp"
+      - "{{BaseURL}}/wls-wsat/CoordinatorPortType"
+      - "{{BaseURL}}/_async/AsyncResponseService"
+    matchers-condition: and
+    matchers:
+      - type: status
+        status: [200, 401, 403]
+      - type: word
+        words:
+          - "WebLogic"
+          - "weblogic"
+          - "Oracle"
+          - "CoordinatorPortType"
+          - "AsyncResponseService"
+        condition: or
+        part: body

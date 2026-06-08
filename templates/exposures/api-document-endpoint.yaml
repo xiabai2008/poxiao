@@ -1,0 +1,27 @@
+id: api-document-endpoint
+info:
+  name: Document API 端点检测
+  severity: info
+  description: 检测 Document API 端点
+  tags: api,document,info
+  author: poxiao
+
+http:
+  - method: GET
+    path:
+      - "{{BaseURL}}/api/v1/documents"
+      - "{{BaseURL}}/api/documents"
+      - "{{BaseURL}}/documents"
+    matchers-condition: and
+    matchers:
+      - type: status
+        status: [200, 404]
+      - type: word
+        words:
+          - "document"
+          - "Document"
+          - "id"
+          - "title"
+          - "content"
+        condition: or
+        part: body

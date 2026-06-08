@@ -1,0 +1,28 @@
+id: api-import-endpoint
+info:
+  name: Import API 端点检测
+  severity: info
+  description: 检测 Import API 端点
+  tags: api,import,info
+  author: poxiao
+
+http:
+  - method: POST
+    path:
+      - "{{BaseURL}}/api/v1/import"
+      - "{{BaseURL}}/api/import"
+      - "{{BaseURL}}/import"
+    headers:
+      Content-Type: "multipart/form-data"
+    matchers-condition: and
+    matchers:
+      - type: status
+        status: [200, 201, 400, 404, 413, 415]
+      - type: word
+        words:
+          - "import"
+          - "Import"
+          - "upload"
+          - "file"
+        condition: or
+        part: all

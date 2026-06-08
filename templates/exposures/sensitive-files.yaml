@@ -1,0 +1,54 @@
+id: sensitive-file-exposure
+info:
+  name: 敏感文件泄露
+  severity: high
+  description: 常见敏感配置文件暴露
+  tags: sensitive,exposure,config
+  author: poxiao
+
+http:
+  - method: GET
+    path:
+      - "{{BaseURL}}/wp-config.php"
+      - "{{BaseURL}}/config.php"
+      - "{{BaseURL}}/config.inc.php"
+      - "{{BaseURL}}/configuration.php"
+      - "{{BaseURL}}/config.yml"
+      - "{{BaseURL}}/config.yaml"
+      - "{{BaseURL}}/config.json"
+      - "{{BaseURL}}/settings.py"
+      - "{{BaseURL}}/application.properties"
+      - "{{BaseURL}}/application.yml"
+      - "{{BaseURL}}/web.config"
+      - "{{BaseURL}}/appsettings.json"
+      - "{{BaseURL}}/database.yml"
+      - "{{BaseURL}}/db.php"
+      - "{{BaseURL}}/conn.php"
+      - "{{BaseURL}}/inc/conn.php"
+      - "{{BaseURL}}/include/config.php"
+      - "{{BaseURL}}/ThinkPHP/Conf/convention.php"
+    matchers-condition: and
+    matchers:
+      - type: status
+        status: [200]
+      - type: word
+        words:
+          - "DB_PASSWORD"
+          - "DB_HOST"
+          - "DB_USER"
+          - "DB_PASS"
+          - "MYSQL_PASS"
+          - "database"
+          - "password"
+          - "mysql_connect"
+          - "mysqli_connect"
+          - "PDO"
+          - "Redis"
+          - "MEMCACHE"
+        condition: or
+        part: body
+    extractors:
+      - type: regex
+        regex:
+          - "(?i)(?:password|passwd|pwd|pass)\\s*[=:]\\s*['\"]?([^\\s'\"]+)"
+        name: passwords

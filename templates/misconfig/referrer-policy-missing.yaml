@@ -1,0 +1,21 @@
+id: referrer-policy-missing
+info:
+  name: Referrer-Policy 缺失
+  severity: info
+  description: 未设置 Referrer-Policy 响应头
+  tags: referrer,headers,info
+  author: poxiao
+
+http:
+  - method: GET
+    path:
+      - "{{BaseURL}}/"
+    matchers-condition: and
+    matchers:
+      - type: status
+        status: [200]
+      - type: regex
+        regex:
+          - "Referrer-Policy"
+        negative: true
+        part: header

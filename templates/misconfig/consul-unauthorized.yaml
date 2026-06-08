@@ -1,0 +1,27 @@
+id: consul-unauthorized
+info:
+  name: Consul 未授权访问
+  severity: high
+  description: HashiCorp Consul 服务发现未授权访问
+  tags: consul,unauthorized,service-discovery,high
+  author: poxiao
+
+http:
+  - method: GET
+    path:
+      - "{{BaseURL}}/v1/agent/self"
+      - "{{BaseURL}}/v1/agent/services"
+      - "{{BaseURL}}/v1/catalog/services"
+      - "{{BaseURL}}/v1/acl/tokens"
+    matchers-condition: and
+    matchers:
+      - type: status
+        status: [200]
+      - type: word
+        words:
+          - "Config"
+          - "Datacenter"
+          - "consul"
+          - "services"
+        condition: or
+        part: body

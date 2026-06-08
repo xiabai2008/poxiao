@@ -1,0 +1,31 @@
+id: api-webhook-endpoint
+info:
+  name: Webhook API 端点检测
+  severity: info
+  description: 检测 Webhook API 端点
+  tags: api,webhook,info
+  author: poxiao
+
+http:
+  - method: POST
+    path:
+      - "{{BaseURL}}/webhook"
+      - "{{BaseURL}}/webhooks"
+      - "{{BaseURL}}/api/webhook"
+      - "{{BaseURL}}/api/webhooks"
+      - "{{BaseURL}}/api/v1/webhooks"
+    headers:
+      Content-Type: "application/json"
+    body: '{"event":"test","data":{}}'
+    matchers-condition: and
+    matchers:
+      - type: status
+        status: [200, 201, 202, 400, 404]
+      - type: word
+        words:
+          - "webhook"
+          - "Webhook"
+          - "event"
+          - "callback"
+        condition: or
+        part: body

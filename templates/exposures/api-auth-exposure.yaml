@@ -1,0 +1,27 @@
+id: api-auth-exposure
+info:
+  name: API 认证信息泄露
+  severity: info
+  description: API 认证信息泄露
+  tags: api,auth,info
+  author: poxiao
+
+http:
+  - method: GET
+    path:
+      - "{{BaseURL}}/api/v1/auth"
+      - "{{BaseURL}}/api/auth"
+      - "{{BaseURL}}/auth/login"
+    matchers-condition: and
+    matchers:
+      - type: status
+        status: [200, 401, 403]
+      - type: word
+        words:
+          - "token"
+          - "access_token"
+          - "refresh_token"
+          - "bearer"
+          - "jwt"
+        condition: or
+        part: body

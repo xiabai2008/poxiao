@@ -1,0 +1,26 @@
+id: api-config-endpoint
+info:
+  name: Config API 端点检测
+  severity: info
+  description: 检测 Config API 端点
+  tags: api,config,info
+  author: poxiao
+
+http:
+  - method: GET
+    path:
+      - "{{BaseURL}}/api/v1/config"
+      - "{{BaseURL}}/api/config"
+      - "{{BaseURL}}/config"
+    matchers-condition: and
+    matchers:
+      - type: status
+        status: [200, 404]
+      - type: word
+        words:
+          - "config"
+          - "Config"
+          - "settings"
+          - "options"
+        condition: or
+        part: body

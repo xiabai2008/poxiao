@@ -1,0 +1,23 @@
+id: svn-wc-db-exposure
+info:
+  name: SVN 仓库信息泄露
+  severity: medium
+  description: SVN .svn/wc.db 文件暴露，泄露版本控制信息
+  tags: svn,exposure,source-code
+  author: poxiao
+
+http:
+  - method: GET
+    path:
+      - "{{BaseURL}}/.svn/wc.db"
+      - "{{BaseURL}}/.svn/entries"
+    matchers-condition: and
+    matchers:
+      - type: status
+        status: [200]
+      - type: word
+        words:
+          - "SQLite"
+          - "svn:"
+        condition: or
+        part: body

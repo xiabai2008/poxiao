@@ -1,0 +1,21 @@
+id: redis-unauthorized
+info:
+  name: Redis 未授权访问
+  severity: critical
+  description: Redis 服务未设置密码，可未授权访问
+  tags: redis,unauthorized,critical
+  author: poxiao
+
+http:
+  - method: GET
+    path:
+      - "{{BaseURL}}/"
+    matchers-condition: and
+    matchers:
+      - type: word
+        words:
+          - "-DENIED Redis is running in protected mode"
+          - "+PONG"
+          - "redis_version"
+        condition: or
+        part: body

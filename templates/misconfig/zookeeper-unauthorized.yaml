@@ -1,0 +1,25 @@
+id: zookeeper-unauthorized
+info:
+  name: Zookeeper 未授权访问
+  severity: high
+  description: Zookeeper 服务未授权访问
+  tags: zookeeper,unauthorized,high
+  author: poxiao
+
+http:
+  - method: GET
+    path:
+      - "{{BaseURL}}/commands"
+      - "{{BaseURL}}/commands/stat"
+    matchers-condition: and
+    matchers:
+      - type: status
+        status: [200]
+      - type: word
+        words:
+          - "Zookeeper"
+          - "zookeeper"
+          - "client_connections"
+          - "outstanding"
+        condition: or
+        part: body

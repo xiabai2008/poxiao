@@ -1,0 +1,21 @@
+id: ftp-anonymous
+info:
+  name: FTP 匿名登录
+  severity: high
+  description: FTP 服务允许匿名登录
+  tags: ftp,anonymous,high
+  author: poxiao
+
+tcp:
+  - host:
+      - "{{Hostname}}"
+    port: 21
+    matchers-condition: and
+    matchers:
+      - type: word
+        words:
+          - "220"
+          - "FTP"
+          - "ftp"
+        condition: or
+        part: body

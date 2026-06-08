@@ -1,0 +1,22 @@
+id: crossdomain-xml
+info:
+  name: crossdomain.xml 策略文件泄露
+  severity: info
+  description: crossdomain.xml 泄露 Flash 跨域策略
+  tags: crossdomain,flash,info
+  author: poxiao
+
+http:
+  - method: GET
+    path:
+      - "{{BaseURL}}/crossdomain.xml"
+    matchers-condition: and
+    matchers:
+      - type: status
+        status: [200]
+      - type: word
+        words:
+          - "cross-domain-policy"
+          - "allow-access-from"
+        condition: or
+        part: body

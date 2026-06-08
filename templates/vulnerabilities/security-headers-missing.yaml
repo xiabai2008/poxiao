@@ -1,0 +1,34 @@
+id: security-headers-missing
+info:
+  name: 安全响应头缺失检测
+  severity: low
+  description: 检测常见安全响应头是否缺失
+  tags: headers,security,info
+  author: poxiao
+
+http:
+  - method: GET
+    path:
+      - "{{BaseURL}}/"
+    matchers-condition: or
+    matchers:
+      - type: regex
+        regex:
+          - "Strict-Transport-Security"
+        negative: true
+        part: header
+      - type: regex
+        regex:
+          - "Content-Security-Policy"
+        negative: true
+        part: header
+      - type: regex
+        regex:
+          - "X-Content-Type-Options"
+        negative: true
+        part: header
+      - type: regex
+        regex:
+          - "X-XSS-Protection"
+        negative: true
+        part: header

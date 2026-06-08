@@ -1,0 +1,17 @@
+id: api-delete-method
+info:
+  name: API DELETE 方法支持
+  severity: info
+  description: 检测 API DELETE 方法支持
+  tags: api,delete,info
+  author: poxiao
+
+http:
+  - method: DELETE
+    path:
+      - "{{BaseURL}}/api/v1/test"
+      - "{{BaseURL}}/api/test"
+    matchers-condition: and
+    matchers:
+      - type: status
+        status: [200, 204, 405]

@@ -1,0 +1,26 @@
+id: api-model-endpoint
+info:
+  name: Model API 端点检测
+  severity: info
+  description: 检测 Model API 端点
+  tags: api,model,info
+  author: poxiao
+
+http:
+  - method: GET
+    path:
+      - "{{BaseURL}}/api/v1/models"
+      - "{{BaseURL}}/api/models"
+      - "{{BaseURL}}/models"
+    matchers-condition: and
+    matchers:
+      - type: status
+        status: [200, 404]
+      - type: word
+        words:
+          - "model"
+          - "Model"
+          - "attributes"
+          - "fields"
+        condition: or
+        part: body

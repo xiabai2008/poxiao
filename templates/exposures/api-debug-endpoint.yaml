@@ -1,0 +1,27 @@
+id: api-debug-endpoint
+info:
+  name: Debug API 端点检测
+  severity: info
+  description: 检测 Debug API 端点
+  tags: api,debug,info
+  author: poxiao
+
+http:
+  - method: GET
+    path:
+      - "{{BaseURL}}/api/v1/debug"
+      - "{{BaseURL}}/api/debug"
+      - "{{BaseURL}}/debug"
+      - "{{BaseURL}}/api/v1/trace"
+    matchers-condition: and
+    matchers:
+      - type: status
+        status: [200, 404]
+      - type: word
+        words:
+          - "debug"
+          - "Debug"
+          - "trace"
+          - "Trace"
+        condition: or
+        part: body

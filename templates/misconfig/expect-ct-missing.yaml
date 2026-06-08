@@ -1,0 +1,21 @@
+id: expect-ct-missing
+info:
+  name: Expect-CT 缺失
+  severity: info
+  description: 未设置 Expect-CT 响应头
+  tags: expect-ct,headers,info
+  author: poxiao
+
+http:
+  - method: GET
+    path:
+      - "{{BaseURL}}/"
+    matchers-condition: and
+    matchers:
+      - type: status
+        status: [200]
+      - type: regex
+        regex:
+          - "Expect-CT"
+        negative: true
+        part: header

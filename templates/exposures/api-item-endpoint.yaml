@@ -1,0 +1,26 @@
+id: api-item-endpoint
+info:
+  name: Item API 端点检测
+  severity: info
+  description: 检测 Item API 端点
+  tags: api,item,info
+  author: poxiao
+
+http:
+  - method: GET
+    path:
+      - "{{BaseURL}}/api/v1/items"
+      - "{{BaseURL}}/api/items"
+      - "{{BaseURL}}/items"
+    matchers-condition: and
+    matchers:
+      - type: status
+        status: [200, 404]
+      - type: word
+        words:
+          - "item"
+          - "Item"
+          - "id"
+          - "name"
+        condition: or
+        part: body

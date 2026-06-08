@@ -1,0 +1,27 @@
+id: api-patch-partial-update
+info:
+  name: API PATCH 部分更新
+  severity: info
+  description: 检测 API PATCH 方法支持
+  tags: api,patch,info
+  author: poxiao
+
+http:
+  - method: PATCH
+    path:
+      - "{{BaseURL}}/api/v1/users/1"
+      - "{{BaseURL}}/api/users/1"
+    headers:
+      Content-Type: "application/json"
+    body: '{"test":"value"}'
+    matchers-condition: and
+    matchers:
+      - type: status
+        status: [200, 204, 405]
+      - type: word
+        words:
+          - "updated"
+          - "modified"
+          - "success"
+        condition: or
+        part: body

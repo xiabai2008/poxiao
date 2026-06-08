@@ -1,0 +1,21 @@
+id: cache-control-missing
+info:
+  name: Cache-Control 缺失
+  severity: info
+  description: 未设置 Cache-Control 响应头
+  tags: cache,headers,info
+  author: poxiao
+
+http:
+  - method: GET
+    path:
+      - "{{BaseURL}}/"
+    matchers-condition: and
+    matchers:
+      - type: status
+        status: [200]
+      - type: regex
+        regex:
+          - "Cache-Control"
+        negative: true
+        part: header

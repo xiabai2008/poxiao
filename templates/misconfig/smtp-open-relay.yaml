@@ -1,0 +1,22 @@
+id: smtp-open-relay
+info:
+  name: SMTP 开放中继
+  severity: high
+  description: SMTP 服务器配置为开放中继，可被用于发送垃圾邮件
+  tags: smtp,open-relay,high
+  author: poxiao
+
+tcp:
+  - host:
+      - "{{Hostname}}"
+    port: 25
+    matchers-condition: and
+    matchers:
+      - type: word
+        words:
+          - "220"
+          - "SMTP"
+          - "smtp"
+          - "ESMTP"
+        condition: or
+        part: body

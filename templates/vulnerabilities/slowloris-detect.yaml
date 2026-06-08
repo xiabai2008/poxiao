@@ -1,0 +1,23 @@
+id: http-slowloris
+info:
+  name: Slowloris DoS 检测
+  severity: medium
+  description: 检测目标是否易受 Slowloris DoS 攻击
+  tags: dos,slowloris,medium
+  author: poxiao
+
+http:
+  - method: GET
+    path:
+      - "{{BaseURL}}/"
+    headers:
+      Connection: "keep-alive"
+      Keep-Alive: "900"
+    matchers-condition: and
+    matchers:
+      - type: status
+        status: [200]
+      - type: regex
+        regex:
+          - "Connection:\\s*keep-alive"
+        part: header

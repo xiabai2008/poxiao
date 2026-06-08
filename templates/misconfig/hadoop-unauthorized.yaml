@@ -1,0 +1,28 @@
+id: hadoop-unauthorized
+info:
+  name: Hadoop 未授权访问
+  severity: critical
+  description: Hadoop YARN/HDFS 未授权访问，可执行任意命令
+  tags: hadoop,unauthorized,bigdata,critical
+  author: poxiao
+
+http:
+  - method: GET
+    path:
+      - "{{BaseURL}}/ws/v1/cluster/apps/new-application"
+      - "{{BaseURL}}/ws/v1/cluster/info"
+      - "{{BaseURL}}/jmx?qry=Hadoop:*"
+      - "{{BaseURL}}/cluster/apps"
+    matchers-condition: and
+    matchers:
+      - type: status
+        status: [200]
+      - type: word
+        words:
+          - "Hadoop"
+          - "hadoop"
+          - "resourceManager"
+          - "application-id"
+          - "clusterInfo"
+        condition: or
+        part: body

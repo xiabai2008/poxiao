@@ -1,0 +1,27 @@
+id: api-image-endpoint
+info:
+  name: Image API 端点检测
+  severity: info
+  description: 检测 Image API 端点
+  tags: api,image,info
+  author: poxiao
+
+http:
+  - method: GET
+    path:
+      - "{{BaseURL}}/api/v1/images"
+      - "{{BaseURL}}/api/images"
+      - "{{BaseURL}}/images"
+    matchers-condition: and
+    matchers:
+      - type: status
+        status: [200, 404]
+      - type: word
+        words:
+          - "image"
+          - "Image"
+          - "url"
+          - "width"
+          - "height"
+        condition: or
+        part: body

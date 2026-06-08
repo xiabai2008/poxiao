@@ -1,0 +1,21 @@
+id: csp-missing
+info:
+  name: Content-Security-Policy 缺失
+  severity: low
+  description: 未设置 CSP 响应头
+  tags: csp,headers,low
+  author: poxiao
+
+http:
+  - method: GET
+    path:
+      - "{{BaseURL}}/"
+    matchers-condition: and
+    matchers:
+      - type: status
+        status: [200]
+      - type: regex
+        regex:
+          - "Content-Security-Policy"
+        negative: true
+        part: header

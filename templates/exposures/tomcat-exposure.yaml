@@ -1,0 +1,32 @@
+id: tomcat-exposure
+info:
+  name: Tomcat 管理界面暴露
+  severity: high
+  description: Apache Tomcat Manager/Host Manager 暴露
+  tags: tomcat,exposure,java,high
+  author: poxiao
+
+http:
+  - method: GET
+    path:
+      - "{{BaseURL}}/manager/html"
+      - "{{BaseURL}}/manager/status"
+      - "{{BaseURL}}/host-manager/html"
+    matchers-condition: and
+    matchers:
+      - type: status
+        status: [200, 401, 403]
+      - type: word
+        words:
+          - "Tomcat"
+          - "tomcat"
+          - "Apache Tomcat"
+          - "Tomcat Manager"
+          - "Host Manager"
+        condition: or
+        part: body
+    extractors:
+      - type: regex
+        regex:
+          - "Apache Tomcat/([0-9.]+)"
+        name: tomcat_version

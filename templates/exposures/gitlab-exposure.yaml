@@ -1,0 +1,31 @@
+id: gitlab-exposure
+info:
+  name: GitLab 暴露
+  severity: medium
+  description: GitLab 实例暴露，可能泄露代码仓库
+  tags: gitlab,exposure,scm,medium
+  author: poxiao
+
+http:
+  - method: GET
+    path:
+      - "{{BaseURL}}/users/sign_in"
+      - "{{BaseURL}}/api/v4/version"
+      - "{{BaseURL}}/-/graphql-explorer"
+    matchers-condition: and
+    matchers:
+      - type: status
+        status: [200]
+      - type: word
+        words:
+          - "GitLab"
+          - "gitlab"
+          - "GitLab Community Edition"
+          - "GitLab Enterprise Edition"
+        condition: or
+        part: body
+    extractors:
+      - type: regex
+        regex:
+          - "GitLab\\s+(?:CE|EE)?\\s*([0-9.]+)"
+        name: gitlab_version

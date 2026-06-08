@@ -1,0 +1,29 @@
+id: api-sync-endpoint
+info:
+  name: Sync API 端点检测
+  severity: info
+  description: 检测 Sync API 端点
+  tags: api,sync,info
+  author: poxiao
+
+http:
+  - method: POST
+    path:
+      - "{{BaseURL}}/api/v1/sync"
+      - "{{BaseURL}}/api/sync"
+      - "{{BaseURL}}/sync"
+    headers:
+      Content-Type: "application/json"
+    body: '{"data":[]}'
+    matchers-condition: and
+    matchers:
+      - type: status
+        status: [200, 201, 400, 404]
+      - type: word
+        words:
+          - "sync"
+          - "Sync"
+          - "synchronize"
+          - "batch"
+        condition: or
+        part: body

@@ -1,0 +1,28 @@
+id: api-batch-request
+info:
+  name: API 批量请求支持
+  severity: info
+  description: 检测 API 批量请求支持
+  tags: api,batch,info
+  author: poxiao
+
+http:
+  - method: POST
+    path:
+      - "{{BaseURL}}/api/v1/batch"
+      - "{{BaseURL}}/api/batch"
+      - "{{BaseURL}}/graphql"
+    headers:
+      Content-Type: "application/json"
+    body: '[{"method":"GET","path":"/api/v1/users"}]'
+    matchers-condition: and
+    matchers:
+      - type: status
+        status: [200]
+      - type: word
+        words:
+          - "results"
+          - "responses"
+          - "batch"
+        condition: or
+        part: body

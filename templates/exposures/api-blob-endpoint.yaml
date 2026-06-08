@@ -1,0 +1,26 @@
+id: api-blob-endpoint
+info:
+  name: Blob API 端点检测
+  severity: info
+  description: 检测 Blob API 端点
+  tags: api,blob,info
+  author: poxiao
+
+http:
+  - method: GET
+    path:
+      - "{{BaseURL}}/api/v1/blobs"
+      - "{{BaseURL}}/api/blobs"
+      - "{{BaseURL}}/blobs"
+    matchers-condition: and
+    matchers:
+      - type: status
+        status: [200, 404]
+      - type: word
+        words:
+          - "blob"
+          - "Blob"
+          - "data"
+          - "content"
+        condition: or
+        part: body

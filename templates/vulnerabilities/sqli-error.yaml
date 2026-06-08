@@ -1,0 +1,34 @@
+id: sql-injection-error-based
+info:
+  name: SQL 注入 (基于错误)
+  severity: high
+  description: 检测 SQL 注入漏洞（基于错误信息回显）
+  tags: sqli,injection,high
+  author: poxiao
+
+http:
+  - method: GET
+    path:
+      - "{{BaseURL}}/?id=1'"
+      - "{{BaseURL}}/?id=1%27"
+      - "{{BaseURL}}/search?q=test%27"
+    matchers-condition: or
+    matchers:
+      - type: word
+        words:
+          - "SQL syntax"
+          - "mysql_fetch"
+          - "ORA-"
+          - "SQLite3::query"
+          - "Microsoft OLE DB"
+          - "ODBC SQL Server"
+          - "JET Database Engine"
+          - "PostgreSQL query failed"
+          - "pg_query"
+          - "SQLite/JDBCDriver"
+          - "SqlException"
+          - "SQLSTATE"
+          - "Unclosed quotation mark"
+          - "syntax error"
+        condition: or
+        part: body

@@ -1,0 +1,26 @@
+id: api-release-endpoint
+info:
+  name: Release API 端点检测
+  severity: info
+  description: 检测 Release API 端点
+  tags: api,release,info
+  author: poxiao
+
+http:
+  - method: GET
+    path:
+      - "{{BaseURL}}/api/v1/releases"
+      - "{{BaseURL}}/api/releases"
+      - "{{BaseURL}}/releases"
+    matchers-condition: and
+    matchers:
+      - type: status
+        status: [200, 404]
+      - type: word
+        words:
+          - "release"
+          - "Release"
+          - "version"
+          - "tag"
+        condition: or
+        part: body

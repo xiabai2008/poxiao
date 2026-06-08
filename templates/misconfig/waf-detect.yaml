@@ -1,0 +1,33 @@
+id: waf-detect
+info:
+  name: WAF 指纹识别
+  severity: info
+  description: 识别目标使用的 WAF/Web 应用防火墙
+  tags: waf,detect,info
+  author: poxiao
+
+http:
+  - method: GET
+    path:
+      - "{{BaseURL}}/?test=<script>alert(1)</script>"
+    matchers-condition: or
+    matchers:
+      - type: word
+        words:
+          - "cloudflare"
+          - "Cloudflare"
+        part: header
+      - type: word
+        words:
+          - "403 Forbidden"
+          - "Access Denied"
+          - "Request blocked"
+          - "WAF"
+        condition: or
+        part: body
+    extractors:
+      - type: kval
+        kval:
+          - "Server"
+          - "X-CDN"
+        name: waf_server

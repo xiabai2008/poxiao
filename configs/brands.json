@@ -1,0 +1,147 @@
+{
+  "_meta": {
+    "total": 107,
+    "description": "补天公益SRC厂商品牌→域名映射表",
+    "usage": "poixao discover 会优先查此表，未命中的用搜索引擎补充",
+    "update": "每次挖到新厂商就往对应分类里加一行"
+  },
+  "brands": {
+    "银行": {
+      "南京银行": "njcb.com.cn",
+      "哈尔滨银行": "hrbccb.com.cn",
+      "桂林银行": "guilinbank.com.cn"
+    },
+    "保险": {
+      "昆仑健康保险": "kunlunhealth.com",
+      "泰山财产保险": "taishan-ins.com.cn"
+    },
+    "基金/金融": {
+      "华宝信托": "huabaotrust.com",
+      "汇添富基金": "99fund.com",
+      "渤海商品交易所": "bohai.com",
+      "财富证券": "cfzq.com",
+      "长安基金": "changanfund.com"
+    },
+    "电商/零售": {
+      "七彩鲜花": "qicaixianhua.com",
+      "人人乐": "rrl.com.cn",
+      "拉卡拉": "lakala.com",
+      "曲美家具": "qumei.com",
+      "特步": "xtep.com.cn",
+      "红蜻蜓": "cnhongqingting.com",
+      "银泰": "yintai.com",
+      "银泰网": "yintai.com",
+      "韵达": "yundaex.com"
+    },
+    "IT/科技": {
+      "YzmCMS": "yzmcms.com",
+      "中威科技": "sinowaysoft.com",
+      "心动网络": "xd.com",
+      "极光推送": "jpush.cn",
+      "盛大": "snda.com",
+      "美橙": "cndns.com",
+      "美橙互联": "cndns.com"
+    },
+    "汽车": {
+      "东风日产": "dongfeng-nissan.com.cn"
+    },
+    "教育": {
+      "东华理工大学": "ecit.cn",
+      "中国电信学院": "ctelecom.com.cn",
+      "乐学一百": "lexue100.com",
+      "北方民族大学": "nwsni.edu.cn",
+      "浙江越秀外国语学院": "zyufl.edu.cn",
+      "重庆工商职业学院": "cqtbi.edu.cn",
+      "闵行区教育局": "mhedu.sh.cn",
+      "陕西工业职业技术学院": "sxpi.edu.cn",
+      "教育部学位与研究生教育发展中心": "moe.gov.cn",
+      "成都东软学院": "neusoft.com",
+      "凤凰艺术教育": "ifeng.com"
+    },
+    "政府": {
+      "南通市政府": "nantong.gov.cn",
+      "温州人社": "hrss.wenzhou.gov.cn"
+    },
+    "媒体": {
+      "大众网": "dzwww.com",
+      "豆瓣网": "douban.com",
+      "哔哩哔哩弹幕网": "bilibili.com",
+      "中国日报": "chinadaily.com.cn",
+      "东方财富网": "eastmoney.com",
+      "网易": "163.com",
+      "虎扑体育网": "hupu.com",
+      "沪江网": "hujiang.com"
+    },
+    "地产": {
+      "华夏幸福": "cfldcn.com",
+      "链家地产": "lianjia.com"
+    },
+    "人力": {
+      "北京外企人力": "fesco.com.cn",
+      "校友邦": "xybservice.com"
+    },
+    "其他": {
+      "中国人寿": "chinalife.com.cn",
+      "北大方正人寿": "pkufi.com",
+      "华泰人寿": "htlife.com.cn",
+      "君龙人寿": "junlonglife.com",
+      "国联人寿": "guolianlife.com",
+      "大特保": "datebao.com",
+      "德华安顾人寿": "ergo-life.com.cn",
+      "哔哩哔哩唧唧": "bilibili.com",
+      "前程无忧": "51job.com",
+      "快手": "kuaishou.com",
+      "VIPKID": "vipkid.com.cn",
+      "万科企业股份有限公司": "vanke.com",
+      "完美世界": "wanmei.com",
+      "新东方": "xdf.cn",
+      "新浪乐居": "sina.com.cn",
+      "360doc": "360.cn",
+      "海尔商城": "haier.com",
+      "科大讯飞": "iflytek.com",
+      "圆通速递": "yto.net.cn",
+      "京东商城": "jd.com",
+      "abc360": "360.cn",
+      "格力": "gree.com.cn",
+      "中兴通讯股份有限公司": "zte.com.cn",
+      "优酷土豆": "youku.com",
+      "海康威视": "hikvision.com",
+      "奇虎360": "360.cn",
+      "大同凤凰妇产医院": "ifeng.com",
+      "木蚂蚁应用市场": "antgroup.com",
+      "华为技术有限公司": "huawei.com",
+      "百度": "baidu.com",
+      "公安部四川消防研究所": "mps.gov.cn",
+      "上海中兴通讯": "zte.com.cn",
+      "阿里巴巴": "alibaba.com",
+      "搜狗": "sogou.com",
+      "北京东审会计事务所": "jd.com",
+      "滴滴打车": "didiglobal.com",
+      "新浪": "sina.com.cn"
+    },
+    "互联网": {
+      "凤凰游戏": "ifeng.com",
+      "北京拉勾网络科技有限公司": "lagou.com",
+      "上海证大喜马拉雅网络科技有限公司": "ximalaya.com",
+      "深信服科技": "sangfor.com.cn",
+      "上海米哈游网络股份有限公司": "mihoyo.com",
+      "北京东方网景信息科技有限公司": "jd.com",
+      "巨人网络科技有限公司": "ztgame.com",
+      "河北东软软件有限公司": "neusoft.com",
+      "大连蓝巨人科技有限公司": "ztgame.com",
+      "用友软件": "yonyou.com",
+      "慈溪中兴网络信息传媒有限公司": "zte.com.cn",
+      "教育部直属机关干部网络学院": "moe.gov.cn",
+      "济南携程广告传媒有限公司": "ctrip.com",
+      "金蝶软件": "kingdee.com",
+      "小米科技": "xiaomi.com"
+    },
+    "金融": {
+      "支付宝": "alipay.com"
+    },
+    "制造": {
+      "东软集团": "neusoft.com",
+      "联想集团": "lenovo.com.cn"
+    }
+  }
+}

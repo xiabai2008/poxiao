@@ -1,0 +1,25 @@
+id: security-txt-exposure
+info:
+  name: security.txt 安全策略文件
+  severity: info
+  description: security.txt 泄露安全联系信息和漏洞报告流程
+  tags: security-txt,exposure,info
+  author: poxiao
+
+http:
+  - method: GET
+    path:
+      - "{{BaseURL}}/.well-known/security.txt"
+      - "{{BaseURL}}/security.txt"
+    matchers-condition: and
+    matchers:
+      - type: status
+        status: [200]
+      - type: word
+        words:
+          - "Contact:"
+          - "Expires:"
+          - "Policy:"
+          - "Acknowledgments:"
+        condition: or
+        part: body

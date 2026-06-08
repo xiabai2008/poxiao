@@ -1,0 +1,44 @@
+id: unauthorized-admin-panel
+info:
+  name: 管理后台未授权访问
+  severity: high
+  description: 常见管理后台路径可未授权访问
+  tags: admin,unauthorized,high
+  author: poxiao
+
+http:
+  - method: GET
+    path:
+      - "{{BaseURL}}/admin"
+      - "{{BaseURL}}/admin/"
+      - "{{BaseURL}}/administrator/"
+      - "{{BaseURL}}/admin/login"
+      - "{{BaseURL}}/manage/"
+      - "{{BaseURL}}/manager/"
+      - "{{BaseURL}}/system/"
+      - "{{BaseURL}}/backend/"
+      - "{{BaseURL}}/wp-admin/"
+      - "{{BaseURL}}/phpmyadmin/"
+      - "{{BaseURL}}/adminer/"
+      - "{{BaseURL}}/pma/"
+      - "{{BaseURL}}/_admin/"
+      - "{{BaseURL}}/console/"
+    matchers-condition: and
+    matchers:
+      - type: status
+        status: [200]
+      - type: word
+        words:
+          - "login"
+          - "Login"
+          - "用户名"
+          - "密码"
+          - "username"
+          - "password"
+          - "管理员"
+          - "Admin"
+          - "Management"
+          - "phpMyAdmin"
+          - "Adminer"
+        condition: or
+        part: body

@@ -1,0 +1,31 @@
+id: manifest-json-exposure
+info:
+  name: manifest.json 泄露
+  severity: info
+  description: PWA manifest.json 泄露应用配置信息
+  tags: manifest,pwa,info
+  author: poxiao
+
+http:
+  - method: GET
+    path:
+      - "{{BaseURL}}/manifest.json"
+      - "{{BaseURL}}/manifest.webmanifest"
+    matchers-condition: and
+    matchers:
+      - type: status
+        status: [200]
+      - type: word
+        words:
+          - "\"name\""
+          - "\"short_name\""
+          - "\"start_url\""
+        condition: or
+        part: body
+    extractors:
+      - type: json
+        json:
+          - "name"
+          - "start_url"
+          - "scope"
+        name: app_info

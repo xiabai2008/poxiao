@@ -1,0 +1,25 @@
+id: api-sse-endpoint
+info:
+  name: SSE (Server-Sent Events) 端点检测
+  severity: info
+  description: 检测 SSE 端点
+  tags: api,sse,info
+  author: poxiao
+
+http:
+  - method: GET
+    path:
+      - "{{BaseURL}}/api/events"
+      - "{{BaseURL}}/events"
+      - "{{BaseURL}}/sse"
+      - "{{BaseURL}}/api/sse"
+    headers:
+      Accept: "text/event-stream"
+    matchers-condition: and
+    matchers:
+      - type: status
+        status: [200]
+      - type: regex
+        regex:
+          - "Content-Type:\\s*text/event-stream"
+        part: header

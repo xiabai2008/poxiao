@@ -1,0 +1,30 @@
+id: idor-detection
+info:
+  name: IDOR 越权访问检测
+  severity: high
+  description: 检测不安全的直接对象引用 (IDOR) 漏洞
+  tags: idor,authorization,high
+  author: poxiao
+
+http:
+  - method: GET
+    path:
+      - "{{BaseURL}}/api/v1/users/1"
+      - "{{BaseURL}}/api/v1/users/2"
+      - "{{BaseURL}}/api/users/1"
+      - "{{BaseURL}}/api/user/1"
+      - "{{BaseURL}}/api/v1/orders/1"
+      - "{{BaseURL}}/api/v1/profile/1"
+    matchers-condition: and
+    matchers:
+      - type: status
+        status: [200]
+      - type: word
+        words:
+          - "username"
+          - "email"
+          - "user_id"
+          - "order_id"
+          - "profile"
+        condition: or
+        part: body

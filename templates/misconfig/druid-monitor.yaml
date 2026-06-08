@@ -1,0 +1,27 @@
+id: druid-monitor-unauthorized
+info:
+  name: Druid 监控面板未授权访问
+  severity: medium
+  description: Apache Druid 监控面板未授权访问，泄露 SQL 查询信息
+  tags: druid,unauthorized,monitor,medium
+  author: poxiao
+
+http:
+  - method: GET
+    path:
+      - "{{BaseURL}}/druid/index.html"
+      - "{{BaseURL}}/druid/login.html"
+      - "{{BaseURL}}/druid/datasource.json"
+      - "{{BaseURL}}/druid/sql.json"
+      - "{{BaseURL}}/druid/wall.json"
+    matchers-condition: and
+    matchers:
+      - type: status
+        status: [200]
+      - type: word
+        words:
+          - "Druid Stat Index"
+          - "DruidDataSource"
+          - "SQL Stat"
+        condition: or
+        part: body

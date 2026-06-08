@@ -1,0 +1,24 @@
+id: xxl-job-unauthorized
+info:
+  name: XXL-Job 未授权访问
+  severity: high
+  description: XXL-Job 分布式任务调度平台未授权访问
+  tags: xxl-job,unauthorized,scheduler,high
+  author: poxiao
+
+http:
+  - method: GET
+    path:
+      - "{{BaseURL}}/xxl-job-admin/api"
+      - "{{BaseURL}}/api/callback"
+    matchers-condition: and
+    matchers:
+      - type: status
+        status: [200]
+      - type: word
+        words:
+          - "XXL-JOB"
+          - "xxl-job"
+          - "code":200
+        condition: or
+        part: body

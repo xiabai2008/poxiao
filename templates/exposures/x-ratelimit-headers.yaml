@@ -1,0 +1,28 @@
+id: x-ratelimit-headers
+info:
+  name: X-RateLimit 响应头泄露
+  severity: info
+  description: X-RateLimit 响应头泄露速率限制配置
+  tags: ratelimit,api,headers,info
+  author: poxiao
+
+http:
+  - method: GET
+    path:
+      - "{{BaseURL}}/api"
+      - "{{BaseURL}}/api/v1"
+    matchers-condition: and
+    matchers:
+      - type: status
+        status: [200, 429]
+      - type: regex
+        regex:
+          - "X-RateLimit"
+        part: header
+    extractors:
+      - type: kval
+        kval:
+          - "X-RateLimit-Limit"
+          - "X-RateLimit-Remaining"
+          - "X-RateLimit-Reset"
+        name: ratelimit_info

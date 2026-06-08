@@ -1,0 +1,26 @@
+id: api-binary-endpoint
+info:
+  name: Binary API 端点检测
+  severity: info
+  description: 检测 Binary API 端点
+  tags: api,binary,info
+  author: poxiao
+
+http:
+  - method: GET
+    path:
+      - "{{BaseURL}}/api/v1/binary"
+      - "{{BaseURL}}/api/binary"
+      - "{{BaseURL}}/binary"
+    matchers-condition: and
+    matchers:
+      - type: status
+        status: [200, 404]
+      - type: word
+        words:
+          - "binary"
+          - "Binary"
+          - "data"
+          - "buffer"
+        condition: or
+        part: body

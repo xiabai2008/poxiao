@@ -1,0 +1,26 @@
+id: api-type-endpoint
+info:
+  name: Type API 端点检测
+  severity: info
+  description: 检测 Type API 端点
+  tags: api,type,info
+  author: poxiao
+
+http:
+  - method: GET
+    path:
+      - "{{BaseURL}}/api/v1/types"
+      - "{{BaseURL}}/api/types"
+      - "{{BaseURL}}/types"
+    matchers-condition: and
+    matchers:
+      - type: status
+        status: [200, 404]
+      - type: word
+        words:
+          - "type"
+          - "Type"
+          - "name"
+          - "fields"
+        condition: or
+        part: body

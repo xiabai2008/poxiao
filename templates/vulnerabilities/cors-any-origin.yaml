@@ -1,0 +1,40 @@
+id: cors-any-origin-reflect
+info:
+  name: CORS 任意 Origin 反射
+  severity: high
+  description: CORS 配置反射任意 Origin，可窃取用户数据
+  tags: cors,xss,high
+  author: poxiao
+
+http:
+  - method: GET
+    path:
+      - "{{BaseURL}}/"
+    headers:
+      Origin: "https://evil.com"
+    matchers-condition: and
+    matchers:
+      - type: regex
+        regex:
+          - "Access-Control-Allow-Origin:\\s*https://evil\\.com"
+        part: header
+      - type: regex
+        regex:
+          - "Access-Control-Allow-Credentials:\\s*true"
+        part: header
+
+  - method: GET
+    path:
+      - "{{BaseURL}}/"
+    headers:
+      Origin: "null"
+    matchers-condition: and
+    matchers:
+      - type: regex
+        regex:
+          - "Access-Control-Allow-Origin:\\s*null"
+        part: header
+      - type: regex
+        regex:
+          - "Access-Control-Allow-Credentials:\\s*true"
+        part: header

@@ -1,6 +1,7 @@
 """观星 — 资产监控 Web 界面"""
 
 from flask import Flask, render_template_string, jsonify, request, redirect, url_for
+from markupsafe import escape
 from pathlib import Path
 import json as _json
 
@@ -10,6 +11,14 @@ from .db import (
 )
 
 app = Flask(__name__)
+
+
+def _esc(val, max_len=0):
+    """安全转义 HTML (防 XSS)"""
+    s = escape(str(val) if val is not None else "")
+    if max_len > 0 and len(s) > max_len:
+        return s[:max_len] + "..."
+    return s
 
 # ── 内联模板（单文件部署，无需额外模板目录）──
 
@@ -70,18 +79,18 @@ def dashboard():
     changes = get_changes(limit=10)
 
     tech_html = " ".join(
-        f'<span class="tech-tag">{t} ×{c}</span>'
+        f'<span class="tech-tag">{_esc(t)} &times;{c}</span>'
         for t, c in sorted(stats["tech_distribution"].items(), key=lambda x: -x[1])[:12]
     )
 
     recent_targets = "".join(
         f"""<tr>
-            <td><a href="/target/{t['id']}">{t['host'][:35]}</a></td>
-            <td><span class="badge {'bg-success' if t['status']=='alive' else 'bg-secondary'}">{t['status']}</span></td>
-            <td>{' '.join(f'<span class="tech-tag">{x}</span>' for x in (t.get('tech_stack',[]) or [])[:3])}</td>
+            <td><a href="/target/{t['id']}">{_esc(t['host'], 35)}</a></td>
+            <td><span class="badge {'bg-success' if t['status']=='alive' else 'bg-secondary'}">{_esc(t['status'])}</span></td>
+            <td>{' '.join(f'<span class="tech-tag">{_esc(x)}</span>' for x in (t.get('tech_stack',[]) or [])[:3])}</td>
             <td><span class="badge {'bg-warning text-dark' if t['sensitive_count']>0 else 'bg-light text-muted'}">{t['sensitive_count']}</span></td>
             <td><span class="badge {'bg-danger' if t['cve_count']>0 else 'bg-light text-muted'}">{t['cve_count']}</span></td>
-            <td class="text-muted small">{t['last_seen'][:16]}</td>
+            <td class="text-muted small">{_esc(t['last_seen'][:16])}</td>
         </tr>"""
         for t in targets
     ) or '<tr><td colspan="6" class="text-center text-muted">暂无数据 — 运行 poxiao scan 后自动导入</td></tr>'
@@ -89,8 +98,8 @@ def dashboard():
     changes_html = "".join(
         f"""<tr>
             <td><a href="/target/{c['target_id']}">目标#{c['target_id']}</a></td>
-            <td>{c['change_type']}</td>
-            <td>{c['changed_at'][:16]}</td>
+            <td>{_esc(c['change_type'])}</td>
+            <td>{_esc(c['changed_at'][:16])}</td>
         </tr>"""
         for c in changes
     ) or '<tr><td colspan="3" class="text-center text-muted">暂无变更</td></tr>'
@@ -150,13 +159,13 @@ def targets_list():
 
     rows = "".join(
         f"""<tr>
-            <td><a href="/target/{t['id']}">{t['host'][:35]}</a></td>
-            <td><code>{t['url'][:40]}</code></td>
-            <td><span class="badge {'bg-success' if t['status']=='alive' else 'bg-secondary'}">{t['status']}</span></td>
-            <td>{' '.join(f'<span class="tech-tag">{x}</span>' for x in (t.get('tech_stack',[]) or [])[:4])}</td>
+            <td><a href="/target/{t['id']}">{_esc(t['host'], 35)}</a></td>
+            <td><code>{_esc(t['url'], 40)}</code></td>
+            <td><span class="badge {'bg-success' if t['status']=='alive' else 'bg-secondary'}">{_esc(t['status'])}</span></td>
+            <td>{' '.join(f'<span class="tech-tag">{_esc(x)}</span>' for x in (t.get('tech_stack',[]) or [])[:4])}</td>
             <td><span class="badge {'bg-warning text-dark' if t['sensitive_count']>0 else 'bg-light text-muted'}">{t['sensitive_count']}</span></td>
             <td><span class="badge {'bg-danger' if t['cve_count']>0 else 'bg-light text-muted'}">{t['cve_count']}</span></td>
-            <td class="text-muted small">{t['last_seen'][:16]}</td>
+            <td class="text-muted small">{_esc(t['last_seen'][:16])}</td>
         </tr>"""
         for t in targets
     ) or '<tr><td colspan="7" class="text-center text-muted">无匹配结果</td></tr>'
@@ -166,7 +175,7 @@ def targets_list():
     <div class="card mb-3"><div class="card-body py-2">
     <form method="GET" class="row g-2">
         <div class="col-md-6">
-            <input type="text" name="q" class="form-control form-control-sm" placeholder="搜索域名或URL..." value="{q}">
+            <input type="text" name="q" class="form-control form-control-sm" placeholder="搜索域名或URL..." value="{_esc(q)}">
         </div>
         <div class="col-md-3">
             <select name="status" class="form-select form-select-sm">
@@ -200,9 +209,9 @@ def target_detail(target_id):
 
     scans_html = "".join(
         f"""<tr>
-            <td>{s['scanned_at'][:16]}</td>
+            <td>{_esc(s['scanned_at'][:16])}</td>
             <td><span class="badge {'bg-success' if s['alive'] else 'bg-secondary'}">{'存活' if s['alive'] else '不可达'}</span></td>
-            <td>{' '.join(f'<span class="tech-tag">{x}</span>' for x in (s.get('tech_stack',[]) or [])[:5])}</td>
+            <td>{' '.join(f'<span class="tech-tag">{_esc(x)}</span>' for x in (s.get('tech_stack',[]) or [])[:5])}</td>
             <td>{len(s.get('sensitive_paths',[]) or [])}</td>
             <td>{len(s.get('cve_matches',[]) or [])}</td>
         </tr>"""
@@ -211,10 +220,10 @@ def target_detail(target_id):
 
     changes_html = "".join(
         f"""<tr>
-            <td>{c['changed_at'][:16]}</td>
-            <td>{c['change_type']}</td>
-            <td><span class="change-old">{c['old_value'][:60]}</span></td>
-            <td><span class="change-new">{c['new_value'][:60]}</span></td>
+            <td>{_esc(c['changed_at'][:16])}</td>
+            <td>{_esc(c['change_type'])}</td>
+            <td><span class="change-old">{_esc(c['old_value'], 60)}</span></td>
+            <td><span class="change-new">{_esc(c['new_value'], 60)}</span></td>
         </tr>"""
         for c in changes
     ) or '<tr><td colspan="4" class="text-center text-muted">暂无变更</td></tr>'
@@ -225,24 +234,24 @@ def target_detail(target_id):
     cves = latest_scan.get("cve_matches", []) or []
 
     sensitive_html = "".join(
-        f'<li><code>{s.get("url","")}</code> [{s.get("status","?")}] {s.get("category","")}</li>'
+        f'<li><code>{_esc(s.get("url",""))}</code> [{_esc(s.get("status","?"))}] {_esc(s.get("category",""))}</li>'
         for s in s[:15]
     ) or '<li class="text-muted">无</li>'
 
-    tech_tags = ' '.join(f'<span class="tech-tag">{x}</span>' for x in (t.get('tech_stack',[]) or []))
+    tech_tags = ' '.join(f'<span class="tech-tag">{_esc(x)}</span>' for x in (t.get('tech_stack',[]) or []))
 
     content = f"""
-    <h4>🔍 {t['host']}</h4>
+    <h4>🔍 {_esc(t['host'])}</h4>
     <div class="row">
         <div class="col-md-8">
             <div class="card"><div class="card-body">
                 <h5>基本信息</h5>
                 <table class="table table-sm">
-                    <tr><td width="100">URL</td><td><code>{t['url']}</code></td></tr>
-                    <tr><td>状态</td><td><span class="badge {'bg-success' if t['status']=='alive' else 'bg-secondary'}">{t['status']}</span></td></tr>
+                    <tr><td width="100">URL</td><td><code>{_esc(t['url'])}</code></td></tr>
+                    <tr><td>状态</td><td><span class="badge {'bg-success' if t['status']=='alive' else 'bg-secondary'}">{_esc(t['status'])}</span></td></tr>
                     <tr><td>技术栈</td><td>{tech_tags or '未知'}</td></tr>
-                    <tr><td>首次发现</td><td>{t['first_seen'][:16]}</td></tr>
-                    <tr><td>最近扫描</td><td>{t['last_seen'][:16]}</td></tr>
+                    <tr><td>首次发现</td><td>{_esc(t['first_seen'][:16])}</td></tr>
+                    <tr><td>最近扫描</td><td>{_esc(t['last_seen'][:16])}</td></tr>
                 </table>
             </div></div>
 
@@ -255,7 +264,7 @@ def target_detail(target_id):
         <div class="col-md-4">
             <div class="card"><div class="card-body">
                 <h5>CVE 匹配 ({len(cves)})</h5>
-                {"".join(f'<div class="mb-2"><span class="badge badge-{"critical" if c.get("severity") in ("CRITICAL","HIGH") else "medium"}">{c.get("severity","?")}</span> {c.get("cve","?")[:30]}</div>' for c in cves[:10]) or '<p class="text-muted">无</p>'}
+                {"".join(f'<div class="mb-2"><span class="badge badge-{"critical" if c.get("severity") in ("CRITICAL","HIGH") else "medium"}">{_esc(c.get("severity","?"))}</span> {_esc(c.get("cve","?"), 30)}</div>' for c in cves[:10]) or '<p class="text-muted">无</p>'}
             </div></div>
         </div>
     </div>
@@ -283,10 +292,10 @@ def changes_list():
     rows = "".join(
         f"""<tr>
             <td><a href="/target/{c['target_id']}">#{c['target_id']}</a></td>
-            <td>{c['changed_at'][:16]}</td>
-            <td>{c['change_type']}</td>
-            <td><span class="change-old">{c['old_value'][:80]}</span></td>
-            <td><span class="change-new">{c['new_value'][:80]}</span></td>
+            <td>{_esc(c['changed_at'][:16])}</td>
+            <td>{_esc(c['change_type'])}</td>
+            <td><span class="change-old">{_esc(c['old_value'], 80)}</span></td>
+            <td><span class="change-new">{_esc(c['new_value'], 80)}</span></td>
         </tr>"""
         for c in changes
     ) or '<tr><td colspan="5" class="text-center text-muted">暂无变更</td></tr>'
@@ -310,17 +319,17 @@ def import_page():
         if path and Path(path).exists():
             try:
                 import_from_summary(path)
-                msg = f'<div class="alert alert-success">✅ 导入成功: {path}</div>'
+                msg = f'<div class="alert alert-success">✅ 导入成功: {_esc(path)}</div>'
             except Exception as e:
-                msg = f'<div class="alert alert-danger">❌ 导入失败: {e}</div>'
+                msg = f'<div class="alert alert-danger">❌ 导入失败: {_esc(e)}</div>'
         else:
-            msg = f'<div class="alert alert-warning">文件不存在: {path}</div>'
+            msg = f'<div class="alert alert-warning">文件不存在: {_esc(path)}</div>'
 
     # 列出可导入的汇总文件
     import glob
     summaries = sorted(glob.glob("scan_results/summary_*.json"), reverse=True)[:10]
     files_html = "".join(
-        f'<option value="{s}">{Path(s).name}</option>' for s in summaries
+        f'<option value="{_esc(s)}">{_esc(Path(s).name)}</option>' for s in summaries
     )
 
     content = f"""

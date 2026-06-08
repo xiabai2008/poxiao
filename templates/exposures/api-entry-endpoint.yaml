@@ -1,0 +1,26 @@
+id: api-entry-endpoint
+info:
+  name: Entry API 端点检测
+  severity: info
+  description: 检测 Entry API 端点
+  tags: api,entry,info
+  author: poxiao
+
+http:
+  - method: GET
+    path:
+      - "{{BaseURL}}/api/v1/entries"
+      - "{{BaseURL}}/api/entries"
+      - "{{BaseURL}}/entries"
+    matchers-condition: and
+    matchers:
+      - type: status
+        status: [200, 404]
+      - type: word
+        words:
+          - "entry"
+          - "Entry"
+          - "id"
+          - "title"
+        condition: or
+        part: body

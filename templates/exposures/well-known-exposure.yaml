@@ -1,0 +1,28 @@
+id: well-known-exposure
+info:
+  name: .well-known 目录信息泄露
+  severity: info
+  description: .well-known 目录泄露服务配置信息
+  tags: well-known,exposure,info
+  author: poxiao
+
+http:
+  - method: GET
+    path:
+      - "{{BaseURL}}/.well-known/openid-configuration"
+      - "{{BaseURL}}/.well-known/oauth-authorization-server"
+      - "{{BaseURL}}/.well-known/host-meta"
+      - "{{BaseURL}}/.well-known/change-password"
+    matchers-condition: and
+    matchers:
+      - type: status
+        status: [200]
+      - type: word
+        words:
+          - "issuer"
+          - "authorization_endpoint"
+          - "token_endpoint"
+          - "links"
+          - "change-password"
+        condition: or
+        part: body

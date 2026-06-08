@@ -1,0 +1,36 @@
+id: host-header-injection
+info:
+  name: Host 头注入
+  severity: medium
+  description: 服务器信任 Host 头，可能导致缓存投毒或密码重置劫持
+  tags: host-header,injection,medium
+  author: poxiao
+
+http:
+  - method: GET
+    path:
+      - "{{BaseURL}}/"
+    headers:
+      Host: "evil.com"
+    matchers-condition: and
+    matchers:
+      - type: status
+        status: [200, 301, 302]
+      - type: word
+        words:
+          - "evil.com"
+        part: body
+
+  - method: GET
+    path:
+      - "{{BaseURL}}/"
+    headers:
+      X-Forwarded-Host: "evil.com"
+    matchers-condition: and
+    matchers:
+      - type: status
+        status: [200, 301, 302]
+      - type: word
+        words:
+          - "evil.com"
+        part: body

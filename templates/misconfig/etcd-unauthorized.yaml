@@ -1,0 +1,26 @@
+id: etcd-unauthorized
+info:
+  name: etcd 未授权访问
+  severity: critical
+  description: etcd 键值存储未授权访问，可能泄露 Kubernetes 密钥
+  tags: etcd,unauthorized,kubernetes,critical
+  author: poxiao
+
+http:
+  - method: GET
+    path:
+      - "{{BaseURL}}/v2/keys/"
+      - "{{BaseURL}}/v2/machines"
+      - "{{BaseURL}}/version"
+    matchers-condition: and
+    matchers:
+      - type: status
+        status: [200]
+      - type: word
+        words:
+          - "etcd"
+          - "etcdserver"
+          - "etcdcluster"
+          - "action"
+        condition: or
+        part: body

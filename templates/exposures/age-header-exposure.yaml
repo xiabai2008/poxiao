@@ -1,0 +1,25 @@
+id: age-header-exposure
+info:
+  name: Age 响应头泄露
+  severity: info
+  description: Age 响应头泄露缓存年龄
+  tags: cache,age,headers,info
+  author: poxiao
+
+http:
+  - method: GET
+    path:
+      - "{{BaseURL}}/"
+    matchers-condition: and
+    matchers:
+      - type: status
+        status: [200]
+      - type: regex
+        regex:
+          - "Age:\\s*[0-9]+"
+        part: header
+    extractors:
+      - type: kval
+        kval:
+          - "Age"
+        name: cache_age

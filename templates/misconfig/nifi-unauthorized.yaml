@@ -1,0 +1,25 @@
+id: apache-nifi-unauthorized
+info:
+  name: Apache NiFi 未授权访问
+  severity: high
+  description: Apache NiFi 数据流管理平台未授权访问
+  tags: nifi,unauthorized,dataflow,high
+  author: poxiao
+
+http:
+  - method: GET
+    path:
+      - "{{BaseURL}}/nifi-api/process-groups/root"
+      - "{{BaseURL}}/nifi-api/system-diagnostics"
+    matchers-condition: and
+    matchers:
+      - type: status
+        status: [200]
+      - type: word
+        words:
+          - "NiFi"
+          - "nifi"
+          - "processGroups"
+          - "systemDiagnostics"
+        condition: or
+        part: body

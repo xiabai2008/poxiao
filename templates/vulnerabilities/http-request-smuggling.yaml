@@ -1,0 +1,26 @@
+id: http-request-smuggling
+info:
+  name: HTTP 请求走私检测
+  severity: high
+  description: 检测 HTTP 请求走私漏洞 (CL.TE / TE.CL)
+  tags: smuggling,http,high
+  author: poxiao
+
+http:
+  - method: POST
+    path:
+      - "{{BaseURL}}/"
+    headers:
+      Content-Type: "application/x-www-form-urlencoded"
+      Transfer-Encoding: "chunked"
+    body: "0\r\n\r\nSMUGGLED"
+    matchers-condition: and
+    matchers:
+      - type: status
+        status: [200, 400, 500]
+      - type: word
+        words:
+          - "SMUGGLED"
+          - "Bad Request"
+        condition: or
+        part: body

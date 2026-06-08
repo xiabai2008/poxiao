@@ -1,0 +1,23 @@
+id: api-trace-method
+info:
+  name: API TRACE 方法支持
+  severity: medium
+  description: 检测 API TRACE 方法支持
+  tags: api,trace,medium
+  author: poxiao
+
+http:
+  - method: TRACE
+    path:
+      - "{{BaseURL}}/api/v1"
+      - "{{BaseURL}}/api"
+    matchers-condition: and
+    matchers:
+      - type: status
+        status: [200]
+      - type: word
+        words:
+          - "TRACE"
+          - "TRACE /api"
+        condition: or
+        part: body

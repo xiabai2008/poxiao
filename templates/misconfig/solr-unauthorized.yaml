@@ -1,0 +1,26 @@
+id: solr-unauthorized
+info:
+  name: Apache Solr 未授权访问
+  severity: high
+  description: Apache Solr 未授权访问，可泄露敏感数据
+  tags: solr,unauthorized,search,high
+  author: poxiao
+
+http:
+  - method: GET
+    path:
+      - "{{BaseURL}}/solr/admin/cores?wt=json"
+      - "{{BaseURL}}/solr/admin/info/system?wt=json"
+      - "{{BaseURL}}/api/cores"
+    matchers-condition: and
+    matchers:
+      - type: status
+        status: [200]
+      - type: word
+        words:
+          - "solr"
+          - "Solr"
+          - "responseHeader"
+          - "lucene"
+        condition: or
+        part: body

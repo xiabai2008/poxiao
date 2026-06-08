@@ -1,0 +1,30 @@
+id: api-callback-endpoint
+info:
+  name: Callback API 端点检测
+  severity: info
+  description: 检测 Callback API 端点
+  tags: api,callback,info
+  author: poxiao
+
+http:
+  - method: POST
+    path:
+      - "{{BaseURL}}/callback"
+      - "{{BaseURL}}/callbacks"
+      - "{{BaseURL}}/api/callback"
+      - "{{BaseURL}}/api/v1/callback"
+    headers:
+      Content-Type: "application/json"
+    body: '{"callback_url":"https://example.com","event":"test"}'
+    matchers-condition: and
+    matchers:
+      - type: status
+        status: [200, 201, 202, 400, 404]
+      - type: word
+        words:
+          - "callback"
+          - "Callback"
+          - "url"
+          - "event"
+        condition: or
+        part: body

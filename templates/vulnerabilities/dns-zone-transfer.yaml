@@ -1,0 +1,20 @@
+id: dns-zone-transfer
+info:
+  name: DNS 区域传送漏洞
+  severity: high
+  description: DNS 服务器允许区域传送，泄露所有 DNS 记录
+  tags: dns,zone-transfer,high
+  author: poxiao
+
+dns:
+  - name: "{{Hostname}}"
+    type: AXFR
+    matchers-condition: and
+    matchers:
+      - type: word
+        words:
+          - "AXFR"
+          - "zone"
+          - "transfer"
+        condition: or
+        part: body

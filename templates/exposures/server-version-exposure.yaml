@@ -1,0 +1,33 @@
+id: server-version-exposure
+info:
+  name: 服务器版本信息泄露
+  severity: info
+  description: HTTP 响应头泄露服务器版本信息
+  tags: server,version,info
+  author: poxiao
+
+http:
+  - method: GET
+    path:
+      - "{{BaseURL}}/"
+    matchers-condition: or
+    matchers:
+      - type: regex
+        regex:
+          - "Server:\\s*(?:Apache/[0-9.]+|nginx/[0-9.]+|Microsoft-IIS/[0-9.]+|Tomcat/[0-9.]+)"
+        part: header
+      - type: regex
+        regex:
+          - "X-Powered-By:\\s*(?:PHP/[0-9.]+|ASP\\.NET|Express)"
+        part: header
+      - type: regex
+        regex:
+          - "X-AspNet-Version:\\s*[0-9.]+"
+        part: header
+    extractors:
+      - type: kval
+        kval:
+          - "Server"
+          - "X-Powered-By"
+          - "X-AspNet-Version"
+        name: server_version

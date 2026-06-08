@@ -1,0 +1,28 @@
+id: api-download-endpoint
+info:
+  name: Download API 端点检测
+  severity: info
+  description: 检测 Download API 端点
+  tags: api,download,info
+  author: poxiao
+
+http:
+  - method: GET
+    path:
+      - "{{BaseURL}}/api/v1/download"
+      - "{{BaseURL}}/api/download"
+      - "{{BaseURL}}/download"
+      - "{{BaseURL}}/api/v1/files/test.txt"
+      - "{{BaseURL}}/api/files/test.txt"
+    matchers-condition: and
+    matchers:
+      - type: status
+        status: [200, 404]
+      - type: word
+        words:
+          - "download"
+          - "Download"
+          - "attachment"
+          - "Content-Disposition"
+        condition: or
+        part: all

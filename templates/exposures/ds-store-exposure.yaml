@@ -1,0 +1,20 @@
+id: ds-store-exposure
+info:
+  name: .DS_Store 文件泄露
+  severity: low
+  description: macOS .DS_Store 文件暴露，泄露目录结构和文件名
+  tags: ds-store,exposure,macos
+  author: poxiao
+
+http:
+  - method: GET
+    path:
+      - "{{BaseURL}}/.DS_Store"
+    matchers-condition: and
+    matchers:
+      - type: status
+        status: [200]
+      - type: binary
+        binary:
+          - "0000000142756431"
+        part: body

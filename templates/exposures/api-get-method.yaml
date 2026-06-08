@@ -1,0 +1,17 @@
+id: api-get-method
+info:
+  name: API GET 方法支持
+  severity: info
+  description: 检测 API GET 方法支持
+  tags: api,get,info
+  author: poxiao
+
+http:
+  - method: GET
+    path:
+      - "{{BaseURL}}/api/v1"
+      - "{{BaseURL}}/api"
+    matchers-condition: and
+    matchers:
+      - type: status
+        status: [200]

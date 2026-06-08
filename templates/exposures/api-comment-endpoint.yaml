@@ -1,0 +1,27 @@
+id: api-comment-endpoint
+info:
+  name: Comment API 端点检测
+  severity: info
+  description: 检测 Comment API 端点
+  tags: api,comment,info
+  author: poxiao
+
+http:
+  - method: GET
+    path:
+      - "{{BaseURL}}/api/v1/comments"
+      - "{{BaseURL}}/api/comments"
+      - "{{BaseURL}}/comments"
+    matchers-condition: and
+    matchers:
+      - type: status
+        status: [200, 404]
+      - type: word
+        words:
+          - "comment"
+          - "Comment"
+          - "body"
+          - "author"
+          - "created_at"
+        condition: or
+        part: body

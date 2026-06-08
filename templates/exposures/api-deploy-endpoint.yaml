@@ -1,0 +1,28 @@
+id: api-deploy-endpoint
+info:
+  name: Deploy API 端点检测
+  severity: info
+  description: 检测 Deploy API 端点
+  tags: api,deploy,info
+  author: poxiao
+
+http:
+  - method: GET
+    path:
+      - "{{BaseURL}}/api/v1/deploy"
+      - "{{BaseURL}}/api/deploy"
+      - "{{BaseURL}}/deploy"
+      - "{{BaseURL}}/api/v1/deployments"
+    matchers-condition: and
+    matchers:
+      - type: status
+        status: [200, 404]
+      - type: word
+        words:
+          - "deploy"
+          - "Deploy"
+          - "deployment"
+          - "Deployment"
+          - "environment"
+        condition: or
+        part: body

@@ -1,0 +1,26 @@
+id: x-cache-header-exposure
+info:
+  name: X-Cache 响应头泄露
+  severity: info
+  description: X-Cache 响应头泄露缓存状态
+  tags: cache,cdn,headers,info
+  author: poxiao
+
+http:
+  - method: GET
+    path:
+      - "{{BaseURL}}/"
+    matchers-condition: and
+    matchers:
+      - type: status
+        status: [200]
+      - type: regex
+        regex:
+          - "X-Cache:\\s*(?:HIT|MISS|DYNAMIC)"
+        part: header
+    extractors:
+      - type: kval
+        kval:
+          - "X-Cache"
+          - "X-Cache-Lookup"
+        name: cache_info

@@ -1,0 +1,25 @@
+id: aspnet-version-exposure
+info:
+  name: ASP.NET 版本泄露
+  severity: info
+  description: ASP.NET 版本信息泄露
+  tags: aspnet,version,info
+  author: poxiao
+
+http:
+  - method: GET
+    path:
+      - "{{BaseURL}}/"
+    matchers-condition: and
+    matchers:
+      - type: status
+        status: [200]
+      - type: regex
+        regex:
+          - "X-AspNet-Version:\\s*[0-9.]+"
+        part: header
+    extractors:
+      - type: kval
+        kval:
+          - "X-AspNet-Version"
+        name: aspnet_version

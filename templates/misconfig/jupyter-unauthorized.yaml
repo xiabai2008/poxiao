@@ -1,0 +1,27 @@
+id: jupyter-unauthorized
+info:
+  name: Jupyter Notebook 未授权访问
+  severity: critical
+  description: Jupyter Notebook 未授权访问，可执行任意代码
+  tags: jupyter,unauthorized,rce,critical
+  author: poxiao
+
+http:
+  - method: GET
+    path:
+      - "{{BaseURL}}/api"
+      - "{{BaseURL}}/api/kernels"
+      - "{{BaseURL}}/tree"
+    matchers-condition: and
+    matchers:
+      - type: status
+        status: [200]
+      - type: word
+        words:
+          - "Jupyter"
+          - "jupyter"
+          - "kernel"
+          - "notebook"
+          - "kernelspecs"
+        condition: or
+        part: body

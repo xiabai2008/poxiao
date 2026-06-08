@@ -2,25 +2,39 @@
 
 import json
 import sqlite3
+from contextlib import contextmanager
 from datetime import datetime
 from pathlib import Path
 from typing import Optional
 
 
 DB_PATH = Path("scan_results/guanxing.db")
+_initialized = False
 
 
-def get_db() -> sqlite3.Connection:
-    """获取数据库连接"""
+@contextmanager
+def get_db():
+    """数据库连接上下文管理器 (自动提交/回滚/关闭)"""
+    global _initialized
     DB_PATH.parent.mkdir(parents=True, exist_ok=True)
     conn = sqlite3.connect(str(DB_PATH))
     conn.row_factory = sqlite3.Row
-    return conn
+    conn.execute("PRAGMA journal_mode=WAL")  # 并发读写优化
+    try:
+        if not _initialized:
+            _create_tables(conn)
+            _initialized = True
+        yield conn
+        conn.commit()
+    except Exception:
+        conn.rollback()
+        raise
+    finally:
+        conn.close()
 
 
-def init_db():
-    """初始化数据库表"""
-    conn = get_db()
+def _create_tables(conn: sqlite3.Connection):
+    """创建数据库表"""
     conn.executescript("""
         CREATE TABLE IF NOT EXISTS targets (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -56,12 +70,18 @@ def init_db():
             FOREIGN KEY (target_id) REFERENCES targets(id)
         );
 
+        CREATE INDEX IF NOT EXISTS idx_targets_host ON targets(host);
         CREATE INDEX IF NOT EXISTS idx_scans_target ON scans(target_id);
         CREATE INDEX IF NOT EXISTS idx_scans_date ON scans(scanned_at);
         CREATE INDEX IF NOT EXISTS idx_changes_target ON changes(target_id);
     """)
-    conn.commit()
-    conn.close()
+
+
+# 保持向后兼容
+def init_db():
+    """初始化数据库表 (向后兼容)"""
+    with get_db() as conn:
+        pass  # 表已在 context manager 中自动创建
 
 
 # ── Target CRUD ──────────────────────────────────
@@ -70,60 +90,54 @@ def upsert_target(url: str, host: str, status: str = "unknown",
                   tech_stack: list = None, sensitive_count: int = 0,
                   cve_count: int = 0) -> int:
     """插入或更新目标"""
-    conn = get_db()
-    now = datetime.now().isoformat()
-    tech_json = json.dumps(tech_stack or [])
+    with get_db() as conn:
+        now = datetime.now().isoformat()
+        tech_json = json.dumps(tech_stack or [])
 
-    existing = conn.execute(
-        "SELECT id, first_seen, tech_stack FROM targets WHERE url = ?", (url,)
-    ).fetchone()
+        existing = conn.execute(
+            "SELECT id, first_seen, tech_stack FROM targets WHERE url = ?", (url,)
+        ).fetchone()
 
-    if existing:
-        # 检测变更
-        old_tech = json.loads(existing["tech_stack"])
-        new_tech = tech_stack or []
-        if old_tech != new_tech and old_tech and new_tech:
-            _record_change(conn, existing["id"], "tech_change",
-                          ",".join(old_tech), ",".join(new_tech))
+        if existing:
+            # 检测变更
+            old_tech = json.loads(existing["tech_stack"])
+            new_tech = tech_stack or []
+            if old_tech != new_tech and old_tech and new_tech:
+                _record_change(conn, existing["id"], "tech_change",
+                              ",".join(old_tech), ",".join(new_tech))
 
-        conn.execute("""
-            UPDATE targets SET last_seen=?, status=?, tech_stack=?,
-            sensitive_count=?, cve_count=?
-            WHERE id=?
-        """, (now, status, tech_json, sensitive_count, cve_count, existing["id"]))
-        target_id = existing["id"]
-    else:
-        cursor = conn.execute("""
-            INSERT INTO targets (url, host, first_seen, last_seen, status,
-                                tech_stack, sensitive_count, cve_count)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-        """, (url, host, now, now, status, tech_json, sensitive_count, cve_count))
-        target_id = cursor.lastrowid
-
-    conn.commit()
-    conn.close()
-    return target_id
+            conn.execute("""
+                UPDATE targets SET last_seen=?, status=?, tech_stack=?,
+                sensitive_count=?, cve_count=?
+                WHERE id=?
+            """, (now, status, tech_json, sensitive_count, cve_count, existing["id"]))
+            return existing["id"]
+        else:
+            cursor = conn.execute("""
+                INSERT INTO targets (url, host, first_seen, last_seen, status,
+                                    tech_stack, sensitive_count, cve_count)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            """, (url, host, now, now, status, tech_json, sensitive_count, cve_count))
+            return cursor.lastrowid
 
 
 def add_scan(target_id: int, alive: bool, tech_stack: list,
              sensitive_paths: list, cve_matches: list,
              response_time: float = 0):
     """记录一次扫描"""
-    conn = get_db()
-    now = datetime.now().isoformat()
-    conn.execute("""
-        INSERT INTO scans (target_id, scanned_at, alive, tech_stack,
-                          sensitive_paths, cve_matches, response_time)
-        VALUES (?, ?, ?, ?, ?, ?, ?)
-    """, (
-        target_id, now, int(alive),
-        json.dumps(tech_stack),
-        json.dumps(sensitive_paths),
-        json.dumps(cve_matches),
-        response_time,
-    ))
-    conn.commit()
-    conn.close()
+    with get_db() as conn:
+        now = datetime.now().isoformat()
+        conn.execute("""
+            INSERT INTO scans (target_id, scanned_at, alive, tech_stack,
+                              sensitive_paths, cve_matches, response_time)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+        """, (
+            target_id, now, int(alive),
+            json.dumps(tech_stack),
+            json.dumps(sensitive_paths),
+            json.dumps(cve_matches),
+            response_time,
+        ))
 
 
 def _record_change(conn: sqlite3.Connection, target_id: int,
@@ -139,123 +153,116 @@ def _record_change(conn: sqlite3.Connection, target_id: int,
 
 def get_targets(status: str = None, limit: int = 100) -> list[dict]:
     """获取目标列表"""
-    conn = get_db()
-    if status:
-        rows = conn.execute(
-            "SELECT * FROM targets WHERE status = ? ORDER BY last_seen DESC LIMIT ?",
-            (status, limit)
-        ).fetchall()
-    else:
-        rows = conn.execute(
-            "SELECT * FROM targets ORDER BY last_seen DESC LIMIT ?", (limit,)
-        ).fetchall()
-    conn.close()
-    return [_row_to_dict(r) for r in rows]
+    with get_db() as conn:
+        if status:
+            rows = conn.execute(
+                "SELECT * FROM targets WHERE status = ? ORDER BY last_seen DESC LIMIT ?",
+                (status, limit)
+            ).fetchall()
+        else:
+            rows = conn.execute(
+                "SELECT * FROM targets ORDER BY last_seen DESC LIMIT ?", (limit,)
+            ).fetchall()
+        return [_row_to_dict(r) for r in rows]
 
 
 def get_target_by_id(target_id: int) -> Optional[dict]:
     """获取单个目标"""
-    conn = get_db()
-    row = conn.execute("SELECT * FROM targets WHERE id = ?", (target_id,)).fetchone()
-    conn.close()
-    return _row_to_dict(row) if row else None
+    with get_db() as conn:
+        row = conn.execute("SELECT * FROM targets WHERE id = ?", (target_id,)).fetchone()
+        return _row_to_dict(row) if row else None
 
 
 def get_scans(target_id: int, limit: int = 20) -> list[dict]:
     """获取扫描历史"""
-    conn = get_db()
-    rows = conn.execute(
-        "SELECT * FROM scans WHERE target_id = ? ORDER BY scanned_at DESC LIMIT ?",
-        (target_id, limit)
-    ).fetchall()
-    conn.close()
-    return [_row_to_dict(r) for r in rows]
+    with get_db() as conn:
+        rows = conn.execute(
+            "SELECT * FROM scans WHERE target_id = ? ORDER BY scanned_at DESC LIMIT ?",
+            (target_id, limit)
+        ).fetchall()
+        return [_row_to_dict(r) for r in rows]
 
 
 def get_changes(target_id: int = None, limit: int = 50) -> list[dict]:
     """获取变更记录"""
-    conn = get_db()
-    if target_id:
-        rows = conn.execute(
-            "SELECT * FROM changes WHERE target_id = ? ORDER BY changed_at DESC LIMIT ?",
-            (target_id, limit)
-        ).fetchall()
-    else:
-        rows = conn.execute(
-            "SELECT * FROM changes ORDER BY changed_at DESC LIMIT ?", (limit,)
-        ).fetchall()
-    conn.close()
-    return [_row_to_dict(r) for r in rows]
+    with get_db() as conn:
+        if target_id:
+            rows = conn.execute(
+                "SELECT * FROM changes WHERE target_id = ? ORDER BY changed_at DESC LIMIT ?",
+                (target_id, limit)
+            ).fetchall()
+        else:
+            rows = conn.execute(
+                "SELECT * FROM changes ORDER BY changed_at DESC LIMIT ?", (limit,)
+            ).fetchall()
+        return [_row_to_dict(r) for r in rows]
 
 
 def get_stats() -> dict:
     """获取统计信息"""
-    conn = get_db()
-    total = conn.execute("SELECT COUNT(*) FROM targets").fetchone()[0]
-    alive = conn.execute("SELECT COUNT(*) FROM targets WHERE status='alive'").fetchone()[0]
-    with_findings = conn.execute(
-        "SELECT COUNT(*) FROM targets WHERE sensitive_count > 0 OR cve_count > 0"
-    ).fetchone()[0]
+    with get_db() as conn:
+        total = conn.execute("SELECT COUNT(*) FROM targets").fetchone()[0]
+        alive = conn.execute("SELECT COUNT(*) FROM targets WHERE status='alive'").fetchone()[0]
 
-    # 技术栈分布
-    techs = conn.execute("SELECT tech_stack FROM targets WHERE tech_stack != '[]'").fetchall()
-    tech_count = {}
-    for (ts,) in techs:
-        for t in json.loads(ts):
-            tech_count[t] = tech_count.get(t, 0) + 1
+        tech_rows = conn.execute(
+            "SELECT tech_stack FROM targets WHERE tech_stack != '[]'"
+        ).fetchall()
+        tech_dist = {}
+        for row in tech_rows:
+            for t in json.loads(row[0]):
+                tech_dist[t] = tech_dist.get(t, 0) + 1
 
-    # 最近变更
-    recent_changes = conn.execute(
-        "SELECT COUNT(*) FROM changes WHERE changed_at > datetime('now', '-7 days')"
-    ).fetchone()[0]
+        with_findings = conn.execute(
+            "SELECT COUNT(*) FROM targets WHERE sensitive_count > 0 OR cve_count > 0"
+        ).fetchone()[0]
 
-    conn.close()
-    return {
-        "total": total,
-        "alive": alive,
-        "with_findings": with_findings,
-        "tech_distribution": tech_count,
-        "recent_changes": recent_changes,
-    }
+        recent_changes = conn.execute(
+            "SELECT COUNT(*) FROM changes WHERE changed_at > datetime('now', '-7 days')"
+        ).fetchone()[0]
 
-
-def get_recent_scan_count(hours: int = 24) -> int:
-    """最近N小时扫描次数"""
-    conn = get_db()
-    count = conn.execute(
-        "SELECT COUNT(*) FROM scans WHERE scanned_at > datetime('now', ?)",
-        (f"-{hours} hours",)
-    ).fetchone()[0]
-    conn.close()
-    return count
+        return {
+            "total": total,
+            "alive": alive,
+            "with_findings": with_findings,
+            "recent_changes": recent_changes,
+            "tech_distribution": tech_dist,
+        }
 
 
 def import_from_summary(summary_path: str):
-    """从破晓扫描汇总JSON导入数据"""
+    """从扫描汇总 JSON 导入数据"""
+    import asyncio
+    from pathlib import Path
+
     data = json.loads(Path(summary_path).read_text(encoding="utf-8"))
     targets = data.get("targets", [])
 
     for t in targets:
         url = t.get("target_url", "")
-        host = t.get("host", url)
-        alive = t.get("alive", False)
-        tech = t.get("tech_tags", [])
-        sensitive = t.get("sensitive_paths", [])
-        cve = t.get("cve_matches", [])
+        if not url:
+            continue
+        host = url.split("//")[-1].split("/")[0].split(":")[0]
+        status = "alive" if t.get("alive") else "dead"
+        tech = t.get("tech", {})
+        if isinstance(tech, dict):
+            tech_list = list(tech.keys())
+        else:
+            tech_list = tech if isinstance(tech, list) else []
+        sensitive_count = len(t.get("sensitive_paths", []))
+        cve_count = len(t.get("cve_matches", []))
 
-        tid = upsert_target(
-            url=url, host=host,
-            status="alive" if alive else "dead",
-            tech_stack=tech,
-            sensitive_count=len(sensitive),
-            cve_count=len(cve),
-        )
-        add_scan(tid, alive, tech, sensitive, cve, t.get("response_time", 0))
+        target_id = upsert_target(url, host, status, tech_list, sensitive_count, cve_count)
+        add_scan(target_id, t.get("alive", False), tech_list,
+                t.get("sensitive_paths", []), t.get("cve_matches", []),
+                t.get("duration_sec", 0))
 
 
-def _row_to_dict(row: sqlite3.Row) -> dict:
-    """Row → dict，解析 JSON 字段"""
+def _row_to_dict(row) -> dict:
+    """将 sqlite3.Row 转为 dict"""
+    if row is None:
+        return {}
     d = dict(row)
+    # JSON 字段反序列化
     for key in ("tech_stack", "sensitive_paths", "cve_matches"):
         if key in d and isinstance(d[key], str):
             try:
@@ -263,8 +270,3 @@ def _row_to_dict(row: sqlite3.Row) -> dict:
             except (json.JSONDecodeError, TypeError):
                 pass
     return d
-
-
-# ── 初始化 ─────────────────────────────────────
-
-init_db()

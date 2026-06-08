@@ -1,0 +1,27 @@
+id: api-message-endpoint
+info:
+  name: Message API 端点检测
+  severity: info
+  description: 检测 Message API 端点
+  tags: api,message,info
+  author: poxiao
+
+http:
+  - method: GET
+    path:
+      - "{{BaseURL}}/api/v1/messages"
+      - "{{BaseURL}}/api/messages"
+      - "{{BaseURL}}/messages"
+    matchers-condition: and
+    matchers:
+      - type: status
+        status: [200, 404]
+      - type: word
+        words:
+          - "message"
+          - "Message"
+          - "from"
+          - "to"
+          - "content"
+        condition: or
+        part: body

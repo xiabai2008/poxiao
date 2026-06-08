@@ -1,0 +1,20 @@
+id: api-post-method
+info:
+  name: API POST 方法支持
+  severity: info
+  description: 检测 API POST 方法支持
+  tags: api,post,info
+  author: poxiao
+
+http:
+  - method: POST
+    path:
+      - "{{BaseURL}}/api/v1/test"
+      - "{{BaseURL}}/api/test"
+    headers:
+      Content-Type: "application/json"
+    body: '{"test":"value"}'
+    matchers-condition: and
+    matchers:
+      - type: status
+        status: [200, 201, 405]

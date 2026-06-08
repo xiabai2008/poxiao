@@ -1,0 +1,34 @@
+id: swagger-ui-exposure
+info:
+  name: Swagger UI / API 文档泄露
+  severity: medium
+  description: Swagger/OpenAPI 文档未授权访问，泄露 API 接口信息
+  tags: swagger,api,exposure,misconfig
+  author: poxiao
+
+http:
+  - method: GET
+    path:
+      - "{{BaseURL}}/swagger-ui.html"
+      - "{{BaseURL}}/swagger-ui/"
+      - "{{BaseURL}}/swagger/index.html"
+      - "{{BaseURL}}/api-docs"
+      - "{{BaseURL}}/v2/api-docs"
+      - "{{BaseURL}}/v3/api-docs"
+      - "{{BaseURL}}/swagger-resources"
+      - "{{BaseURL}}/swagger-ui/index.html"
+      - "{{BaseURL}}/doc.html"
+      - "{{BaseURL}}/druid/index.html"
+    matchers-condition: and
+    matchers:
+      - type: status
+        status: [200]
+      - type: word
+        words:
+          - "swagger"
+          - "api-docs"
+          - "openapi"
+          - "Swagger UI"
+          - "Druid Stat Index"
+        condition: or
+        part: body

@@ -1,0 +1,25 @@
+id: sitemap-txt-exposure
+info:
+  name: sitemap.xml 信息泄露
+  severity: info
+  description: sitemap.xml 泄露网站结构和敏感页面
+  tags: sitemap,exposure,info
+  author: poxiao
+
+http:
+  - method: GET
+    path:
+      - "{{BaseURL}}/sitemap.xml"
+      - "{{BaseURL}}/sitemap_index.xml"
+      - "{{BaseURL}}/sitemap.txt"
+    matchers-condition: and
+    matchers:
+      - type: status
+        status: [200]
+      - type: word
+        words:
+          - "urlset"
+          - "sitemapindex"
+          - "sitemap"
+        condition: or
+        part: body

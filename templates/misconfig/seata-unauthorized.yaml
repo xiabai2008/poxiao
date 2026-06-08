@@ -1,0 +1,24 @@
+id: seata-unauthorized
+info:
+  name: Seata 未授权访问
+  severity: medium
+  description: Seata 分布式事务框架未授权访问
+  tags: seata,unauthorized,distributed,medium
+  author: poxiao
+
+http:
+  - method: GET
+    path:
+      - "{{BaseURL}}/health"
+      - "{{BaseURL}}/api/v1/console/namespaces"
+    matchers-condition: and
+    matchers:
+      - type: status
+        status: [200]
+      - type: word
+        words:
+          - "seata"
+          - "Seata"
+          - "server"
+        condition: or
+        part: body

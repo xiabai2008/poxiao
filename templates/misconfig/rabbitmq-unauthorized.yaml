@@ -1,0 +1,26 @@
+id: rabbitmq-unauthorized
+info:
+  name: RabbitMQ 未授权访问
+  severity: high
+  description: RabbitMQ 消息队列未授权访问
+  tags: rabbitmq,unauthorized,mq,high
+  author: poxiao
+
+http:
+  - method: GET
+    path:
+      - "{{BaseURL}}/api/overview"
+      - "{{BaseURL}}/api/queues"
+      - "{{BaseURL}}/api/users"
+    matchers-condition: and
+    matchers:
+      - type: status
+        status: [200]
+      - type: word
+        words:
+          - "rabbitmq"
+          - "RabbitMQ"
+          - "rabbit_version"
+          - "cluster_name"
+        condition: or
+        part: body

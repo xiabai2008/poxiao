@@ -1,0 +1,25 @@
+id: apache-kafka-unauthorized
+info:
+  name: Apache Kafka 未授权访问
+  severity: high
+  description: Apache Kafka 未授权访问
+  tags: kafka,unauthorized,mq,high
+  author: poxiao
+
+http:
+  - method: GET
+    path:
+      - "{{BaseURL}}/v3/clusters"
+      - "{{BaseURL}}/api/clusters"
+    matchers-condition: and
+    matchers:
+      - type: status
+        status: [200]
+      - type: word
+        words:
+          - "kafka"
+          - "Kafka"
+          - "cluster_id"
+          - "controller"
+        condition: or
+        part: body

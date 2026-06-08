@@ -1,0 +1,30 @@
+id: api-async-endpoint
+info:
+  name: Async API 端点检测
+  severity: info
+  description: 检测 Async API 端点
+  tags: api,async,info
+  author: poxiao
+
+http:
+  - method: POST
+    path:
+      - "{{BaseURL}}/api/v1/async"
+      - "{{BaseURL}}/api/async"
+      - "{{BaseURL}}/async"
+    headers:
+      Content-Type: "application/json"
+    body: '{"task":"test"}'
+    matchers-condition: and
+    matchers:
+      - type: status
+        status: [200, 201, 202, 400, 404]
+      - type: word
+        words:
+          - "async"
+          - "Async"
+          - "task"
+          - "job"
+          - "queue"
+        condition: or
+        part: body

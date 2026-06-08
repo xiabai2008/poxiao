@@ -1,30 +1,44 @@
+# 破晓 .gitignore
+
+# 运行时数据
+scan_results/*.db
+scan_results/*.json
+scan_results/*.md
+scan_results/src_reports/
+scan_results/rayscan/
+
 # Python
 __pycache__/
-*.py[cod]
+*.pyc
+*.pyo
 *.egg-info/
 dist/
 build/
-.eggs/
+*.egg
 
-# 环境
+# 虚拟环境
 .venv/
 venv/
 env/
-.env
-
-# 系统
-.DS_Store
-Thumbs.db
 
 # IDE
 .vscode/
 .idea/
+*.swp
+*.swo
 
-# 扫描结果（不提交到仓库）
-scan_results/
+# 临时文件
+temp_*.txt
+*.tmp
 *.log
-*.json
 
-# 敏感配置
-configs/local/
-*.secret.*
+# 操作系统
+.DS_Store
+Thumbs.db
+
+# 敏感信息
+.env
+*.key
+*.pem
+cookies.json
+storage_state.json

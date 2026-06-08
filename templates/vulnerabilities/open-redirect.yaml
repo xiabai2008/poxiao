@@ -1,0 +1,28 @@
+id: open-redirect
+info:
+  name: 开放重定向漏洞
+  severity: medium
+  description: 未经验证的 URL 重定向，可用于钓鱼攻击
+  tags: redirect,open-redirect,medium
+  author: poxiao
+
+http:
+  - method: GET
+    path:
+      - "{{BaseURL}}/redirect?url=https://evil.com"
+      - "{{BaseURL}}/login?next=https://evil.com"
+      - "{{BaseURL}}/?redirect=https://evil.com"
+      - "{{BaseURL}}/?return=https://evil.com"
+      - "{{BaseURL}}/?goto=https://evil.com"
+      - "{{BaseURL}}/?to=https://evil.com"
+      - "{{BaseURL}}/?dest=https://evil.com"
+      - "{{BaseURL}}/?target=https://evil.com"
+      - "{{BaseURL}}/?rurl=https://evil.com"
+    matchers-condition: and
+    matchers:
+      - type: status
+        status: [301, 302, 303, 307, 308]
+      - type: regex
+        regex:
+          - "Location:\\s*https?://evil\\.com"
+        part: header

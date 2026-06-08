@@ -1,0 +1,27 @@
+id: api-page-endpoint
+info:
+  name: Page API 端点检测
+  severity: info
+  description: 检测 Page API 端点
+  tags: api,page,info
+  author: poxiao
+
+http:
+  - method: GET
+    path:
+      - "{{BaseURL}}/api/v1/pages"
+      - "{{BaseURL}}/api/pages"
+      - "{{BaseURL}}/pages"
+    matchers-condition: and
+    matchers:
+      - type: status
+        status: [200, 404]
+      - type: word
+        words:
+          - "page"
+          - "Page"
+          - "title"
+          - "slug"
+          - "content"
+        condition: or
+        part: body

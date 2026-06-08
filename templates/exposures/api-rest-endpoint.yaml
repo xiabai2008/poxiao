@@ -1,0 +1,29 @@
+id: api-rest-endpoint
+info:
+  name: REST API 端点检测
+  severity: info
+  description: 检测 REST API 端点
+  tags: api,rest,info
+  author: poxiao
+
+http:
+  - method: GET
+    path:
+      - "{{BaseURL}}/api"
+      - "{{BaseURL}}/api/v1"
+      - "{{BaseURL}}/api/v2"
+      - "{{BaseURL}}/rest"
+      - "{{BaseURL}}/rest/v1"
+    matchers-condition: and
+    matchers:
+      - type: status
+        status: [200]
+      - type: word
+        words:
+          - "\"api\""
+          - "\"version\""
+          - "\"endpoints\""
+          - "\"links\""
+          - "\"resources\""
+        condition: or
+        part: body

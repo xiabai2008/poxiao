@@ -1,0 +1,26 @@
+id: api-grpc-endpoint
+info:
+  name: gRPC API 端点检测
+  severity: info
+  description: 检测 gRPC API 端点
+  tags: api,grpc,info
+  author: poxiao
+
+http:
+  - method: POST
+    path:
+      - "{{BaseURL}}/grpc"
+      - "{{BaseURL}}/api/grpc"
+    headers:
+      Content-Type: "application/grpc"
+    matchers-condition: and
+    matchers:
+      - type: status
+        status: [200, 415]
+      - type: word
+        words:
+          - "grpc"
+          - "gRPC"
+          - "application/grpc"
+        condition: or
+        part: all

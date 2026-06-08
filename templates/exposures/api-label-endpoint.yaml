@@ -1,0 +1,26 @@
+id: api-label-endpoint
+info:
+  name: Label API 端点检测
+  severity: info
+  description: 检测 Label API 端点
+  tags: api,label,info
+  author: poxiao
+
+http:
+  - method: GET
+    path:
+      - "{{BaseURL}}/api/v1/labels"
+      - "{{BaseURL}}/api/labels"
+      - "{{BaseURL}}/labels"
+    matchers-condition: and
+    matchers:
+      - type: status
+        status: [200, 404]
+      - type: word
+        words:
+          - "label"
+          - "Label"
+          - "name"
+          - "color"
+        condition: or
+        part: body

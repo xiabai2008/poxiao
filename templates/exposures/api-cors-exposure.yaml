@@ -1,0 +1,31 @@
+id: api-cors-exposure
+info:
+  name: API CORS 配置泄露
+  severity: info
+  description: API CORS 配置信息泄露
+  tags: api,cors,info
+  author: poxiao
+
+http:
+  - method: OPTIONS
+    path:
+      - "{{BaseURL}}/api"
+      - "{{BaseURL}}/api/v1"
+    headers:
+      Origin: "https://example.com"
+      Access-Control-Request-Method: "GET"
+    matchers-condition: and
+    matchers:
+      - type: status
+        status: [200, 204]
+      - type: regex
+        regex:
+          - "Access-Control-Allow-Origin"
+        part: header
+    extractors:
+      - type: kval
+        kval:
+          - "Access-Control-Allow-Origin"
+          - "Access-Control-Allow-Methods"
+          - "Access-Control-Allow-Headers"
+        name: cors_config

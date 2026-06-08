@@ -1,0 +1,22 @@
+id: api-streaming-endpoint
+info:
+  name: Streaming API 端点检测
+  severity: info
+  description: 检测 Streaming API 端点
+  tags: api,streaming,info
+  author: poxiao
+
+http:
+  - method: GET
+    path:
+      - "{{BaseURL}}/api/stream"
+      - "{{BaseURL}}/stream"
+      - "{{BaseURL}}/api/v1/stream"
+    matchers-condition: and
+    matchers:
+      - type: status
+        status: [200]
+      - type: regex
+        regex:
+          - "Transfer-Encoding:\\s*chunked"
+        part: header

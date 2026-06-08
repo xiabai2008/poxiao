@@ -1,0 +1,22 @@
+id: web-cache-poisoning
+info:
+  name: Web 缓存投毒检测
+  severity: high
+  description: 检测 Web 缓存投毒漏洞
+  tags: cache,poisoning,high
+  author: poxiao
+
+http:
+  - method: GET
+    path:
+      - "{{BaseURL}}/?cb={{randstr}}"
+    headers:
+      X-Forwarded-Host: "evil.com"
+    matchers-condition: and
+    matchers:
+      - type: status
+        status: [200]
+      - type: word
+        words:
+          - "evil.com"
+        part: body

@@ -1,0 +1,37 @@
+id: env-file-exposure
+info:
+  name: .env 环境配置文件泄露
+  severity: high
+  description: .env 文件暴露，可能泄露数据库密码、API Key 等敏感信息
+  tags: env,exposure,config,secrets
+  author: poxiao
+
+http:
+  - method: GET
+    path:
+      - "{{BaseURL}}/.env"
+      - "{{BaseURL}}/.env.local"
+      - "{{BaseURL}}/.env.production"
+      - "{{BaseURL}}/.env.development"
+      - "{{BaseURL}}/.env.bak"
+    matchers-condition: and
+    matchers:
+      - type: status
+        status: [200]
+      - type: word
+        words:
+          - "DB_PASSWORD"
+          - "DB_HOST"
+          - "APP_KEY"
+          - "SECRET_KEY"
+          - "AWS_ACCESS_KEY"
+          - "DATABASE_URL"
+          - "REDIS_HOST"
+          - "MAIL_PASSWORD"
+        condition: or
+        part: body
+    extractors:
+      - type: regex
+        regex:
+          - "(?i)(?:DB_PASSWORD|DB_PASS|MYSQL_PASSWORD|REDIS_PASSWORD|MAIL_PASSWORD|SECRET_KEY|APP_KEY|API_KEY|AWS_SECRET)\\s*=\\s*(.+)"
+        name: leaked_secrets

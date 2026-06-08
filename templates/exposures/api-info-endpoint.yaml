@@ -1,0 +1,30 @@
+id: api-info-endpoint
+info:
+  name: Info API 端点检测
+  severity: info
+  description: 检测 Info API 端点
+  tags: api,info
+  author: poxiao
+
+http:
+  - method: GET
+    path:
+      - "{{BaseURL}}/api/v1/info"
+      - "{{BaseURL}}/api/info"
+      - "{{BaseURL}}/info"
+      - "{{BaseURL}}/api/v1/version"
+      - "{{BaseURL}}/version"
+    matchers-condition: and
+    matchers:
+      - type: status
+        status: [200]
+      - type: word
+        words:
+          - "version"
+          - "Version"
+          - "build"
+          - "Build"
+          - "environment"
+          - "Environment"
+        condition: or
+        part: body

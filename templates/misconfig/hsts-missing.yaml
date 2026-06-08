@@ -1,0 +1,21 @@
+id: hsts-missing
+info:
+  name: HSTS 未启用
+  severity: low
+  description: 未启用 HTTP Strict Transport Security
+  tags: hsts,headers,low
+  author: poxiao
+
+http:
+  - method: GET
+    path:
+      - "{{BaseURL}}/"
+    matchers-condition: and
+    matchers:
+      - type: status
+        status: [200]
+      - type: regex
+        regex:
+          - "Strict-Transport-Security"
+        negative: true
+        part: header

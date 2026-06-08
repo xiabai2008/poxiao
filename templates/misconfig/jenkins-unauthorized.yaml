@@ -1,0 +1,32 @@
+id: jenkins-unauthorized
+info:
+  name: Jenkins 未授权访问
+  severity: critical
+  description: Jenkins 未授权访问，可执行任意构建任务
+  tags: jenkins,unauthorized,ci,critical
+  author: poxiao
+
+http:
+  - method: GET
+    path:
+      - "{{BaseURL}}/api/json"
+      - "{{BaseURL}}/script"
+      - "{{BaseURL}}/manage"
+      - "{{BaseURL}}/asynchPeople/"
+    matchers-condition: and
+    matchers:
+      - type: status
+        status: [200, 403]
+      - type: word
+        words:
+          - "Jenkins"
+          - "X-Jenkins"
+          - "X-Hudson"
+          - "hudson"
+        condition: or
+        part: all
+    extractors:
+      - type: kval
+        kval:
+          - "X-Jenkins"
+        name: jenkins_version

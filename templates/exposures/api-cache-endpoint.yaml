@@ -1,0 +1,26 @@
+id: api-cache-endpoint
+info:
+  name: Cache API 端点检测
+  severity: info
+  description: 检测 Cache API 端点
+  tags: api,cache,info
+  author: poxiao
+
+http:
+  - method: GET
+    path:
+      - "{{BaseURL}}/api/v1/cache"
+      - "{{BaseURL}}/api/cache"
+      - "{{BaseURL}}/cache"
+    matchers-condition: and
+    matchers:
+      - type: status
+        status: [200, 404]
+      - type: word
+        words:
+          - "cache"
+          - "Cache"
+          - "redis"
+          - "memcached"
+        condition: or
+        part: body

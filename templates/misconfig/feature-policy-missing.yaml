@@ -1,0 +1,21 @@
+id: feature-policy-missing
+info:
+  name: Feature-Policy 缺失
+  severity: info
+  description: 未设置 Feature-Policy 响应头 (已弃用，被 Permissions-Policy 替代)
+  tags: feature-policy,headers,info
+  author: poxiao
+
+http:
+  - method: GET
+    path:
+      - "{{BaseURL}}/"
+    matchers-condition: and
+    matchers:
+      - type: status
+        status: [200]
+      - type: regex
+        regex:
+          - "Feature-Policy"
+        negative: true
+        part: header

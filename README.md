@@ -22,6 +22,10 @@
 ```
 poxiao discover   🏢 公司名 → 域名
 poxiao subdomain  🥇霜月 子域名收集（crt.sh + DNS爆破 + 泛解析检测）
+poxiao recon      🔎 被动信息收集（Whois/备案/DNS/证书/IP情报/CDN检测）
+poxiao poc        🧪 POC 模板扫描（207个模板：CVE/未授权/注入/信息泄露）
+poxiao stealth    🥷 反封禁（代理池/UA轮换/限速/WAF检测）
+poxiao util       🔧 编解码工具（Base64/Hex/URL/JWT/MD5/SHA/AES等29种）
 poxiao scan       🔍 主机扫描（技术栈 + 敏感路径 + CVE匹配）
 poxiao verify     🥈惊蛰 漏洞自动验证（10模块 + 评分 + 降噪）
 poxiao monitor    🥉观星 Web 资产监控面板（扫描自动入库）
@@ -58,21 +62,35 @@ poxiao report     📋 SRC 补天格式报告
 
 ```bash
 # 安装
-pip install httpx dnspython flask
+cd 破晓
+pip install -e .
 
-# 子域名收集
-python -m src.cli subdomain example.com
+# 现在可以直接用 poxiao 命令!
+poxiao                              # 显示主 banner
+poxiao recon example.com --quick    # 被动信息收集
+poxiao poc scan example.com         # POC 模板扫描
+poxiao util encode base64 "hello"   # 编解码工具
+poxiao stealth gen-ua -n 10         # 生成随机 UA
+poxiao scan https://example.com     # 主机扫描
+poxiao verify https://example.com   # 漏洞验证
+poxiao subdomain example.com        # 子域名收集
+poxiao monitor stats                # 资产监控统计
+```
 
-# 批量扫描
-python -m src.cli scan data/targets.txt -c 10
+### 三种使用方式
 
-# 漏洞验证
-python -m src.cli verify https://target.com
+```bash
+# 方式一：全局命令 (推荐，安装后直接用)
+poxiao <command>
 
-# 启动监控面板
-python -m src.cli monitor import scan_results/summary_*.json
-python -m src.cli monitor serve
-# → http://localhost:5099
+# 方式二：Python 脚本
+python poxiao.py <command>
+
+# 方式三：Windows 批处理
+poxiao.bat <command>
+
+# 方式四：模块方式 (原始方式)
+python -X utf8 -m src.cli <command>
 ```
 
 ---
@@ -87,6 +105,26 @@ src/
 │   └── sensitive.py    # 敏感路径发现 + CDN 降噪
 ├── collector/          # 🥇 霜月
 │   └── shuangyue.py    # 子域名收集器
+├── recon/              # 🔎 被动信息收集
+│   ├── recon_engine.py # 编排引擎
+│   ├── whois_lookup.py # Whois 查询
+│   ├── icp_query.py    # ICP 备案查询
+│   ├── dns_records.py  # DNS 全量记录
+│   ├── ip_info.py      # IP 情报 (ASN/Shodan/FOFA)
+│   ├── cdn_detect.py   # CDN/WAF 检测 & 真实 IP
+│   └── cert_info.py    # 证书透明度深度分析
+├── poc/                # 🧪 POC 模板引擎
+│   ├── engine.py       # 执行引擎 (并发扫描)
+│   ├── template.py     # 模板数据模型
+│   ├── matcher.py      # 匹配器 (word/status/regex/DSL)
+│   ├── extractor.py    # 提取器 (regex/kval/json)
+│   └── loader.py       # YAML 模板加载器
+├── stealth/            # 🥷 反封禁 & 代理池
+│   ├── stealth_client.py # 隐匿 HTTP 客户端
+│   ├── proxy_pool.py   # 代理池管理 (加载/验证/轮换)
+│   ├── user_agents.py  # UA 池 (Chrome/Firefox/Safari/Edge/Mobile)
+│   ├── rate_limiter.py # 令牌桶限速器 (全局+per-domain)
+│   └── waf_bypass.py   # WAF 绕过技术
 ├── verifier/           # 🥈 惊蛰
 │   └── jingzhe.py      # 漏洞验证引擎
 ├── monitor/            # 🥉 观星
@@ -95,6 +133,13 @@ src/
 ├── target/             # 目标管理
 ├── reporter/           # 报告生成
 └── cve/                # CVE 漏洞库
+
+templates/              # POC 模板库 (207个)
+├── cves/               # CVE 漏洞模板
+├── misconfig/          # 配置错误模板
+├── exposures/          # 信息泄露模板
+├── default-logins/     # 默认口令模板
+└── vulnerabilities/    # 通用漏洞模板
 ```
 
 ---

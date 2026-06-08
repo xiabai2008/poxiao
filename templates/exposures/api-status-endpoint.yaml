@@ -1,0 +1,29 @@
+id: api-status-endpoint
+info:
+  name: Status API 端点检测
+  severity: info
+  description: 检测 Status API 端点
+  tags: api,status,info
+  author: poxiao
+
+http:
+  - method: GET
+    path:
+      - "{{BaseURL}}/api/v1/status"
+      - "{{BaseURL}}/api/status"
+      - "{{BaseURL}}/status"
+      - "{{BaseURL}}/health"
+      - "{{BaseURL}}/healthz"
+    matchers-condition: and
+    matchers:
+      - type: status
+        status: [200]
+      - type: word
+        words:
+          - "status"
+          - "Status"
+          - "healthy"
+          - "ok"
+          - "UP"
+        condition: or
+        part: body

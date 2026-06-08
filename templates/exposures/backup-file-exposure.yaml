@@ -1,0 +1,38 @@
+id: backup-file-exposure
+info:
+  name: 备份文件泄露
+  severity: high
+  description: 常见备份文件暴露，可能泄露源码、数据库等
+  tags: backup,exposure,source-code
+  author: poxiao
+
+http:
+  - method: GET
+    path:
+      - "{{BaseURL}}/backup.zip"
+      - "{{BaseURL}}/backup.tar.gz"
+      - "{{BaseURL}}/backup.sql"
+      - "{{BaseURL}}/db.sql"
+      - "{{BaseURL}}/database.sql"
+      - "{{BaseURL}}/www.zip"
+      - "{{BaseURL}}/wwwroot.zip"
+      - "{{BaseURL}}/web.zip"
+      - "{{BaseURL}}/site.zip"
+      - "{{BaseURL}}/www.tar.gz"
+      - "{{BaseURL}}/1.zip"
+      - "{{BaseURL}}/bak.zip"
+      - "{{BaseURL}}/backup.rar"
+      - "{{BaseURL}}/admin.zip"
+    matchers-condition: and
+    matchers:
+      - type: status
+        status: [200]
+      - type: word
+        words:
+          - "PK"
+          - "application/zip"
+          - "application/octet-stream"
+          - "application/x-rar"
+          - "application/gzip"
+        condition: or
+        part: header

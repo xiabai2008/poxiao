@@ -1,0 +1,26 @@
+id: nacos-unauthorized
+info:
+  name: Nacos 未授权访问
+  severity: high
+  description: Nacos 配置中心未授权访问
+  tags: nacos,unauthorized,springcloud,high
+  author: poxiao
+
+http:
+  - method: GET
+    path:
+      - "{{BaseURL}}/nacos/v1/auth/users?pageNo=1&pageSize=10"
+      - "{{BaseURL}}/nacos/v1/cs/configs?dataId=&group=&tenant=&appName=&pageNo=1&pageSize=10"
+      - "{{BaseURL}}/nacos/"
+    matchers-condition: and
+    matchers:
+      - type: status
+        status: [200]
+      - type: word
+        words:
+          - "nacos"
+          - "totalCount"
+          - "username"
+          - "password"
+        condition: or
+        part: body

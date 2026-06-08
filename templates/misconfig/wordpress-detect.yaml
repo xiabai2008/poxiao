@@ -1,0 +1,31 @@
+id: wordpress-detect
+info:
+  name: WordPress 指纹识别
+  severity: info
+  description: 检测目标是否使用 WordPress CMS
+  tags: wordpress,cms,detect,info
+  author: poxiao
+
+http:
+  - method: GET
+    path:
+      - "{{BaseURL}}/"
+    matchers-condition: or
+    matchers:
+      - type: word
+        words:
+          - "wp-content"
+          - "wp-includes"
+          - "wp-json"
+          - "wordpress"
+        condition: or
+        part: body
+      - type: word
+        words:
+          - "X-Powered-By: WordPress"
+        part: header
+    extractors:
+      - type: regex
+        regex:
+          - "WordPress\\s+([0-9.]+)"
+        name: wordpress_version

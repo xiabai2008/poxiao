@@ -1,0 +1,26 @@
+id: api-video-endpoint
+info:
+  name: Video API 端点检测
+  severity: info
+  description: 检测 Video API 端点
+  tags: api,video,info
+  author: poxiao
+
+http:
+  - method: GET
+    path:
+      - "{{BaseURL}}/api/v1/videos"
+      - "{{BaseURL}}/api/videos"
+      - "{{BaseURL}}/videos"
+    matchers-condition: and
+    matchers:
+      - type: status
+        status: [200, 404]
+      - type: word
+        words:
+          - "video"
+          - "Video"
+          - "url"
+          - "duration"
+        condition: or
+        part: body

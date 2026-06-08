@@ -1,0 +1,25 @@
+id: server-header-exposure
+info:
+  name: Server 响应头泄露
+  severity: info
+  description: Server 响应头泄露服务器软件信息
+  tags: server,headers,info
+  author: poxiao
+
+http:
+  - method: GET
+    path:
+      - "{{BaseURL}}/"
+    matchers-condition: and
+    matchers:
+      - type: status
+        status: [200]
+      - type: regex
+        regex:
+          - "Server:\\s*(?:Apache|nginx|Microsoft-IIS|Tomcat|LiteSpeed|Caddy|OpenResty)"
+        part: header
+    extractors:
+      - type: kval
+        kval:
+          - "Server"
+        name: server_header

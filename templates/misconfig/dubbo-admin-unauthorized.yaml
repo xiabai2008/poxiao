@@ -1,0 +1,25 @@
+id: dubbo-admin-unauthorized
+info:
+  name: Dubbo Admin 未授权访问
+  severity: medium
+  description: Dubbo 管理控制台未授权访问
+  tags: dubbo,unauthorized,rpc,medium
+  author: poxiao
+
+http:
+  - method: GET
+    path:
+      - "{{BaseURL}}/api/dev/orgs"
+      - "{{BaseURL}}/api/services"
+    matchers-condition: and
+    matchers:
+      - type: status
+        status: [200]
+      - type: word
+        words:
+          - "dubbo"
+          - "Dubbo"
+          - "providers"
+          - "consumers"
+        condition: or
+        part: body

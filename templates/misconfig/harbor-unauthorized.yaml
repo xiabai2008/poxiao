@@ -1,0 +1,26 @@
+id: harbor-unauthorized
+info:
+  name: Harbor 镜像仓库未授权访问
+  severity: high
+  description: Harbor 镜像仓库未授权访问
+  tags: harbor,unauthorized,registry,high
+  author: poxiao
+
+http:
+  - method: GET
+    path:
+      - "{{BaseURL}}/api/v2.0/projects"
+      - "{{BaseURL}}/api/systeminfo"
+      - "{{BaseURL}}/api/v2.0/users"
+    matchers-condition: and
+    matchers:
+      - type: status
+        status: [200]
+      - type: word
+        words:
+          - "\"project_id\""
+          - "\"harbor_version\""
+          - "\"total\""
+          - "\"user_id\""
+        condition: or
+        part: body

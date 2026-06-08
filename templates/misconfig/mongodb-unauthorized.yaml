@@ -1,0 +1,23 @@
+id: mongodb-unauthorized
+info:
+  name: MongoDB 未授权访问
+  severity: critical
+  description: MongoDB 未设置认证，可未授权访问
+  tags: mongodb,unauthorized,database,critical
+  author: poxiao
+
+http:
+  - method: GET
+    path:
+      - "{{BaseURL}}/"
+    matchers-condition: and
+    matchers:
+      - type: status
+        status: [200]
+      - type: word
+        words:
+          - "It looks like you are trying to access MongoDB over HTTP"
+          - "mongod"
+          - "MongoDB"
+        condition: or
+        part: body

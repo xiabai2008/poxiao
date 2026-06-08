@@ -1,0 +1,25 @@
+id: clickjacking
+info:
+  name: 点击劫持漏洞
+  severity: low
+  description: 网站未设置 X-Frame-Options，可能存在点击劫持风险
+  tags: clickjacking,headers,low
+  author: poxiao
+
+http:
+  - method: GET
+    path:
+      - "{{BaseURL}}/"
+    matchers-condition: and
+    matchers:
+      - type: status
+        status: [200]
+      - type: regex
+        regex:
+          - "X-Frame-Options"
+        negative: true
+        part: header
+      - type: word
+        words:
+          - "text/html"
+        part: header

@@ -1,0 +1,27 @@
+id: api-env-endpoint
+info:
+  name: Environment API 端点检测
+  severity: info
+  description: 检测 Environment API 端点
+  tags: api,env,info
+  author: poxiao
+
+http:
+  - method: GET
+    path:
+      - "{{BaseURL}}/api/v1/env"
+      - "{{BaseURL}}/api/env"
+      - "{{BaseURL}}/env"
+    matchers-condition: and
+    matchers:
+      - type: status
+        status: [200, 404]
+      - type: word
+        words:
+          - "environment"
+          - "Environment"
+          - "ENV"
+          - "production"
+          - "development"
+        condition: or
+        part: body

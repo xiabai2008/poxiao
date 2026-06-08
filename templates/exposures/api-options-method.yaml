@@ -1,0 +1,21 @@
+id: api-options-method
+info:
+  name: API OPTIONS 方法支持
+  severity: info
+  description: 检测 API OPTIONS 方法支持
+  tags: api,options,info
+  author: poxiao
+
+http:
+  - method: OPTIONS
+    path:
+      - "{{BaseURL}}/api/v1"
+      - "{{BaseURL}}/api"
+    matchers-condition: and
+    matchers:
+      - type: status
+        status: [200, 204]
+      - type: regex
+        regex:
+          - "Allow:\\s*(?:GET|POST|PUT|DELETE|PATCH|OPTIONS|HEAD)"
+        part: header

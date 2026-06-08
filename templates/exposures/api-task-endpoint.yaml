@@ -1,0 +1,26 @@
+id: api-task-endpoint
+info:
+  name: Task API 端点检测
+  severity: info
+  description: 检测 Task API 端点
+  tags: api,task,info
+  author: poxiao
+
+http:
+  - method: GET
+    path:
+      - "{{BaseURL}}/api/v1/tasks"
+      - "{{BaseURL}}/api/tasks"
+      - "{{BaseURL}}/tasks"
+    matchers-condition: and
+    matchers:
+      - type: status
+        status: [200, 404]
+      - type: word
+        words:
+          - "task"
+          - "Task"
+          - "status"
+          - "progress"
+        condition: or
+        part: body

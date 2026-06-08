@@ -1,0 +1,33 @@
+id: docker-api-unauthorized
+info:
+  name: Docker API 未授权访问
+  severity: critical
+  description: Docker Remote API 未授权访问，可导致容器逃逸
+  tags: docker,unauthorized,critical
+  author: poxiao
+
+http:
+  - method: GET
+    path:
+      - "{{BaseURL}}/version"
+      - "{{BaseURL}}/info"
+      - "{{BaseURL}}/containers/json"
+    matchers-condition: and
+    matchers:
+      - type: status
+        status: [200]
+      - type: word
+        words:
+          - "\"ApiVersion\""
+          - "\"Containers\""
+          - "\"ContainersPaused\""
+          - "\"OSType\""
+          - "\"Architecture\""
+        condition: or
+        part: body
+    extractors:
+      - type: json
+        json:
+          - "ApiVersion"
+          - "Version"
+        name: docker_version

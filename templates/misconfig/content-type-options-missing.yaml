@@ -1,0 +1,21 @@
+id: content-type-options-missing
+info:
+  name: X-Content-Type-Options 缺失
+  severity: low
+  description: 未设置 X-Content-Type-Options 响应头
+  tags: headers,mime,low
+  author: poxiao
+
+http:
+  - method: GET
+    path:
+      - "{{BaseURL}}/"
+    matchers-condition: and
+    matchers:
+      - type: status
+        status: [200]
+      - type: regex
+        regex:
+          - "X-Content-Type-Options"
+        negative: true
+        part: header

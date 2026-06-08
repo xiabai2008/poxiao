@@ -1,0 +1,28 @@
+id: api-pagination-exposure
+info:
+  name: API 分页信息泄露
+  severity: info
+  description: API 分页信息泄露
+  tags: api,pagination,headers,info
+  author: poxiao
+
+http:
+  - method: GET
+    path:
+      - "{{BaseURL}}/api/v1?page=1"
+      - "{{BaseURL}}/api?page=1"
+    matchers-condition: and
+    matchers:
+      - type: status
+        status: [200]
+      - type: regex
+        regex:
+          - "X-Total-Count:\\s*[0-9]+"
+        part: header
+    extractors:
+      - type: kval
+        kval:
+          - "X-Total-Count"
+          - "X-Page"
+          - "X-Per-Page"
+        name: pagination_info

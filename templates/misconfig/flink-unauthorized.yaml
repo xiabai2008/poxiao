@@ -1,0 +1,26 @@
+id: apache-flink-unauthorized
+info:
+  name: Apache Flink 未授权访问
+  severity: high
+  description: Apache Flink Dashboard 未授权访问
+  tags: flink,unauthorized,bigdata,high
+  author: poxiao
+
+http:
+  - method: GET
+    path:
+      - "{{BaseURL}}/overview"
+      - "{{BaseURL}}/jobs"
+      - "{{BaseURL}}/taskmanagers"
+    matchers-condition: and
+    matchers:
+      - type: status
+        status: [200]
+      - type: word
+        words:
+          - "flink"
+          - "Flink"
+          - "taskmanagers"
+          - "jobs-overview"
+        condition: or
+        part: body

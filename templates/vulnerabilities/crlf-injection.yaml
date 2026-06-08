@@ -1,0 +1,19 @@
+id: crlf-injection
+info:
+  name: CRLF 注入
+  severity: medium
+  description: HTTP 响应头拆分漏洞，可注入响应头或 XSS
+  tags: crlf,injection,medium
+  author: poxiao
+
+http:
+  - method: GET
+    path:
+      - "{{BaseURL}}/%0d%0aSet-Cookie:crlf=injection"
+      - "{{BaseURL}}/?q=%0d%0aSet-Cookie:crlf=injection"
+    matchers-condition: and
+    matchers:
+      - type: regex
+        regex:
+          - "Set-Cookie:\\s*crlf=injection"
+        part: header

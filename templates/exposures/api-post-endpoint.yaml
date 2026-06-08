@@ -1,0 +1,27 @@
+id: api-post-endpoint
+info:
+  name: Post API 端点检测
+  severity: info
+  description: 检测 Post API 端点
+  tags: api,post,info
+  author: poxiao
+
+http:
+  - method: GET
+    path:
+      - "{{BaseURL}}/api/v1/posts"
+      - "{{BaseURL}}/api/posts"
+      - "{{BaseURL}}/posts"
+    matchers-condition: and
+    matchers:
+      - type: status
+        status: [200, 404]
+      - type: word
+        words:
+          - "post"
+          - "Post"
+          - "title"
+          - "body"
+          - "author"
+        condition: or
+        part: body

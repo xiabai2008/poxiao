@@ -1,0 +1,21 @@
+id: x-xss-protection-missing
+info:
+  name: X-XSS-Protection 缺失
+  severity: low
+  description: 未设置 X-XSS-Protection 响应头
+  tags: xss,headers,low
+  author: poxiao
+
+http:
+  - method: GET
+    path:
+      - "{{BaseURL}}/"
+    matchers-condition: and
+    matchers:
+      - type: status
+        status: [200]
+      - type: regex
+        regex:
+          - "X-XSS-Protection"
+        negative: true
+        part: header

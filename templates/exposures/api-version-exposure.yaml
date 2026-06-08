@@ -1,0 +1,26 @@
+id: api-version-exposure
+info:
+  name: API 版本信息泄露
+  severity: info
+  description: API 版本信息泄露
+  tags: api,version,headers,info
+  author: poxiao
+
+http:
+  - method: GET
+    path:
+      - "{{BaseURL}}/api"
+      - "{{BaseURL}}/api/v1"
+    matchers-condition: and
+    matchers:
+      - type: status
+        status: [200]
+      - type: regex
+        regex:
+          - "X-API-Version:\\s*[0-9.]+"
+        part: header
+    extractors:
+      - type: kval
+        kval:
+          - "X-API-Version"
+        name: api_version

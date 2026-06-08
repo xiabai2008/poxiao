@@ -1,0 +1,25 @@
+id: x-powered-by-exposure
+info:
+  name: X-Powered-By 响应头泄露
+  severity: info
+  description: X-Powered-By 响应头泄露后端技术栈
+  tags: x-powered-by,headers,info
+  author: poxiao
+
+http:
+  - method: GET
+    path:
+      - "{{BaseURL}}/"
+    matchers-condition: and
+    matchers:
+      - type: status
+        status: [200]
+      - type: regex
+        regex:
+          - "X-Powered-By:\\s*(?:PHP|ASP\\.NET|Express|Next\\.js|Nuxt\\.js)"
+        part: header
+    extractors:
+      - type: kval
+        kval:
+          - "X-Powered-By"
+        name: powered_by

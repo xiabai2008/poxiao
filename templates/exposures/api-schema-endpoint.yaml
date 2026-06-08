@@ -1,0 +1,28 @@
+id: api-schema-endpoint
+info:
+  name: Schema API 端点检测
+  severity: info
+  description: 检测 Schema API 端点
+  tags: api,schema,info
+  author: poxiao
+
+http:
+  - method: GET
+    path:
+      - "{{BaseURL}}/api/v1/schema"
+      - "{{BaseURL}}/api/schema"
+      - "{{BaseURL}}/schema"
+      - "{{BaseURL}}/api/v1/schemas"
+    matchers-condition: and
+    matchers:
+      - type: status
+        status: [200, 404]
+      - type: word
+        words:
+          - "schema"
+          - "Schema"
+          - "type"
+          - "properties"
+          - "definitions"
+        condition: or
+        part: body

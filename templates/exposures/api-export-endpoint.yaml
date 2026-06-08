@@ -1,0 +1,29 @@
+id: api-export-endpoint
+info:
+  name: Export API 端点检测
+  severity: info
+  description: 检测 Export API 端点
+  tags: api,export,info
+  author: poxiao
+
+http:
+  - method: GET
+    path:
+      - "{{BaseURL}}/api/v1/export"
+      - "{{BaseURL}}/api/export"
+      - "{{BaseURL}}/export"
+      - "{{BaseURL}}/api/v1/reports/export"
+    matchers-condition: and
+    matchers:
+      - type: status
+        status: [200, 404]
+      - type: word
+        words:
+          - "export"
+          - "Export"
+          - "download"
+          - "csv"
+          - "excel"
+          - "pdf"
+        condition: or
+        part: all

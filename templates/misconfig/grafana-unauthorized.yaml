@@ -1,0 +1,32 @@
+id: grafana-unauthorized
+info:
+  name: Grafana 未授权访问
+  severity: high
+  description: Grafana 监控面板未授权访问
+  tags: grafana,unauthorized,monitor,high
+  author: poxiao
+
+http:
+  - method: GET
+    path:
+      - "{{BaseURL}}/api/org"
+      - "{{BaseURL}}/api/datasources"
+      - "{{BaseURL}}/api/dashboards/home"
+      - "{{BaseURL}}/login"
+    matchers-condition: and
+    matchers:
+      - type: status
+        status: [200]
+      - type: word
+        words:
+          - "grafana"
+          - "Grafana"
+          - "\"orgName\""
+          - "\"datasources\""
+        condition: or
+        part: body
+    extractors:
+      - type: regex
+        regex:
+          - "grafana[_-]?version[\"':\\s]+([0-9.]+)"
+        name: grafana_version

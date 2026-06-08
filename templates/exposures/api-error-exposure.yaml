@@ -1,0 +1,26 @@
+id: api-error-exposure
+info:
+  name: API 错误信息泄露
+  severity: info
+  description: API 错误信息泄露内部实现细节
+  tags: api,error,info
+  author: poxiao
+
+http:
+  - method: GET
+    path:
+      - "{{BaseURL}}/api/v1/nonexistent"
+      - "{{BaseURL}}/api/nonexistent"
+    matchers-condition: and
+    matchers:
+      - type: status
+        status: [400, 404, 500]
+      - type: word
+        words:
+          - "error"
+          - "message"
+          - "detail"
+          - "stack"
+          - "trace"
+        condition: or
+        part: body

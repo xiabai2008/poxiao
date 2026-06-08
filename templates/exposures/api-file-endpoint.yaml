@@ -1,0 +1,27 @@
+id: api-file-endpoint
+info:
+  name: File API 端点检测
+  severity: info
+  description: 检测 File API 端点
+  tags: api,file,info
+  author: poxiao
+
+http:
+  - method: GET
+    path:
+      - "{{BaseURL}}/api/v1/files"
+      - "{{BaseURL}}/api/files"
+      - "{{BaseURL}}/files"
+    matchers-condition: and
+    matchers:
+      - type: status
+        status: [200, 404]
+      - type: word
+        words:
+          - "file"
+          - "File"
+          - "name"
+          - "size"
+          - "type"
+        condition: or
+        part: body

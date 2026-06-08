@@ -1,0 +1,27 @@
+id: x-debug-token-exposure
+info:
+  name: X-Debug-Token 泄露
+  severity: medium
+  description: Symfony 调试令牌泄露
+  tags: symfony,debug,token,medium
+  author: poxiao
+
+http:
+  - method: GET
+    path:
+      - "{{BaseURL}}/"
+      - "{{BaseURL}}/_profiler"
+    matchers-condition: and
+    matchers:
+      - type: status
+        status: [200]
+      - type: regex
+        regex:
+          - "X-Debug-Token:\\s*[a-zA-Z0-9]+"
+        part: header
+    extractors:
+      - type: kval
+        kval:
+          - "X-Debug-Token"
+          - "X-Debug-Token-Link"
+        name: debug_token

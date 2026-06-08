@@ -1,0 +1,27 @@
+id: api-media-endpoint
+info:
+  name: Media API 端点检测
+  severity: info
+  description: 检测 Media API 端点
+  tags: api,media,info
+  author: poxiao
+
+http:
+  - method: GET
+    path:
+      - "{{BaseURL}}/api/v1/media"
+      - "{{BaseURL}}/api/media"
+      - "{{BaseURL}}/media"
+    matchers-condition: and
+    matchers:
+      - type: status
+        status: [200, 404]
+      - type: word
+        words:
+          - "media"
+          - "Media"
+          - "type"
+          - "url"
+          - "filename"
+        condition: or
+        part: body

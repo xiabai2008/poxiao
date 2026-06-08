@@ -1,0 +1,26 @@
+id: api-audio-endpoint
+info:
+  name: Audio API 端点检测
+  severity: info
+  description: 检测 Audio API 端点
+  tags: api,audio,info
+  author: poxiao
+
+http:
+  - method: GET
+    path:
+      - "{{BaseURL}}/api/v1/audio"
+      - "{{BaseURL}}/api/audio"
+      - "{{BaseURL}}/audio"
+    matchers-condition: and
+    matchers:
+      - type: status
+        status: [200, 404]
+      - type: word
+        words:
+          - "audio"
+          - "Audio"
+          - "url"
+          - "duration"
+        condition: or
+        part: body

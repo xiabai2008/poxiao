@@ -1,0 +1,28 @@
+id: api-queue-endpoint
+info:
+  name: Queue API 端点检测
+  severity: info
+  description: 检测 Queue API 端点
+  tags: api,queue,info
+  author: poxiao
+
+http:
+  - method: GET
+    path:
+      - "{{BaseURL}}/api/v1/queue"
+      - "{{BaseURL}}/api/queue"
+      - "{{BaseURL}}/queue"
+      - "{{BaseURL}}/api/v1/queues"
+    matchers-condition: and
+    matchers:
+      - type: status
+        status: [200, 404]
+      - type: word
+        words:
+          - "queue"
+          - "Queue"
+          - "jobs"
+          - "pending"
+          - "workers"
+        condition: or
+        part: body

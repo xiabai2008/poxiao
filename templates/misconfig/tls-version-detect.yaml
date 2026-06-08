@@ -1,0 +1,25 @@
+id: tls-version-detect
+info:
+  name: TLS 版本检测
+  severity: info
+  description: 检测目标支持的 TLS 版本
+  tags: tls,ssl,info
+  author: poxiao
+
+http:
+  - method: GET
+    path:
+      - "{{BaseURL}}/"
+    matchers-condition: and
+    matchers:
+      - type: status
+        status: [200]
+      - type: regex
+        regex:
+          - "TLSv1\\.[0-3]"
+        part: header
+    extractors:
+      - type: kval
+        kval:
+          - "Strict-Transport-Security"
+        name: hsts

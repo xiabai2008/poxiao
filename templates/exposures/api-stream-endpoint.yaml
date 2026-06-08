@@ -1,0 +1,26 @@
+id: api-stream-endpoint
+info:
+  name: Stream API 端点检测
+  severity: info
+  description: 检测 Stream API 端点
+  tags: api,stream,info
+  author: poxiao
+
+http:
+  - method: GET
+    path:
+      - "{{BaseURL}}/api/v1/streams"
+      - "{{BaseURL}}/api/streams"
+      - "{{BaseURL}}/streams"
+    matchers-condition: and
+    matchers:
+      - type: status
+        status: [200, 404]
+      - type: word
+        words:
+          - "stream"
+          - "Stream"
+          - "data"
+          - "events"
+        condition: or
+        part: body

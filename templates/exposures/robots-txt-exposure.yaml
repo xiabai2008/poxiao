@@ -1,0 +1,28 @@
+id: robots-txt-exposure
+info:
+  name: robots.txt 信息泄露
+  severity: info
+  description: robots.txt 泄露敏感路径和目录结构
+  tags: robots,exposure,info
+  author: poxiao
+
+http:
+  - method: GET
+    path:
+      - "{{BaseURL}}/robots.txt"
+    matchers-condition: and
+    matchers:
+      - type: status
+        status: [200]
+      - type: word
+        words:
+          - "User-agent"
+          - "Disallow"
+          - "Sitemap"
+        condition: or
+        part: body
+    extractors:
+      - type: regex
+        regex:
+          - "Disallow:\\s*(.+)"
+        name: disallowed_paths

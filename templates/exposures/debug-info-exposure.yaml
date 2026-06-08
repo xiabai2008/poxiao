@@ -1,0 +1,35 @@
+id: information-disclosure-debug
+info:
+  name: 调试信息泄露
+  severity: medium
+  description: 生产环境泄露调试信息和错误详情
+  tags: debug,exposure,medium
+  author: poxiao
+
+http:
+  - method: GET
+    path:
+      - "{{BaseURL}}/nonexistent_path_to_trigger_error"
+    matchers-condition: or
+    matchers:
+      - type: word
+        words:
+          - "Stack trace"
+          - "Stack Trace"
+          - "Traceback (most recent call last)"
+          - "at org."
+          - "at com."
+          - "at java."
+          - "PHP Fatal error"
+          - "PHP Warning"
+          - "PHP Notice"
+          - "Microsoft .NET"
+          - "Server Error in '/' Application"
+          - "Debugging Information"
+          - "Source File"
+          - "Line Number"
+          - "SQLSTATE"
+          - "PDOException"
+          - "MongoError"
+        condition: or
+        part: body

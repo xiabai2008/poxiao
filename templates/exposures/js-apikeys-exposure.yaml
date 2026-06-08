@@ -1,0 +1,33 @@
+id: sensitive-js-apikeys
+info:
+  name: JavaScript 文件中的 API Key 泄露
+  severity: medium
+  description: 从 JavaScript 文件中提取 API Key、Secret 等敏感信息
+  tags: js,apikeys,exposure,medium
+  author: poxiao
+
+http:
+  - method: GET
+    path:
+      - "{{BaseURL}}/js/app.js"
+      - "{{BaseURL}}/js/main.js"
+      - "{{BaseURL}}/static/js/app.js"
+      - "{{BaseURL}}/assets/js/app.js"
+      - "{{BaseURL}}/dist/js/app.js"
+      - "{{BaseURL}}/build/static/js/main.js"
+    matchers-condition: and
+    matchers:
+      - type: status
+        status: [200]
+      - type: regex
+        regex:
+          - "(?:api[_-]?key|apikey|secret[_-]?key|access[_-]?key|token|auth[_-]?token)\\s*[:=]\\s*['\"]([A-Za-z0-9_\\-]{20,})['\"]"
+          - "(?:AWS_ACCESS_KEY_ID|AWS_SECRET_ACCESS_KEY|ALICLOUD_ACCESS_KEY)\\s*[:=]\\s*['\"]([A-Za-z0-9]{20,})['\"]"
+          - "(?:firebase|gapi)\\.init\\s*\\(\\s*\\{[^}]*apiKey\\s*:\\s*['\"]([A-Za-z0-9_\\-]{20,})['\"]"
+        condition: or
+        part: body
+    extractors:
+      - type: regex
+        regex:
+          - "(?:api[_-]?key|apikey|secret[_-]?key|access[_-]?key|token)\\s*[:=]\\s*['\"]([A-Za-z0-9_\\-]{20,})['\"]"
+        name: leaked_keys

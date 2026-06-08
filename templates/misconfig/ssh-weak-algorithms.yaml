@@ -1,0 +1,21 @@
+id: ssh-weak-algorithms
+info:
+  name: SSH 弱加密算法
+  severity: medium
+  description: SSH 服务支持弱加密算法
+  tags: ssh,weak-crypto,medium
+  author: poxiao
+
+tcp:
+  - host:
+      - "{{Hostname}}"
+    port: 22
+    matchers-condition: and
+    matchers:
+      - type: word
+        words:
+          - "SSH"
+          - "ssh"
+          - "OpenSSH"
+        condition: or
+        part: body

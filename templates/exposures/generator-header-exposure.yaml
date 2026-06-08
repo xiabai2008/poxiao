@@ -1,0 +1,25 @@
+id: powered-by-header-exposure
+info:
+  name: X-Generator 响应头泄露
+  severity: info
+  description: X-Generator 响应头泄露网站生成器信息
+  tags: generator,headers,info
+  author: poxiao
+
+http:
+  - method: GET
+    path:
+      - "{{BaseURL}}/"
+    matchers-condition: and
+    matchers:
+      - type: status
+        status: [200]
+      - type: regex
+        regex:
+          - "X-Generator:\\s*.+"
+        part: header
+    extractors:
+      - type: kval
+        kval:
+          - "X-Generator"
+        name: generator

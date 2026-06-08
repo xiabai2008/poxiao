@@ -1,0 +1,27 @@
+id: api-article-endpoint
+info:
+  name: Article API 端点检测
+  severity: info
+  description: 检测 Article API 端点
+  tags: api,article,info
+  author: poxiao
+
+http:
+  - method: GET
+    path:
+      - "{{BaseURL}}/api/v1/articles"
+      - "{{BaseURL}}/api/articles"
+      - "{{BaseURL}}/articles"
+    matchers-condition: and
+    matchers:
+      - type: status
+        status: [200, 404]
+      - type: word
+        words:
+          - "article"
+          - "Article"
+          - "title"
+          - "content"
+          - "author"
+        condition: or
+        part: body

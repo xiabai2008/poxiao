@@ -1,6 +1,25 @@
-# 核心依赖
+# 破晓 (PoXiao) 依赖
+
+# 核心 HTTP 客户端
 httpx>=0.27.0
 httpx-sse>=0.4.0
+
+# HTML 解析
 beautifulsoup4>=4.12.0
 lxml>=5.1.0
+
+# YAML 模板
 pyyaml>=6.0
+
+# 观星 - 资产监控 Web 仪表盘
+flask>=3.0.0
+
+# 霜月 - 子域名收集 DNS 解析
+dnspython>=2.6.0
+
+# Whois 查询
+python-whois>=0.9.0
+
+# 开发依赖 (可选)
+# pytest>=8.0
+# pytest-asyncio>=0.24

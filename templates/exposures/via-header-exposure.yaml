@@ -1,0 +1,25 @@
+id: via-header-exposure
+info:
+  name: Via 响应头泄露
+  severity: info
+  description: Via 响应头泄露代理/网关信息
+  tags: via,proxy,headers,info
+  author: poxiao
+
+http:
+  - method: GET
+    path:
+      - "{{BaseURL}}/"
+    matchers-condition: and
+    matchers:
+      - type: status
+        status: [200]
+      - type: regex
+        regex:
+          - "Via:\\s*.+"
+        part: header
+    extractors:
+      - type: kval
+        kval:
+          - "Via"
+        name: via_header

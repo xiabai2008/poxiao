@@ -1,0 +1,26 @@
+id: api-category-endpoint
+info:
+  name: Category API 端点检测
+  severity: info
+  description: 检测 Category API 端点
+  tags: api,category,info
+  author: poxiao
+
+http:
+  - method: GET
+    path:
+      - "{{BaseURL}}/api/v1/categories"
+      - "{{BaseURL}}/api/categories"
+      - "{{BaseURL}}/categories"
+    matchers-condition: and
+    matchers:
+      - type: status
+        status: [200, 404]
+      - type: word
+        words:
+          - "category"
+          - "Category"
+          - "name"
+          - "slug"
+        condition: or
+        part: body

@@ -1,0 +1,35 @@
+id: elasticsearch-unauthorized
+info:
+  name: Elasticsearch 未授权访问
+  severity: critical
+  description: Elasticsearch 未授权访问，可泄露敏感数据
+  tags: elasticsearch,unauthorized,database,critical
+  author: poxiao
+
+http:
+  - method: GET
+    path:
+      - "{{BaseURL}}/"
+      - "{{BaseURL}}/_cat/indices"
+      - "{{BaseURL}}/_cat/health"
+      - "{{BaseURL}}/_cluster/health"
+    matchers-condition: and
+    matchers:
+      - type: status
+        status: [200]
+      - type: word
+        words:
+          - "\"cluster_name\""
+          - "\"status\":\"green\""
+          - "\"status\":\"yellow\""
+          - "\"status\":\"red\""
+          - "\"number_of_nodes\""
+          - "elasticsearch"
+        condition: or
+        part: body
+    extractors:
+      - type: json
+        json:
+          - "cluster_name"
+          - "version.number"
+        name: es_info

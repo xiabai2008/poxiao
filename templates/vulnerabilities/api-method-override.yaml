@@ -1,0 +1,26 @@
+id: api-method-override
+info:
+  name: API 方法覆盖
+  severity: medium
+  description: 检测 API 方法覆盖漏洞
+  tags: api,method-override,medium
+  author: poxiao
+
+http:
+  - method: GET
+    path:
+      - "{{BaseURL}}/api/v1/users?_method=DELETE"
+      - "{{BaseURL}}/api/v1/users?_method=PUT"
+    headers:
+      X-HTTP-Method-Override: "DELETE"
+    matchers-condition: and
+    matchers:
+      - type: status
+        status: [200, 204, 405]
+      - type: word
+        words:
+          - "deleted"
+          - "updated"
+          - "success"
+        condition: or
+        part: body

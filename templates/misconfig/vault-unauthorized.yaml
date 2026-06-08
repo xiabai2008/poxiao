@@ -1,0 +1,27 @@
+id: vault-unauthorized
+info:
+  name: HashiCorp Vault 未授权访问
+  severity: critical
+  description: HashiCorp Vault 密钥管理未授权访问
+  tags: vault,unauthorized,secrets,critical
+  author: poxiao
+
+http:
+  - method: GET
+    path:
+      - "{{BaseURL}}/v1/sys/health"
+      - "{{BaseURL}}/v1/sys/mounts"
+      - "{{BaseURL}}/v1/secret/data"
+    matchers-condition: and
+    matchers:
+      - type: status
+        status: [200, 429, 472, 473, 501, 503]
+      - type: word
+        words:
+          - "vault"
+          - "Vault"
+          - "initialized"
+          - "sealed"
+          - "cluster_name"
+        condition: or
+        part: body

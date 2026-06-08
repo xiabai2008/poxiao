@@ -1,0 +1,26 @@
+id: api-conversation-endpoint
+info:
+  name: Conversation API 端点检测
+  severity: info
+  description: 检测 Conversation API 端点
+  tags: api,conversation,info
+  author: poxiao
+
+http:
+  - method: GET
+    path:
+      - "{{BaseURL}}/api/v1/conversations"
+      - "{{BaseURL}}/api/conversations"
+      - "{{BaseURL}}/conversations"
+    matchers-condition: and
+    matchers:
+      - type: status
+        status: [200, 404]
+      - type: word
+        words:
+          - "conversation"
+          - "Conversation"
+          - "participants"
+          - "messages"
+        condition: or
+        part: body

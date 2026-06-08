@@ -1,0 +1,26 @@
+id: wordpress-xmlrpc
+info:
+  name: WordPress XMLRPC 接口暴露
+  severity: medium
+  description: WordPress XMLRPC.php 接口暴露，可用于暴力破解和 DDoS
+  tags: wordpress,xmlrpc,medium
+  author: poxiao
+
+http:
+  - method: POST
+    path:
+      - "{{BaseURL}}/xmlrpc.php"
+    headers:
+      Content-Type: "text/xml"
+    body: "<?xml version='1.0'?><methodCall><methodName>system.listMethods</methodName><params></params></methodCall>"
+    matchers-condition: and
+    matchers:
+      - type: status
+        status: [200]
+      - type: word
+        words:
+          - "methodResponse"
+          - "listMethods"
+          - "system.listMethods"
+        condition: or
+        part: body

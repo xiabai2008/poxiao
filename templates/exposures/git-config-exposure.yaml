@@ -1,0 +1,30 @@
+id: git-config-exposure
+info:
+  name: Git 配置文件泄露
+  severity: high
+  description: Git 仓库配置文件暴露，可能导致源码泄露
+  tags: git,exposure,source-code
+  author: poxiao
+
+http:
+  - method: GET
+    path:
+      - "{{BaseURL}}/.git/config"
+      - "{{BaseURL}}/.git/HEAD"
+      - "{{BaseURL}}/.gitignore"
+    matchers-condition: and
+    matchers:
+      - type: status
+        status: [200]
+      - type: word
+        words:
+          - "[core]"
+          - "repositoryformatversion"
+          - "ref: refs/heads/"
+        condition: or
+        part: body
+    extractors:
+      - type: regex
+        regex:
+          - "url\\s*=\\s*(.+)"
+        name: git_remote

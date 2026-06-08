@@ -1,0 +1,22 @@
+id: clientaccesspolicy-xml
+info:
+  name: clientaccesspolicy.xml 泄露
+  severity: info
+  description: Silverlight 跨域策略文件泄露
+  tags: silverlight,crossdomain,info
+  author: poxiao
+
+http:
+  - method: GET
+    path:
+      - "{{BaseURL}}/clientaccesspolicy.xml"
+    matchers-condition: and
+    matchers:
+      - type: status
+        status: [200]
+      - type: word
+        words:
+          - "clientaccesspolicy"
+          - "allow-from"
+        condition: or
+        part: body

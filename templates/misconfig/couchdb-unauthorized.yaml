@@ -1,0 +1,26 @@
+id: couchdb-unauthorized
+info:
+  name: CouchDB 未授权访问
+  severity: high
+  description: CouchDB 未授权访问
+  tags: couchdb,unauthorized,database,high
+  author: poxiao
+
+http:
+  - method: GET
+    path:
+      - "{{BaseURL}}/"
+      - "{{BaseURL}}/_all_dbs"
+      - "{{BaseURL}}/_users/_all_docs"
+    matchers-condition: and
+    matchers:
+      - type: status
+        status: [200]
+      - type: word
+        words:
+          - "couchdb"
+          - "CouchDB"
+          - "\"db_name\""
+          - "Welcome"
+        condition: or
+        part: body

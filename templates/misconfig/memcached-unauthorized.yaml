@@ -1,0 +1,22 @@
+id: memcached-unauthorized
+info:
+  name: Memcached 未授权访问
+  severity: high
+  description: Memcached 未设置认证，可未授权访问
+  tags: memcached,unauthorized,cache,high
+  author: poxiao
+
+http:
+  - method: GET
+    path:
+      - "{{BaseURL}}/"
+    matchers-condition: and
+    matchers:
+      - type: word
+        words:
+          - "STAT pid"
+          - "STAT uptime"
+          - "STAT version"
+          - "MEMCACHE"
+        condition: or
+        part: body

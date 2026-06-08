@@ -1,0 +1,28 @@
+id: api-build-endpoint
+info:
+  name: Build API 端点检测
+  severity: info
+  description: 检测 Build API 端点
+  tags: api,build,info
+  author: poxiao
+
+http:
+  - method: GET
+    path:
+      - "{{BaseURL}}/api/v1/build"
+      - "{{BaseURL}}/api/build"
+      - "{{BaseURL}}/build"
+      - "{{BaseURL}}/api/v1/builds"
+    matchers-condition: and
+    matchers:
+      - type: status
+        status: [200, 404]
+      - type: word
+        words:
+          - "build"
+          - "Build"
+          - "version"
+          - "commit"
+          - "hash"
+        condition: or
+        part: body

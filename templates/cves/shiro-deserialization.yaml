@@ -1,0 +1,25 @@
+id: shiro-deserialization
+info:
+  name: Apache Shiro 反序列化
+  severity: critical
+  description: Apache Shiro RememberMe 反序列化漏洞 (默认密钥)
+  tags: shiro,deserialization,rce,java,critical
+  author: poxiao
+
+http:
+  - method: GET
+    path:
+      - "{{BaseURL}}/"
+    headers:
+      Cookie: "rememberMe=deleteMe"
+    matchers-condition: and
+    matchers:
+      - type: regex
+        regex:
+          - "rememberMe=deleteMe"
+        part: header
+    extractors:
+      - type: kval
+        kval:
+          - "Set-Cookie"
+        name: shiro_cookie

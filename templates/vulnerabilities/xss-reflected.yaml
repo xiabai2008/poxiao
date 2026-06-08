@@ -1,0 +1,23 @@
+id: xss-reflected
+info:
+  name: 反射型 XSS 检测
+  severity: medium
+  description: 检测反射型跨站脚本漏洞
+  tags: xss,injection,medium
+  author: poxiao
+
+http:
+  - method: GET
+    path:
+      - "{{BaseURL}}/?q=<script>alert('{{randstr}}')</script>"
+      - "{{BaseURL}}/?search=<script>alert('{{randstr}}')</script>"
+      - "{{BaseURL}}/?keyword=<script>alert('{{randstr}}')</script>"
+      - "{{BaseURL}}/?s=<script>alert('{{randstr}}')</script>"
+    matchers-condition: and
+    matchers:
+      - type: word
+        words:
+          - "<script>alert('{{randstr}}')</script>"
+          - "<script>alert(\"{{randstr}}\")</script>"
+        condition: or
+        part: body

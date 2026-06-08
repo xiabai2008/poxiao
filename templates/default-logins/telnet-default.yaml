@@ -1,0 +1,21 @@
+id: telnet-default
+info:
+  name: Telnet 默认凭据
+  severity: critical
+  description: Telnet 服务使用默认凭据
+  tags: telnet,default-creds,critical
+  author: poxiao
+
+tcp:
+  - host:
+      - "{{Hostname}}"
+    port: 23
+    matchers-condition: and
+    matchers:
+      - type: word
+        words:
+          - "login:"
+          - "Password:"
+          - "Telnet"
+        condition: or
+        part: body

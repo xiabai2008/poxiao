@@ -1,0 +1,29 @@
+id: graphql-introspection
+info:
+  name: GraphQL Introspection 暴露
+  severity: medium
+  description: GraphQL Introspection 查询开启，泄露 API Schema
+  tags: graphql,api,exposure,medium
+  author: poxiao
+
+http:
+  - method: POST
+    path:
+      - "{{BaseURL}}/graphql"
+      - "{{BaseURL}}/graphiql"
+      - "{{BaseURL}}/api/graphql"
+    headers:
+      Content-Type: "application/json"
+    body: '{"query":"{ __schema { types { name fields { name type { name } } } } }"}'
+    matchers-condition: and
+    matchers:
+      - type: status
+        status: [200]
+      - type: word
+        words:
+          - "__schema"
+          - "__type"
+          - "Query"
+          - "Mutation"
+        condition: or
+        part: body

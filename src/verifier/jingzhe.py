@@ -355,7 +355,7 @@ class JingZhe:
                         evidence=f"API 端点可访问: {desc}",
                         detail=f"返回 {len(resp.content)}B 数据",
                     ))
-            except:
+            except Exception:
                 pass
         return findings
 
@@ -404,7 +404,7 @@ class JingZhe:
                     evidence="服务端信息泄露",
                     detail=" | ".join(info_bits[:5]),
                 )
-        except:
+        except Exception:
             pass
         return None
 
@@ -513,21 +513,24 @@ class JingZhe:
                     # ── .gitignore ──
                     if path == "/.gitignore" and size > 50:
                         tlow = text.lower()
+                        # 跳过 HTML 响应 (假阳性)
                         if any(tlow.startswith(t) for t in
                                ("<!doctype", "<html", "<script")):
                             continue
+                        # 跳过 CDN/WAF 响应 (假阳性)
                         if "x5secdata" in tlow:
                             continue
-                            lines = [l.strip() for l in text.splitlines()
-                                     if l.strip() and not l.startswith('#')]
-                            if lines:
-                                findings.append(VerifiedFinding(
-                                    url=full_url, finding_type="git",
-                                    exploitable=True, confidence="MEDIUM",
-                                    evidence=f".gitignore 泄露 {len(lines)} 条规则",
-                                    detail=f"包含: {', '.join(lines[:5])}",
-                                ))
-                                continue
+                        # 解析 .gitignore 内容
+                        lines = [l.strip() for l in text.splitlines()
+                                 if l.strip() and not l.startswith('#')]
+                        if lines:
+                            findings.append(VerifiedFinding(
+                                url=full_url, finding_type="git",
+                                exploitable=True, confidence="MEDIUM",
+                                evidence=f".gitignore 泄露 {len(lines)} 条规则",
+                                detail=f"包含: {', '.join(lines[:5])}",
+                            ))
+                            continue
 
                     # ── 配置/敏感文件 ──
                     if path in ("/config.php", "/.env", "/web.config"):

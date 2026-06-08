@@ -1,0 +1,25 @@
+id: api-websocket-upgrade
+info:
+  name: API WebSocket 升级支持
+  severity: info
+  description: 检测 API WebSocket 升级支持
+  tags: api,websocket,info
+  author: poxiao
+
+http:
+  - method: GET
+    path:
+      - "{{BaseURL}}/api/v1/ws"
+      - "{{BaseURL}}/api/ws"
+      - "{{BaseURL}}/ws"
+    headers:
+      Connection: "Upgrade"
+      Upgrade: "websocket"
+    matchers-condition: and
+    matchers:
+      - type: status
+        status: [101, 200]
+      - type: regex
+        regex:
+          - "Upgrade:\\s*websocket"
+        part: header

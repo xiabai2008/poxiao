@@ -1,0 +1,29 @@
+id: api-metrics-endpoint
+info:
+  name: Metrics API 端点检测
+  severity: info
+  description: 检测 Metrics API 端点
+  tags: api,metrics,info
+  author: poxiao
+
+http:
+  - method: GET
+    path:
+      - "{{BaseURL}}/api/v1/metrics"
+      - "{{BaseURL}}/api/metrics"
+      - "{{BaseURL}}/metrics"
+      - "{{BaseURL}}/actuator/metrics"
+    matchers-condition: and
+    matchers:
+      - type: status
+        status: [200]
+      - type: word
+        words:
+          - "metrics"
+          - "Metrics"
+          - "counter"
+          - "gauge"
+          - "histogram"
+          - "prometheus"
+        condition: or
+        part: body

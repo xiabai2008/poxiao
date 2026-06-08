@@ -1,0 +1,25 @@
+id: cf-ray-header-exposure
+info:
+  name: Cloudflare CF-Ray 响应头泄露
+  severity: info
+  description: CF-Ray 响应头泄露 Cloudflare 节点信息
+  tags: cloudflare,cdn,headers,info
+  author: poxiao
+
+http:
+  - method: GET
+    path:
+      - "{{BaseURL}}/"
+    matchers-condition: and
+    matchers:
+      - type: status
+        status: [200]
+      - type: regex
+        regex:
+          - "CF-Ray:\\s*[a-zA-Z0-9]+"
+        part: header
+    extractors:
+      - type: kval
+        kval:
+          - "CF-Ray"
+        name: cf_ray

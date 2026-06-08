@@ -1,0 +1,29 @@
+id: api-rate-limit-bypass
+info:
+  name: API 速率限制绕过
+  severity: medium
+  description: 检测 API 速率限制是否可绕过
+  tags: api,ratelimit,bypass,medium
+  author: poxiao
+
+http:
+  - method: GET
+    path:
+      - "{{BaseURL}}/api/v1"
+    headers:
+      X-Forwarded-For: "1.2.3.4"
+      X-Real-IP: "1.2.3.4"
+      X-Originating-IP: "1.2.3.4"
+      X-Remote-IP: "1.2.3.4"
+      X-Client-IP: "1.2.3.4"
+    matchers-condition: and
+    matchers:
+      - type: status
+        status: [200]
+      - type: word
+        words:
+          - "limit"
+          - "remaining"
+          - "reset"
+        condition: or
+        part: header

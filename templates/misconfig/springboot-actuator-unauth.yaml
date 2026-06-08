@@ -1,0 +1,39 @@
+id: springboot-actuator-unauth
+info:
+  name: Spring Boot Actuator 未授权访问
+  severity: high
+  description: Spring Boot Actuator 端点未授权访问，可泄露敏感配置信息
+  reference:
+    - https://docs.spring.io/spring-boot/docs/current/reference/html/actuator.html
+  tags: springboot,actuator,misconfig,java
+  author: poxiao
+
+http:
+  - method: GET
+    path:
+      - "{{BaseURL}}/actuator"
+      - "{{BaseURL}}/actuator/env"
+      - "{{BaseURL}}/actuator/health"
+      - "{{BaseURL}}/actuator/info"
+      - "{{BaseURL}}/actuator/mappings"
+      - "{{BaseURL}}/actuator/configprops"
+      - "{{BaseURL}}/actuator/beans"
+      - "{{BaseURL}}/actuator/heapdump"
+    matchers-condition: and
+    matchers:
+      - type: status
+        status: [200]
+      - type: word
+        words:
+          - "\"status\""
+          - "\"_links\""
+          - "\"components\""
+          - "UP"
+        condition: or
+        part: body
+    extractors:
+      - type: json
+        json:
+          - "status"
+          - "components.db.details.database"
+        name: spring_info

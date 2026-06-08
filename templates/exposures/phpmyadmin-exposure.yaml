@@ -1,0 +1,30 @@
+id: phpmyadmin-exposure
+info:
+  name: phpMyAdmin 暴露
+  severity: medium
+  description: phpMyAdmin 数据库管理界面暴露
+  tags: phpmyadmin,exposure,database,medium
+  author: poxiao
+
+http:
+  - method: GET
+    path:
+      - "{{BaseURL}}/phpmyadmin/"
+      - "{{BaseURL}}/pma/"
+      - "{{BaseURL}}/myadmin/"
+      - "{{BaseURL}}/mysql/"
+      - "{{BaseURL}}/dbadmin/"
+      - "{{BaseURL}}/mysqladmin/"
+      - "{{BaseURL}}/websql/"
+    matchers-condition: and
+    matchers:
+      - type: status
+        status: [200, 301, 302]
+      - type: word
+        words:
+          - "phpMyAdmin"
+          - "phpmyadmin"
+          - "pma_navigation"
+          - "MySQL"
+        condition: or
+        part: all

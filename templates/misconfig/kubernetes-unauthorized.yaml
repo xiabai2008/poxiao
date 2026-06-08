@@ -1,0 +1,26 @@
+id: kubernetes-unauthorized
+info:
+  name: Kubernetes API 未授权访问
+  severity: critical
+  description: Kubernetes API Server 未授权访问
+  tags: kubernetes,k8s,unauthorized,critical
+  author: poxiao
+
+http:
+  - method: GET
+    path:
+      - "{{BaseURL}}/api/v1/namespaces"
+      - "{{BaseURL}}/api/v1/pods"
+      - "{{BaseURL}}/api/v1/secrets"
+      - "{{BaseURL}}/api/v1/nodes"
+    matchers-condition: and
+    matchers:
+      - type: status
+        status: [200]
+      - type: word
+        words:
+          - "\"kind\":\""
+          - "\"apiVersion\":\""
+          - "\"metadata\":"
+        condition: or
+        part: body

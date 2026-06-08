@@ -1,0 +1,27 @@
+id: api-event-endpoint
+info:
+  name: Event API 端点检测
+  severity: info
+  description: 检测 Event API 端点
+  tags: api,event,info
+  author: poxiao
+
+http:
+  - method: GET
+    path:
+      - "{{BaseURL}}/api/v1/events"
+      - "{{BaseURL}}/api/events"
+      - "{{BaseURL}}/events"
+    matchers-condition: and
+    matchers:
+      - type: status
+        status: [200, 404]
+      - type: word
+        words:
+          - "event"
+          - "Event"
+          - "type"
+          - "data"
+          - "timestamp"
+        condition: or
+        part: body

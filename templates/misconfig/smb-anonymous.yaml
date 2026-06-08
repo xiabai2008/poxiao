@@ -1,0 +1,21 @@
+id: smb-anonymous
+info:
+  name: SMB 匿名访问
+  severity: high
+  description: SMB 服务允许匿名访问
+  tags: smb,anonymous,high
+  author: poxiao
+
+tcp:
+  - host:
+      - "{{Hostname}}"
+    port: 445
+    matchers-condition: and
+    matchers:
+      - type: word
+        words:
+          - "SMB"
+          - "smb"
+          - "Samba"
+        condition: or
+        part: body

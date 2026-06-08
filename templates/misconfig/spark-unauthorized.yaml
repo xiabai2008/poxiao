@@ -1,0 +1,26 @@
+id: apache-spark-unauthorized
+info:
+  name: Apache Spark 未授权访问
+  severity: high
+  description: Apache Spark Dashboard 未授权访问
+  tags: spark,unauthorized,bigdata,high
+  author: poxiao
+
+http:
+  - method: GET
+    path:
+      - "{{BaseURL}}/"
+      - "{{BaseURL}}/api/v1/applications"
+      - "{{BaseURL}}/api/v1/stages"
+    matchers-condition: and
+    matchers:
+      - type: status
+        status: [200]
+      - type: word
+        words:
+          - "Spark"
+          - "spark"
+          - "REST API"
+          - "applications"
+        condition: or
+        part: body

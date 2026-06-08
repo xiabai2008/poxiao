@@ -1,0 +1,26 @@
+id: websocket-misconfig
+info:
+  name: WebSocket 配置检测
+  severity: info
+  description: 检测 WebSocket 端点配置
+  tags: websocket,info
+  author: poxiao
+
+http:
+  - method: GET
+    path:
+      - "{{BaseURL}}/ws"
+      - "{{BaseURL}}/websocket"
+      - "{{BaseURL}}/socket"
+      - "{{BaseURL}}/api/ws"
+    headers:
+      Connection: "Upgrade"
+      Upgrade: "websocket"
+    matchers-condition: and
+    matchers:
+      - type: status
+        status: [101, 200]
+      - type: regex
+        regex:
+          - "Upgrade:\\s*websocket"
+        part: header

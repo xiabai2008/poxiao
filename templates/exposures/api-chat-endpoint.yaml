@@ -1,0 +1,26 @@
+id: api-chat-endpoint
+info:
+  name: Chat API 端点检测
+  severity: info
+  description: 检测 Chat API 端点
+  tags: api,chat,info
+  author: poxiao
+
+http:
+  - method: GET
+    path:
+      - "{{BaseURL}}/api/v1/chats"
+      - "{{BaseURL}}/api/chats"
+      - "{{BaseURL}}/chats"
+    matchers-condition: and
+    matchers:
+      - type: status
+        status: [200, 404]
+      - type: word
+        words:
+          - "chat"
+          - "Chat"
+          - "messages"
+          - "users"
+        condition: or
+        part: body

@@ -1,0 +1,25 @@
+id: prometheus-unauthorized
+info:
+  name: Prometheus 监控面板未授权访问
+  severity: medium
+  description: Prometheus 监控面板未授权访问，泄露系统指标
+  tags: prometheus,unauthorized,monitor,medium
+  author: poxiao
+
+http:
+  - method: GET
+    path:
+      - "{{BaseURL}}/api/v1/targets"
+      - "{{BaseURL}}/api/v1/label/__name__/values"
+      - "{{BaseURL}}/graph"
+    matchers-condition: and
+    matchers:
+      - type: status
+        status: [200]
+      - type: word
+        words:
+          - "\"status\":\"success\""
+          - "Prometheus Time Series"
+          - "prometheus_"
+        condition: or
+        part: body

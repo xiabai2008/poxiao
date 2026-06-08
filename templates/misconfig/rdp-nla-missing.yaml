@@ -1,0 +1,21 @@
+id: rdp-nla-missing
+info:
+  name: RDP NLA 未启用
+  severity: medium
+  description: RDP 服务未启用网络级认证 (NLA)
+  tags: rdp,nla,windows,medium
+  author: poxiao
+
+tcp:
+  - host:
+      - "{{Hostname}}"
+    port: 3389
+    matchers-condition: and
+    matchers:
+      - type: word
+        words:
+          - "RDP"
+          - "rdp"
+          - "Remote Desktop"
+        condition: or
+        part: body

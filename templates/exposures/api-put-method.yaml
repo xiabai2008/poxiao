@@ -1,0 +1,20 @@
+id: api-put-method
+info:
+  name: API PUT 方法支持
+  severity: info
+  description: 检测 API PUT 方法支持
+  tags: api,put,info
+  author: poxiao
+
+http:
+  - method: PUT
+    path:
+      - "{{BaseURL}}/api/v1/test"
+      - "{{BaseURL}}/api/test"
+    headers:
+      Content-Type: "application/json"
+    body: '{"test":"value"}'
+    matchers-condition: and
+    matchers:
+      - type: status
+        status: [200, 204, 405]

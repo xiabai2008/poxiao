@@ -1,0 +1,25 @@
+id: api-logs-endpoint-v2
+info:
+  name: Logs API 端点检测 v2
+  severity: info
+  description: 检测 Logs API 端点
+  tags: api,logs,info
+  author: poxiao
+
+http:
+  - method: GET
+    path:
+      - "{{BaseURL}}/api/v2/logs"
+      - "{{BaseURL}}/api/v2/logging"
+    matchers-condition: and
+    matchers:
+      - type: status
+        status: [200, 404]
+      - type: word
+        words:
+          - "log"
+          - "Log"
+          - "logs"
+          - "logging"
+        condition: or
+        part: body

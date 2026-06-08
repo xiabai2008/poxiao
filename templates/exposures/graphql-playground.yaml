@@ -1,0 +1,27 @@
+id: graphql-playground
+info:
+  name: GraphQL Playground 暴露
+  severity: medium
+  description: GraphQL Playground 交互式查询界面暴露
+  tags: graphql,playground,exposure,medium
+  author: poxiao
+
+http:
+  - method: GET
+    path:
+      - "{{BaseURL}}/playground"
+      - "{{BaseURL}}/graphiql"
+      - "{{BaseURL}}/graphql/playground"
+      - "{{BaseURL}}/graphql/console"
+    matchers-condition: and
+    matchers:
+      - type: status
+        status: [200]
+      - type: word
+        words:
+          - "GraphQL Playground"
+          - "GraphiQL"
+          - "graphql-playground"
+          - "React"
+        condition: or
+        part: body

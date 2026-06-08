@@ -1,0 +1,30 @@
+id: api-soap-endpoint
+info:
+  name: SOAP API 端点检测
+  severity: info
+  description: 检测 SOAP API 端点
+  tags: api,soap,info
+  author: poxiao
+
+http:
+  - method: POST
+    path:
+      - "{{BaseURL}}/api/soap"
+      - "{{BaseURL}}/soap"
+      - "{{BaseURL}}/ws"
+      - "{{BaseURL}}/wsdl"
+    headers:
+      Content-Type: "text/xml"
+    body: '<?xml version="1.0" encoding="UTF-8"?><soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/"><soap:Body></soap:Body></soap:Envelope>'
+    matchers-condition: and
+    matchers:
+      - type: status
+        status: [200, 500]
+      - type: word
+        words:
+          - "soap"
+          - "SOAP"
+          - "Envelope"
+          - "WSDL"
+        condition: or
+        part: body

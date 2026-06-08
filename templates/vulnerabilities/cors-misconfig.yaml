@@ -1,0 +1,24 @@
+id: cors-misconfig
+info:
+  name: CORS 配置错误
+  severity: medium
+  description: CORS 配置不当，允许任意域名跨域访问
+  tags: cors,misconfig
+  author: poxiao
+
+http:
+  - method: GET
+    path:
+      - "{{BaseURL}}/"
+    headers:
+      Origin: "https://evil.com"
+    matchers-condition: and
+    matchers:
+      - type: regex
+        regex:
+          - "Access-Control-Allow-Origin:\\s*https://evil\\.com"
+        part: header
+      - type: regex
+        regex:
+          - "Access-Control-Allow-Credentials:\\s*true"
+        part: header

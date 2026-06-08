@@ -1,0 +1,28 @@
+id: ssrf-detection
+info:
+  name: SSRF 漏洞检测
+  severity: high
+  description: 检测服务端请求伪造漏洞
+  tags: ssrf,injection,high
+  author: poxiao
+
+http:
+  - method: GET
+    path:
+      - "{{BaseURL}}/api/proxy?url=http://{{randstr}}.burpcollaborator.net"
+      - "{{BaseURL}}/api/fetch?url=http://{{randstr}}.burpcollaborator.net"
+      - "{{BaseURL}}/api/load?url=http://127.0.0.1:80"
+      - "{{BaseURL}}/proxy?target=http://127.0.0.1:80"
+    matchers-condition: or
+    matchers:
+      - type: status
+        status: [200, 301, 302, 500]
+      - type: word
+        words:
+          - "Connection refused"
+          - "Connection timed out"
+          - "No route to host"
+          - "Network is unreachable"
+          - "cURL error"
+        condition: or
+        part: body

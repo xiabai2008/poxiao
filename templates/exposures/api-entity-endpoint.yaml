@@ -1,0 +1,26 @@
+id: api-entity-endpoint
+info:
+  name: Entity API 端点检测
+  severity: info
+  description: 检测 Entity API 端点
+  tags: api,entity,info
+  author: poxiao
+
+http:
+  - method: GET
+    path:
+      - "{{BaseURL}}/api/v1/entities"
+      - "{{BaseURL}}/api/entities"
+      - "{{BaseURL}}/entities"
+    matchers-condition: and
+    matchers:
+      - type: status
+        status: [200, 404]
+      - type: word
+        words:
+          - "entity"
+          - "Entity"
+          - "id"
+          - "type"
+        condition: or
+        part: body

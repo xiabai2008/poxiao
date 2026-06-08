@@ -1,0 +1,61 @@
+id: default-login-admin
+info:
+  name: 常见默认口令检测
+  severity: critical
+  description: 检测常见管理后台的默认用户名密码
+  tags: default-login,auth,critical
+  author: poxiao
+
+http:
+  # Spring Boot Admin
+  - method: POST
+    path:
+      - "{{BaseURL}}/login"
+    headers:
+      Content-Type: "application/x-www-form-urlencoded"
+    body: "username=admin&password=admin"
+    matchers-condition: and
+    matchers:
+      - type: status
+        status: [200, 302]
+      - type: word
+        words:
+          - "dashboard"
+          - "welcome"
+          - "success"
+          - "token"
+          - "session"
+        condition: or
+        part: body
+
+  # Tomcat Manager
+  - method: GET
+    path:
+      - "{{BaseURL}}/manager/html"
+    headers:
+      Authorization: "Basic dG9tY2F0OnRvbWNhdA=="
+    matchers-condition: and
+    matchers:
+      - type: status
+        status: [200]
+      - type: word
+        words:
+          - "Tomcat Web Application Manager"
+          - "Server Information"
+        condition: or
+        part: body
+
+  # Weblogic Console
+  - method: GET
+    path:
+      - "{{BaseURL}}/console/login/LoginForm.jsp"
+    matchers-condition: and
+    matchers:
+      - type: status
+        status: [200]
+      - type: word
+        words:
+          - "Oracle WebLogic Server"
+          - "WebLogic Console"
+        condition: or
+        part: body

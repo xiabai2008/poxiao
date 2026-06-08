@@ -1,0 +1,22 @@
+id: cassandra-unauthorized
+info:
+  name: Cassandra 未授权访问
+  severity: high
+  description: Cassandra 数据库未授权访问
+  tags: cassandra,unauthorized,database,high
+  author: poxiao
+
+http:
+  - method: GET
+    path:
+      - "{{BaseURL}}/"
+    matchers-condition: and
+    matchers:
+      - type: word
+        words:
+          - "Cassandra"
+          - "cassandra"
+          - "column_family"
+          - "cluster_name"
+        condition: or
+        part: body

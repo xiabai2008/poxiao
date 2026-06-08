@@ -1,0 +1,27 @@
+id: api-test-endpoint
+info:
+  name: Test API 端点检测
+  severity: info
+  description: 检测 Test API 端点
+  tags: api,test,info
+  author: poxiao
+
+http:
+  - method: GET
+    path:
+      - "{{BaseURL}}/api/v1/test"
+      - "{{BaseURL}}/api/test"
+      - "{{BaseURL}}/test"
+    matchers-condition: and
+    matchers:
+      - type: status
+        status: [200, 404]
+      - type: word
+        words:
+          - "test"
+          - "Test"
+          - "hello"
+          - "world"
+          - "ok"
+        condition: or
+        part: body

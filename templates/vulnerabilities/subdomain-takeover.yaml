@@ -1,0 +1,35 @@
+id: subdomain-takeover
+info:
+  name: 子域名接管检测
+  severity: high
+  description: 检测可被接管的子域名 (CNAME 指向已失效的服务)
+  tags: takeover,subdomain,high
+  author: poxiao
+
+http:
+  - method: GET
+    path:
+      - "{{BaseURL}}/"
+    matchers-condition: or
+    matchers:
+      - type: word
+        words:
+          - "There isn't a GitHub Pages site here"
+          - "NoSuchBucket"
+          - "The specified bucket does not exist"
+          - "herokucdn.com/error-pages"
+          - "No Such Account"
+          - "is not a registered InCloud YouTrack"
+          - "Repository not found"
+          - "The thing you were looking for is no longer here"
+          - "Domain is not configured"
+          - "Fastly error: unknown domain"
+          - "Sorry, We Couldn't Find That Page"
+          - "Feedbin does not exist"
+          - "You're Almost There"
+          - "The request could not be satisfied"
+          - "Tictail.com - Error"
+          - "This page is parked free"
+          - "Shopify Store"
+        condition: or
+        part: body

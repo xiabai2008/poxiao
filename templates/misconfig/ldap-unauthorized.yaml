@@ -1,0 +1,23 @@
+id: ldap-unauthorized
+info:
+  name: LDAP 未授权访问
+  severity: high
+  description: LDAP 目录服务未授权访问
+  tags: ldap,unauthorized,high
+  author: poxiao
+
+http:
+  - method: GET
+    path:
+      - "{{BaseURL}}/"
+    matchers-condition: and
+    matchers:
+      - type: word
+        words:
+          - "LDAP"
+          - "ldap"
+          - "Directory"
+          - "distinguishedName"
+          - "objectClass"
+        condition: or
+        part: body

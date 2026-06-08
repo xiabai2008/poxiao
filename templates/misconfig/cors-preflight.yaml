@@ -1,0 +1,30 @@
+id: cors-preflight
+info:
+  name: CORS Preflight 配置检测
+  severity: info
+  description: 检测 CORS Preflight 请求配置
+  tags: cors,preflight,info
+  author: poxiao
+
+http:
+  - method: OPTIONS
+    path:
+      - "{{BaseURL}}/"
+    headers:
+      Origin: "https://example.com"
+      Access-Control-Request-Method: "POST"
+    matchers-condition: and
+    matchers:
+      - type: status
+        status: [200, 204]
+      - type: regex
+        regex:
+          - "Access-Control-Allow-Methods"
+        part: header
+    extractors:
+      - type: kval
+        kval:
+          - "Access-Control-Allow-Origin"
+          - "Access-Control-Allow-Methods"
+          - "Access-Control-Allow-Headers"
+        name: cors_config
