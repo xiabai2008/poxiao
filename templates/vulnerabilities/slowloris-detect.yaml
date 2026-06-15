@@ -2,22 +2,33 @@ id: http-slowloris
 info:
   name: Slowloris DoS 检测
   severity: medium
-  description: 检测目标是否易受 Slowloris DoS 攻击
+  description: 检测目标是否易受 Slowloris DoS 攻击（发送不完整 HTTP 头并检测服务器是否保持连接）
   tags: dos,slowloris,medium
   author: poxiao
 
-http:
-  - method: GET
-    path:
-      - "{{BaseURL}}/"
-    headers:
-      Connection: "keep-alive"
-      Keep-Alive: "900"
+# Slowloris 检测：发送带有大量不完整头部的请求，观察服务器是否接受并保持连接
+# 如果服务器在收到不完整请求时不立即断开，说明可能易受 Slowloris 攻击
+# 需要网络层工具（如 hping3 / slowloris.py）进行完整验证，此模板仅做初步筛查
+
+tcp:
+  - host:
+      - "{{Hostname}}"
+    port: {{Port}}
+    inputs:
+      - data: "GET / HTTP/1.1\r\nHost: {{Hostname}}\r\n"
+      - data: "X-a: b\r\n"
+      - data: "X-c: d\r\n"
+      - data: "X-e: f\r\n"
+      - data: "X-g: h\r\n"
+    read-size: 2048
     matchers-condition: and
     matchers:
-      - type: status
-        status: [200]
-      - type: regex
-        regex:
-          - "Connection:\\s*keep-alive"
-        part: header
+      - type: word
+        words:
+          - "HTTP/"
+        part: body
+      - type: word
+        words:
+          - "Connection: close"
+        part: body
+        negative: true

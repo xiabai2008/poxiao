@@ -3,7 +3,7 @@
 import json
 from pathlib import Path
 
-from src.reporter.src_reporter import SRCReporter
+from src.dawn.src_reporter import SRCReporter
 from src.utils.output import Out, C
 
 

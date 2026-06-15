@@ -2,7 +2,7 @@
 
 import asyncio
 
-from src.verifier.jingzhe import JingZhe
+from src.jingzhe import JingZhe
 from src.utils.output import Out, C
 
 

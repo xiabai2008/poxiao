@@ -2,7 +2,7 @@ id: api-error-exposure
 info:
   name: API 错误信息泄露
   severity: info
-  description: API 错误信息泄露内部实现细节
+  description: API 错误响应中泄露堆栈跟踪、SQL 信息、文件路径等内部实现细节
   tags: api,error,info
   author: poxiao
 
@@ -14,13 +14,37 @@ http:
     matchers-condition: and
     matchers:
       - type: status
-        status: [400, 404, 500]
+        status: [400, 500]
       - type: word
         words:
-          - "error"
-          - "message"
-          - "detail"
-          - "stack"
-          - "trace"
+          - "stack trace"
+          - "StackTrace"
+          - "Traceback (most recent call last)"
+          - "at com."
+          - "at org."
+          - "at java."
+          - "at sun."
+          - "Caused by:"
+          - "Exception in thread"
+          - "SQL syntax"
+          - "ORA-"
+          - "mysql_fetch"
+          - "Unclosed quotation mark"
+          - "ODBC SQL Server"
+          - "PostgreSQL query failed"
+          - "PDOException"
+          - "/var/www/"
+          - "/usr/local/"
+          - "/home/"
+          - "C:\\Users\\"
+          - "C:\\Windows\\"
+          - "FileNotFoundError"
+          - "NoSuchFileException"
+          - "PermissionError"
+          - "EACCES"
+          - "Internal Server Error"
+          - "debug mode"
+          - "DEBUG = True"
+          - "X-Debug"
         condition: or
         part: body

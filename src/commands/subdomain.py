@@ -3,7 +3,7 @@
 import asyncio
 from collections import defaultdict
 
-from src.collector.shuangyue import ShuangYue
+from src.frostmoon import ShuangYue
 from src.utils.output import Out, C
 
 

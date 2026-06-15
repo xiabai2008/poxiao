@@ -1,6 +1,7 @@
 """存活检测命令"""
 
 import asyncio
+import time
 from pathlib import Path
 
 from src.target.manager import TargetManager

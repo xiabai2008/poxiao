@@ -2,7 +2,7 @@ id: api-get-method
 info:
   name: API GET 方法支持
   severity: info
-  description: 检测 API GET 方法支持
+  description: 检测 API GET 方法支持，验证返回 JSON 格式数据
   tags: api,get,info
   author: poxiao
 
@@ -15,3 +15,12 @@ http:
     matchers:
       - type: status
         status: [200]
+      - type: word
+        words:
+          - "application/json"
+        part: header
+      - type: regex
+        regex:
+          - "\\S+"
+        part: body
+        negative: false

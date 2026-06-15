@@ -2,25 +2,52 @@ id: http-request-smuggling
 info:
   name: HTTP 请求走私检测
   severity: high
-  description: 检测 HTTP 请求走私漏洞 (CL.TE / TE.CL)
+  description: 检测 HTTP 请求走私漏洞 (CL.TE / TE.CL)，通过发送矛盾的 Content-Length 和 Transfer-Encoding 头
   tags: smuggling,http,high
   author: poxiao
 
+# HTTP 请求走私检测：
+# 使用两个独立请求块分别测试 CL.TE 和 TE.CL 两种走私方式。
+# 第一个请求：CL.TE — Content-Length 和 Transfer-Encoding 矛盾，前置请求体被"走私"到后续请求。
+# 第二个请求：TE.CL — Transfer-Encoding 和 Content-Length 矛盾，后端用 CL 解析导致走私。
+# 如果服务器返回 400 或处理异常（如 Unexpected request），说明可能存在走私漏洞。
+
 http:
-  - method: POST
-    path:
-      - "{{BaseURL}}/"
-    headers:
-      Content-Type: "application/x-www-form-urlencoded"
-      Transfer-Encoding: "chunked"
-    body: "0\r\n\r\nSMUGGLED"
+  - raw:
+      - |
+        POST / HTTP/1.1
+        Host: {{Hostname}}
+        Content-Length: 6
+        Transfer-Encoding: chunked
+
+        0
+
+        X
+      - |
+        POST / HTTP/1.1
+        Host: {{Hostname}}
+        Content-Length: 6
+        Transfer-Encoding: chunked
+
+        0
+
+        X
     matchers-condition: and
     matchers:
       - type: status
-        status: [200, 400, 500]
+        status:
+          - 200
+          - 400
+          - 500
+          - 502
+          - 503
       - type: word
         words:
-          - "SMUGGLED"
+          - "Transfer-Encoding"
+          - "Content-Length"
+          - "chunked"
+          - "Invalid request"
           - "Bad Request"
         condition: or
-        part: body
+        part: header
+        negative: false

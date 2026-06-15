@@ -2,19 +2,35 @@ id: idor-detection
 info:
   name: IDOR 越权访问检测
   severity: high
-  description: 检测不安全的直接对象引用 (IDOR) 漏洞
+  description: 检测不安全的直接对象引用 (IDOR) 漏洞，通过对比不同 ID 的返回内容判断是否可越权访问
   tags: idor,authorization,high
   author: poxiao
 
+# IDOR 检测策略：对同一接口发送两个不同 ID 的请求，如果都返回 200 且包含敏感字段，
+# 说明该接口可能未做鉴权，存在越权访问风险。
+# 使用两个请求块：第一个请求 ID=1，第二个请求 ID=99999，如果两者都返回 200 且内容结构相似，
+# 则很可能存在 IDOR 漏洞（因为攻击者可以枚举任意 ID）。
+
 http:
-  - method: GET
-    path:
-      - "{{BaseURL}}/api/v1/users/1"
-      - "{{BaseURL}}/api/v1/users/2"
-      - "{{BaseURL}}/api/users/1"
-      - "{{BaseURL}}/api/user/1"
-      - "{{BaseURL}}/api/v1/orders/1"
-      - "{{BaseURL}}/api/v1/profile/1"
+  - raw:
+      - |
+        GET /api/v1/users/1 HTTP/1.1
+        Host: {{Hostname}}
+      - |
+        GET /api/v1/users/99999 HTTP/1.1
+        Host: {{Hostname}}
+      - |
+        GET /api/users/1 HTTP/1.1
+        Host: {{Hostname}}
+      - |
+        GET /api/users/99999 HTTP/1.1
+        Host: {{Hostname}}
+      - |
+        GET /api/v1/orders/1 HTTP/1.1
+        Host: {{Hostname}}
+      - |
+        GET /api/v1/orders/99999 HTTP/1.1
+        Host: {{Hostname}}
     matchers-condition: and
     matchers:
       - type: status
@@ -26,5 +42,9 @@ http:
           - "user_id"
           - "order_id"
           - "profile"
+          - "phone"
+          - "address"
+          - "id_card"
+          - "real_name"
         condition: or
         part: body

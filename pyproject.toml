@@ -1,7 +1,7 @@
 [project]
 name = "poxiao"
-version = "2.4.0"
-description = "破晓 — Bug Bounty 自动化工具链"
+version = "3.0.0"
+description = "破晓 — 二十四节气安全工具链 (Dawn + FrostMoon + VernalEquinox + JingZhe + GuanXing + XiaZhi)"
 requires-python = ">=3.10"
 dependencies = [
     "httpx>=0.27.0",
@@ -22,6 +22,11 @@ dev = [
 
 [project.scripts]
 poxiao = "src.cli:main"
+frostmoon = "frostmoon:main"
+vernalequinox = "vernalequinox:main"
+jingzhe = "jingzhe:main"
+guanxing = "guanxing:main"
+xiazhi = "xiazhi:main"
 
 [tool.setuptools.packages.find]
 where = ["."]

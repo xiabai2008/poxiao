@@ -11,6 +11,7 @@ from .poc import cmd_poc
 from .stealth import cmd_stealth
 from .util import cmd_util
 from .report import cmd_report
+from .config import cmd_config
 
 # 命令映射表
 CMD_MAP = {
@@ -25,6 +26,7 @@ CMD_MAP = {
     "stealth": cmd_stealth,
     "util": cmd_util,
     "report": cmd_report,
+    "config": cmd_config,
 }
 
 # Banner 映射表

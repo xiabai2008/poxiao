@@ -4,9 +4,9 @@ import asyncio
 import time
 from pathlib import Path
 
-from src.scanner.engine import ScanEngine
-from src.reporter.reporter import Reporter
-from src.reporter.src_reporter import SRCReporter
+from src.dawn.engine import ScanEngine
+from src.dawn.reporter import Reporter
+from src.dawn.src_reporter import SRCReporter
 from src.target.manager import TargetManager
 from src.utils.output import Out, C
 
@@ -182,7 +182,7 @@ def cmd_scan(args):
 
     # 自动导入到观星（如果数据库已初始化）
     try:
-        from src.monitor.db import import_from_summary, get_stats
+        from src.guanxing.db import import_from_summary, get_stats
         import_from_summary(summary_path)
         stats = get_stats()
         Out.info(f"观星已同步: {stats['total']} 目标 | 启动面板: poxiao monitor serve")

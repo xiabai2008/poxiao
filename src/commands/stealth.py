@@ -3,9 +3,9 @@
 import asyncio
 from pathlib import Path
 
-from src.stealth import ProxyPool
-from src.stealth.waf_bypass import WAFBypass
-from src.stealth.user_agents import UserAgentPool
+from src.xiazhi import ProxyPool
+from src.xiazhi.waf_bypass import WAFBypass
+from src.xiazhi.user_agents import UserAgentPool
 from src.utils.output import Out, C
 
 

@@ -1,6 +1,6 @@
 """观星资产监控命令"""
 
-from src.monitor import import_from_summary, start_server, get_stats
+from src.guanxing import import_from_summary, start_server, get_stats
 from src.utils.output import Out, C
 
 

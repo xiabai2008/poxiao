@@ -111,6 +111,13 @@ EXAMPLES = {
   poxiao report scan_results/summary_xxx.json  # 指定扫描结果
   poxiao report -o reports/                    # 自定义输出目录
 """,
+
+    "config": """
+示例:
+  poxiao config init                           # 创建默认配置文件 (~/.poxiao/config.yaml)
+  poxiao config show                           # 显示当前生效的配置
+  poxiao config path                           # 显示配置文件路径
+""",
 }
 
 

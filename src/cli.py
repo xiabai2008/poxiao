@@ -127,6 +127,9 @@ def main():
     recon_parser.add_argument("--shodan-key", default="", help="Shodan API Key")
     recon_parser.add_argument("--fofa-key", default="", help="FOFA API Key")
     recon_parser.add_argument("--fofa-email", default="", help="FOFA 邮箱")
+    recon_parser.add_argument("--censys-id", default="", help="Censys API ID")
+    recon_parser.add_argument("--censys-secret", default="", help="Censys API Secret")
+    recon_parser.add_argument("--github-token", default="", help="GitHub Token")
     recon_parser.add_argument("-o", "--output", default="", help="报告输出路径")
     recon_parser.add_argument("--timeout", type=float, default=10.0, help="超时秒数")
 
@@ -201,6 +204,14 @@ def main():
         epilog=get_examples("report"), formatter_class=argparse.RawDescriptionHelpFormatter)
     report_parser.add_argument("summary", nargs="?", help="扫描汇总 JSON 文件")
     report_parser.add_argument("-o", "--output", default="scan_results", help="输出目录")
+
+    # ── config 命令 ─────────────────────────────────
+    config_parser = sub.add_parser("config", help="配置管理",
+        epilog=get_examples("config"), formatter_class=argparse.RawDescriptionHelpFormatter)
+    config_sub = config_parser.add_subparsers(dest="config_action")
+    config_sub.add_parser("init", help="创建默认配置文件")
+    config_sub.add_parser("show", help="显示当前配置")
+    config_sub.add_parser("path", help="显示配置文件路径")
 
     args = parser.parse_args()
 

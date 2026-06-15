@@ -2,7 +2,7 @@
 
 import asyncio
 
-from src.recon import ReconEngine
+from src.vernalequinox import ReconEngine
 from src.utils.output import Out, C
 
 
@@ -16,11 +16,20 @@ def cmd_recon(args):
         os.environ["FOFA_KEY"] = args.fofa_key
     if args.fofa_email:
         os.environ["FOFA_EMAIL"] = args.fofa_email
+    if args.censys_id:
+        os.environ["CENSYS_API_ID"] = args.censys_id
+    if args.censys_secret:
+        os.environ["CENSYS_API_SECRET"] = args.censys_secret
+    if args.github_token:
+        os.environ["GITHUB_TOKEN"] = args.github_token
 
     engine = ReconEngine(
         timeout=args.timeout,
         shodan_key=args.shodan_key,
         fofa_key=args.fofa_key,
+        censys_id=args.censys_id,
+        censys_secret=args.censys_secret,
+        github_token=args.github_token,
     )
 
     # 配置框
@@ -47,7 +56,7 @@ def cmd_recon(args):
 
     # 自动导入到观星
     try:
-        from src.monitor.db import init_db
+        from src.guanxing.db import init_db
         init_db()
     except Exception:
         pass

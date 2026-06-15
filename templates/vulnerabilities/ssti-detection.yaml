@@ -2,22 +2,22 @@ id: ssti-detection
 info:
   name: 服务端模板注入检测
   severity: high
-  description: 检测服务端模板注入漏洞 (SSTI)
+  description: 检测服务端模板注入漏洞 (SSTI)，通过注入唯一标记并检测回显
   tags: ssti,injection,template,high
   author: poxiao
 
 http:
   - method: GET
     path:
-      - "{{BaseURL}}/?name={{7*7}}"
-      - "{{BaseURL}}/?q={{7*7}}"
-      - "{{BaseURL}}/?search={{7*7}}"
-      - "{{BaseURL}}/?page={{7*7}}"
+      - "{{BaseURL}}/?name={{randstr}}"
+      - "{{BaseURL}}/?q={{randstr}}"
+      - "{{BaseURL}}/?search={{randstr}}"
+      - "{{BaseURL}}/?page={{randstr}}"
     matchers-condition: and
     matchers:
       - type: status
         status: [200]
       - type: word
         words:
-          - "49"
+          - "{{randstr}}"
         part: body

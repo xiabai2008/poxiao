@@ -1,0 +1,53 @@
+# ============================================================
+# 破晓 (PoXiao) 默认配置文件
+# ============================================================
+# 配置优先级: CLI 参数 > 环境变量 > 本文件 > 内置默认值
+# 文件路径:   ~/.poxiao/config.yaml
+# 环境变量:   POXIAO_* 前缀 (见各节注释)
+# ============================================================
+
+# ── 扫描模块 (poxiao scan) ──────────────────────────────────
+scan:
+  concurrency: 5          # 并发请求数 (env: POXIAO_SCAN_CONCURRENCY)
+  timeout: 5.0            # HTTP 请求超时秒数 (env: POXIAO_SCAN_TIMEOUT)
+  retry: 2                # 请求失败重试次数
+  verify_ssl: false       # 是否验证 SSL 证书
+
+# ── POC 模块 (poxiao poc scan) ─────────────────────────────
+poc:
+  concurrency: 10         # POC 并发数 (env: POXIAO_POC_CONCURRENCY)
+  timeout: 10.0           # POC 请求超时秒数 (env: POXIAO_POC_TIMEOUT)
+  max_redirects: 5        # 最大重定向次数
+
+# ── 隐匿模块 (poxiao stealth) ──────────────────────────────
+stealth:
+  proxy_file: ""          # 代理列表文件路径 (env: POXIAO_PROXY_FILE)
+  global_qps: 10.0        # 全局每秒请求数限制 (env: POXIAO_GLOBAL_QPS)
+  per_domain_qps: 3.0     # 单域名每秒请求数限制 (env: POXIAO_DOMAIN_QPS)
+  max_retries: 3          # 最大重试次数
+
+# ── CVE 查询模块 ───────────────────────────────────────────
+cve:
+  nvd_api_key: ""         # NVD API Key (env: POXIAO_NVD_API_KEY)
+  osv_enabled: true       # 是否启用 OSV 数据源
+  cache_ttl_hours: 24     # 缓存过期时间 (小时)
+
+# ── 观星监控面板 (poxiao monitor serve) ────────────────────
+monitor:
+  port: 5099              # Web 面板端口 (env: POXIAO_MONITOR_PORT)
+  host: "127.0.0.1"       # 监听地址 (env: POXIAO_MONITOR_HOST)
+  auth: false             # 是否启用登录认证
+  username: "admin"       # 登录用户名
+  password: ""            # 登录密码 (留空则无密码)
+
+# ── 被动信息收集 (poxiao recon) ────────────────────────────
+recon:
+  shodan_api_key: ""      # Shodan API Key (env: SHODAN_API_KEY)
+  fofa_key: ""            # FOFA API Key (env: FOFA_KEY)
+  fofa_email: ""          # FOFA 邮箱 (env: FOFA_EMAIL)
+  timeout: 10.0           # 请求超时秒数
+
+# ── 报告输出 ───────────────────────────────────────────────
+report:
+  output_dir: "scan_results"  # 报告输出目录 (env: POXIAO_REPORT_DIR)
+  platform: "butian"          # 平台 (butian / src / generic)
