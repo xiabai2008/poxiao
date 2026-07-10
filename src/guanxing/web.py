@@ -10,6 +10,7 @@ import json as _json
 from .db import (
     get_targets, get_target_by_id, get_scans, get_changes,
     get_stats, import_from_summary, upsert_target, add_scan,
+    export_data,
 )
 
 app = Flask(__name__)
@@ -17,7 +18,7 @@ app = Flask(__name__)
 
 # ── 基础认证 ──────────────────────────────────────
 
-def _check_auth(username: str, password: str) -> bool:
+def _check_auth(username: str | None, password: str | None) -> bool:
     """校验用户名密码"""
     return (
         username == os.environ.get("POXIAO_MONITOR_USER", "")
@@ -429,6 +430,21 @@ python -m src.cli monitor --serve
 # 4. 浏览器打开 http://localhost:5099</pre>
     """
     return _layout("观星 · 导入", content)
+
+
+@app.route("/api/export")
+@requires_auth
+def api_export() -> Response:
+    """批量导出资产与变更（CSV / JSON），仅本地文件下载（P2-2 / X3）。"""
+    fmt = request.args.get("format", "json") or "json"
+    if fmt not in ("csv", "json"):
+        fmt = "json"
+    content, mimetype, filename = export_data(fmt)
+    return Response(
+        content,
+        mimetype=mimetype,
+        headers={"Content-Disposition": f"attachment; filename={filename}"},
+    )
 
 
 def start_server(host: str = "127.0.0.1", port: int = 5099, debug: bool = False):

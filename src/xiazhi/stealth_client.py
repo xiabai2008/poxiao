@@ -53,7 +53,7 @@ class StealthClient:
                  max_retries: int = 3,
                  verify_ssl: bool = False,
                  follow_redirects: bool = True,
-                 enable_waf_bypass: bool = True):
+                 enable_waf_bypass: bool = False):
         """
         Args:
             proxy_file: 代理文件路径

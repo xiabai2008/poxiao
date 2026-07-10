@@ -118,6 +118,11 @@ def _run_poc_scan(args, template_dir):
             Out.info(f"代理文件: {args.proxies}")
         Out.info(f"限速: 全局 {args.qps} QPS, 单域名 {args.domain_qps} QPS")
 
+    # WAF 绕过（P2-3 / X2：默认关，需显式 --waf-bypass 启用）
+    if getattr(args, "waf_bypass", False):
+        Out.blank()
+        Out.info("WAF 绕过: 已启用（可选能力，建议仅在内网/授权测试中使用）")
+
     # 持续性扫描
     if args.loop:
         Out.blank()
@@ -130,6 +135,7 @@ def _run_poc_scan(args, template_dir):
         timeout=args.timeout,
         concurrency=args.concurrency,
         stealth=args.stealth,
+        enable_waf_bypass=getattr(args, "waf_bypass", False),
         proxy_file=args.proxies,
         qps=args.qps,
         per_domain_qps=args.domain_qps,

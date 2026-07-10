@@ -1,0 +1,31 @@
+id: openapi-v3-exposure
+info:
+  name: OpenAPI v3 文档泄露
+  severity: medium
+  description: /v3/api-docs 或 /swagger-resources 泄露 OpenAPI 规范，暴露 API 接口定义
+  tags: swagger,openapi,api,exposure,medium
+  author: poxiao
+
+http:
+  - method: GET
+    path:
+      - "{{BaseURL}}/v3/api-docs"
+      - "{{BaseURL}}/swagger-resources"
+      - "{{BaseURL}}/openapi.json"
+    matchers-condition: and
+    matchers:
+      - type: status
+        status: [200]
+      - type: word
+        words:
+          - "\"openapi\""
+          - "\"paths\""
+          - "\"swagger\""
+        condition: or
+        part: body
+    extractors:
+      - type: json
+        json:
+          - "info.title"
+          - "servers"
+        name: openapi_info

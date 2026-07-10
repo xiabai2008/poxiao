@@ -27,6 +27,7 @@ def cmd_recon(args):
         timeout=args.timeout,
         shodan_key=args.shodan_key,
         fofa_key=args.fofa_key,
+        fofa_email=args.fofa_email,
         censys_id=args.censys_id,
         censys_secret=args.censys_secret,
         github_token=args.github_token,

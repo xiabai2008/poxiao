@@ -1,0 +1,24 @@
+id: gitignore-exposure
+info:
+  name: .gitignore 文件泄露
+  severity: medium
+  description: .gitignore 可访问，泄露项目结构与被忽略的敏感文件清单
+  tags: git,exposure,info-leak,medium
+  author: poxiao
+
+http:
+  - method: GET
+    path:
+      - "{{BaseURL}}/.gitignore"
+    matchers-condition: and
+    matchers:
+      - type: status
+        status: [200]
+      - type: word
+        words:
+          - ".env"
+          - "node_modules"
+          - "vendor"
+          - "*.log"
+        condition: or
+        part: body

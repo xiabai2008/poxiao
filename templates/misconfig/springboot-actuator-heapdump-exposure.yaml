@@ -1,0 +1,16 @@
+id: springboot-actuator-heapdump-exposure
+info:
+  name: Spring Boot Actuator /heapdump 泄露
+  severity: high
+  description: /actuator/heapdump 可下载堆转储，可能包含明文密码、会话等敏感数据
+  tags: springboot,actuator,misconfig,java,high
+  author: poxiao
+
+http:
+  - method: GET
+    path:
+      - "{{BaseURL}}/actuator/heapdump"
+    matchers-condition: and
+    matchers:
+      - type: status
+        status: [200]

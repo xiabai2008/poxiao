@@ -1,6 +1,9 @@
 """观星资产监控命令"""
 
+from pathlib import Path
+
 from src.guanxing import import_from_summary, start_server, get_stats
+from src.guanxing.db import export_data
 from src.utils.output import Out, C
 
 
@@ -23,5 +26,11 @@ def cmd_monitor(args):
         if stats.get('tech_distribution'):
             tech_sorted = dict(sorted(stats['tech_distribution'].items(), key=lambda x: -x[1])[:8])
             Out.kv_row("技术栈", str(tech_sorted))
+    elif args.mon_action == "export":
+        content, mimetype, filename = export_data(args.format)
+        out = args.out or f"scan_results/{filename}"
+        Path(out).parent.mkdir(parents=True, exist_ok=True)
+        Path(out).write_text(content, encoding="utf-8")
+        Out.success(f"已导出: {out} ({len(content)} 字节, {mimetype})")
     else:
         Out.info("用法: poxiao monitor {serve|import|stats}")

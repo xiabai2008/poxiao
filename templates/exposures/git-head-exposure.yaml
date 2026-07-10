@@ -1,0 +1,20 @@
+id: git-head-exposure
+info:
+  name: Git HEAD 文件泄露
+  severity: high
+  description: .git/HEAD 可访问，确认目标部署了 Git 仓库，可尝试恢复完整源码
+  tags: git,exposure,source-code,high
+  author: poxiao
+
+http:
+  - method: GET
+    path:
+      - "{{BaseURL}}/.git/HEAD"
+    matchers-condition: and
+    matchers:
+      - type: status
+        status: [200]
+      - type: regex
+        regex:
+          - "ref:\\s*refs/heads/(master|main)"
+        part: body

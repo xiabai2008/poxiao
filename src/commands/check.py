@@ -1,6 +1,7 @@
 """存活检测命令"""
 
 import asyncio
+import os
 import time
 from pathlib import Path
 
@@ -32,8 +33,9 @@ def cmd_check(args):
         for t in dead:
             Out._print(f"      {C.RED}-{C.RESET} {t.url}")
 
-    # 保存存活列表
-    alive_path = Path("data/targets_alive.txt")
+    # 保存存活列表（支持环境变量指定输出目录）
+    output_dir = os.environ.get("POXIAO_CHECK_OUTPUT", "data")
+    alive_path = Path(output_dir) / "targets_alive.txt"
     alive_path.parent.mkdir(parents=True, exist_ok=True)
     alive_path.write_text("\n".join(t.url for t in alive), encoding="utf-8")
     Out.success(f"已保存: {alive_path}")

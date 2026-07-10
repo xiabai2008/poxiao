@@ -5,6 +5,7 @@
 """
 
 import asyncio
+import os
 import re
 from dataclasses import dataclass
 from typing import Optional
@@ -35,7 +36,14 @@ class DomainDiscovery:
         """从 configs/brands.json 加载品牌映射"""
         import json
         from pathlib import Path
-        path = Path(__file__).parent.parent.parent / "configs" / "brands.json"
+
+        # 支持环境变量指定品牌文件路径
+        custom = os.environ.get("POXIAO_BRANDS_PATH", "")
+        if custom:
+            path = Path(custom)
+        else:
+            path = Path(__file__).parent.parent.parent / "configs" / "brands.json"
+
         if path.exists():
             try:
                 data = json.loads(path.read_text(encoding="utf-8"))

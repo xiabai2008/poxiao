@@ -77,6 +77,34 @@ class SRCReporter:
         },
     }
 
+    # 各平台专属元数据字段（label, key）—— 增强 P2-5 平台格式
+    PLATFORM_META = {
+        "butian": [
+            ("厂商名称", "vendor"),
+            ("漏洞类型", "vuln_type_cn"),
+            ("提交类型", "submit_type"),
+        ],
+        "vulbox": [
+            ("漏洞标题", "title"),
+            ("利用条件", "condition"),
+            ("漏洞危害", "impact"),
+        ],
+        "cnvd": [
+            ("影响产品", "affected_product"),
+            ("漏洞类型", "vuln_type_cn"),
+            ("危害级别", "severity_cn"),
+        ],
+    }
+
+    # ── 平台字段查询 ──────────────────────────────
+
+    def platform_fields(self, platform: str) -> list[tuple[str, str]]:
+        """返回某平台专属元数据字段列表 [(label, key), ...]
+
+        增强 P2-5：补天/漏洞盒子/CNVD 导出字段差异。
+        """
+        return list(self.PLATFORM_META.get(platform, []))
+
     # ── 单漏洞报告 ──────────────────────────────
 
     def generate_vuln_report(
@@ -91,6 +119,7 @@ class SRCReporter:
         platform: str = "butian",
         evidence: str = "",
         finding: dict = None,
+        meta: dict = None,
     ) -> str:
         """生成单个漏洞的SRC报告（Markdown格式）
 
@@ -98,6 +127,8 @@ class SRCReporter:
             platform: butian / vulbox / cnvd — 影响报告格式
             evidence: HTTP 请求/响应证据文本
             finding: 原始发现数据（用于自动生成证据）
+            meta: 平台专属元数据 dict（如 {"vendor": "...", "affected_product": "..."}），
+                  渲染 PLATFORM_META 中声明的字段。
         """
         cfg = self.PLATFORM_CONFIG.get(platform, self.PLATFORM_CONFIG["butian"])
         sev_cn = self.SEVERITY_CN.get(severity, severity)
@@ -116,6 +147,13 @@ class SRCReporter:
         lines.append(f"- **{cfg['severity_field']}**: {sev_cn}")
         lines.append(f"- **{cfg['url_field']}**: {vuln_url}")
         lines.append(f"- **漏洞类型**: {type_cn}")
+
+        # 平台专属元数据字段（P2-5 增强）
+        if meta:
+            for label, key in self.platform_fields(platform):
+                val = meta.get(key, "")
+                if val:
+                    lines.append(f"- **{label}**: {val}")
         lines.append("")
         lines.append(f"{h}# 漏洞描述")
         lines.append("")
@@ -239,11 +277,13 @@ class SRCReporter:
         self,
         scan_results: list[dict],
         output_dir: str = "scan_results",
+        platform: str = "butian",
     ) -> dict:
         """
         批量生成 SRC 报告
         scan_results: ScanResult.to_dict() 列表
-        返回: {"reports": [...], "output_dir": "..."}
+        platform: butian / vulbox / cnvd — 影响报告格式（P2-5 增强）
+        返回: {"reports": [...], "output_dir": "...", "platform": "..."}
         """
         out = Path(output_dir) / "src_reports"
         out.mkdir(parents=True, exist_ok=True)
@@ -262,6 +302,7 @@ class SRCReporter:
                     host=host,
                     findings=sensitive,
                     tech_tags=tech_tags,
+                    platform=platform,
                 )
                 all_reports.extend(reports)
 
@@ -296,6 +337,7 @@ class SRCReporter:
             "total": len(all_reports),
             "output_dir": str(out),
             "index": str(index_path),
+            "platform": platform,
             "reports": all_reports,
         }
 

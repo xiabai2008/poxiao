@@ -1,21 +1,13 @@
 """破晓 CLI 入口"""
 
 import argparse
-import asyncio
 import sys
 import os
-import time
 import traceback
 from pathlib import Path
 
-# Windows UTF-8 修复
-if sys.platform == "win32":
-    os.system("chcp 65001 >nul 2>&1")
-    os.environ["PYTHONIOENCODING"] = "utf-8"
-    if hasattr(sys.stdout, "reconfigure"):
-        sys.stdout.reconfigure(encoding="utf-8")
-    if hasattr(sys.stderr, "reconfigure"):
-        sys.stderr.reconfigure(encoding="utf-8")
+from src.utils.win_utf8 import fix_windows_utf8
+fix_windows_utf8()
 
 from src.utils.banner import print_banner
 from src.utils.output import Out
@@ -112,6 +104,9 @@ def main():
     mon_import = mon_subs.add_parser("import", help="导入扫描结果")
     mon_import.add_argument("path", help="扫描汇总 JSON 文件")
     mon_subs.add_parser("stats", help="查看统计")
+    mon_export = mon_subs.add_parser("export", help="导出资产/变更（csv|json）")
+    mon_export.add_argument("--format", default="json", choices=["csv", "json"], help="导出格式")
+    mon_export.add_argument("-o", "--out", default="", help="输出文件路径")
 
     # ── verify 命令 ────────────────────────────
     verify_parser = sub.add_parser("verify", help="漏洞自动验证（惊蛰）",
@@ -148,6 +143,8 @@ def main():
     poc_scan.add_argument("--timeout", type=float, default=10.0, help="HTTP 超时秒数")
     poc_scan.add_argument("-o", "--output", default="", help="结果输出路径")
     poc_scan.add_argument("--stealth", action="store_true", help="隐匿模式")
+    poc_scan.add_argument("--waf-bypass", action="store_true",
+                          help="启用 WAF 绕过（可选能力，默认关；建议配合 --stealth 走代理）")
     poc_scan.add_argument("--proxies", default="", help="代理列表文件")
     poc_scan.add_argument("--qps", type=float, default=10.0, help="全局每秒请求数")
     poc_scan.add_argument("--domain-qps", type=float, default=3.0, help="单域名每秒请求数")
@@ -204,6 +201,8 @@ def main():
         epilog=get_examples("report"), formatter_class=argparse.RawDescriptionHelpFormatter)
     report_parser.add_argument("summary", nargs="?", help="扫描汇总 JSON 文件")
     report_parser.add_argument("-o", "--output", default="scan_results", help="输出目录")
+    report_parser.add_argument("--format", default="src", choices=["src", "html"],
+                               help="报告格式（src=文本/Markdown，html=网页）")
 
     # ── config 命令 ─────────────────────────────────
     config_parser = sub.add_parser("config", help="配置管理",
@@ -227,6 +226,10 @@ def main():
     # 命令分发
     handler = CMD_MAP.get(args.command)
     if handler:
+        # 启动安全红线自检（仅告警，不阻断）— P1-3 / D5 / R1
+        from src.utils.redline import check_security_config
+        for _w in check_security_config():
+            Out.warning(_w)
         safe_run(handler, args)
     else:
         parser.print_help()

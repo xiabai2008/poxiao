@@ -1,0 +1,26 @@
+id: phpmyadmin-default-login
+info:
+  name: phpMyAdmin 默认凭据登录
+  severity: critical
+  description: phpMyAdmin 使用默认口令（root/root、root 空密码）可登录数据库管理界面
+  tags: phpmyadmin,default-login,critical,database
+  author: poxiao
+
+http:
+  - method: POST
+    path:
+      - "{{BaseURL}}/phpmyadmin/index.php"
+    headers:
+      Content-Type: "application/x-www-form-urlencoded"
+    body: "pma_username=root&pma_password=root"
+    matchers-condition: and
+    matchers:
+      - type: status
+        status: [200, 302]
+      - type: word
+        words:
+          - "phpMyAdmin"
+          - "Server:"
+          - "Database"
+        condition: or
+        part: body

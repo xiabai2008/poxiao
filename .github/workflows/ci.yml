@@ -1,0 +1,63 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  audit-and-test:
+    name: Data Governance Audit + Tests
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.10", "3.11", "3.12"]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install package + dev extras
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]"
+
+      - name: CVE / Template governance audit (hard gate)
+        run: python tools/ci_audit.py
+
+      - name: Run tests with coverage (metric)
+        run: python -m pytest
+
+  type-check:
+    name: mypy core modules (P1-4 / R2, phased)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install package + dev extras
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]"
+
+      # 渐进式关卡：仅对核心模块做 mypy 校验（非 --strict）。
+      # 全仓约 150+ 处类型错误，按 R2 修订逐模块收紧，不承诺近期 --strict 零错误。
+      - name: mypy on curated core modules (hard gate)
+        run: |
+          python -m mypy \
+            src/config.py \
+            src/utils/redline.py \
+            src/guanxing/db.py \
+            src/guanxing/web.py

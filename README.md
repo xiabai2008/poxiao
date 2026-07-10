@@ -65,9 +65,6 @@ xiazhi scan example.com -t templates/ --stealth  # 隐匿扫描
 # 配置管理
 poxiao config init                         # 创建配置文件
 poxiao config show                         # 查看当前配置
-
-# 全流程编排
-poxiao run example.com                     # 霜月→破晓→惊蛰→报告
 ```
 
 ---
@@ -92,7 +89,7 @@ poxiao run example.com                     # 霜月→破晓→惊蛰→报告
 │   ├── dawn/              # 核心扫描器 (7 模块)
 │   │   ├── engine.py      # HTTP 扫描 + 技术栈识别
 │   │   ├── tech_stack.py  # 指纹库 (Server/Language/CMS/CDN/WAF)
-│   │   ├── cve_match.py   # CVE 匹配 (121 条内置 + NVD 在线)
+│   │   ├── cve_match.py   # CVE 匹配 (257 条内置 + NVD 在线)
 │   │   ├── sensitive.py   # 敏感路径 + 三层降噪
 │   │   └── reporter.py    # SRC 报告生成
 │   ├── frostmoon/         # 霜月 — 子域名收集
@@ -104,7 +101,7 @@ poxiao run example.com                     # 霜月→破晓→惊蛰→报告
 │   ├── target/            # 目标管理
 │   └── utils/             # 共享工具
 │
-├── templates/             # POC 模板库 (206 个)
+├── templates/             # POC 模板库 (215 个)
 ├── configs/               # 配置文件
 │   └── brands.json        # 补天品牌数据库 (107 品牌)
 │
@@ -173,8 +170,8 @@ monitor:
 110+ 厂商扫描
 7.6 秒 / 30 目标
 58.com → 89 子域名（54 存活）
-CVE 数据库: 121 条内置 + NVD 在线查询
-POC 模板: 206 个
+CVE 数据库: 257 条内置 + NVD 在线查询
+POC 模板: 215 个
 补天品牌: 107 个
 ```
 

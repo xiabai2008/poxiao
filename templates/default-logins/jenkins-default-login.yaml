@@ -1,0 +1,26 @@
+id: jenkins-default-login
+info:
+  name: Jenkins 默认凭据登录
+  severity: critical
+  description: Jenkins 控制台使用默认口令（admin:admin）或弱口令可登录
+  tags: jenkins,default-login,critical,ci
+  author: poxiao
+
+http:
+  - method: POST
+    path:
+      - "{{BaseURL}}/j_acegi_security_check"
+    headers:
+      Content-Type: "application/x-www-form-urlencoded"
+    body: "j_username=admin&j_password=admin&from=%2F&Submit=%E7%99%BB%E5%BD%95"
+    matchers-condition: and
+    matchers:
+      - type: status
+        status: [200, 302]
+      - type: word
+        words:
+          - "dashboard"
+          - "logged-in"
+          - "Jenkins"
+        condition: or
+        part: body

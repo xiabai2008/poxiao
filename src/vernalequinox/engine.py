@@ -30,6 +30,7 @@ from .cert_info import CertAnalyzer, CertInfo
 from .censys_query import CensysQuery, CensysResult
 from .wayback import WaybackQuery, WaybackResult
 from .github_leak import GitHubLeakScanner, GitHubLeakResult
+from .fofa_query import FofaQuery, FofaResult
 
 
 @dataclass
@@ -49,6 +50,7 @@ class ReconReport:
     censys: Optional[CensysResult] = None
     wayback: Optional[WaybackResult] = None
     github_leaks: Optional[GitHubLeakResult] = None
+    fofa: Optional[FofaResult] = None
     wayback_interesting_urls: List[Dict] = field(default_factory=list)
 
     # 汇总信息
@@ -92,6 +94,8 @@ class ReconReport:
             d["wayback"] = self.wayback.to_dict()
         if self.github_leaks:
             d["github_leaks"] = self.github_leaks.to_dict()
+        if self.fofa:
+            d["fofa"] = self.fofa.to_dict()
         if self.wayback_interesting_urls:
             d["wayback_interesting_urls"] = self.wayback_interesting_urls
         return d
@@ -104,7 +108,7 @@ class ReconEngine:
                  shodan_key: str = "", fofa_key: str = "",
                  skip_shodan: bool = False, skip_fofa: bool = False,
                  censys_id: str = "", censys_secret: str = "",
-                 github_token: str = ""):
+                 github_token: str = "", fofa_email: str = ""):
         self.timeout = timeout
         self.whois = WhoisLookup(timeout=timeout)
         self.icp = ICPQuery(timeout=timeout)
@@ -119,6 +123,11 @@ class ReconEngine:
         self.censys = CensysQuery(api_id=censys_id, api_secret=censys_secret, timeout=timeout)
         self.wayback = WaybackQuery(timeout=timeout)
         self.github = GitHubLeakScanner(token=github_token, timeout=timeout)
+        self.fofa = FofaQuery(
+            email=fofa_email,
+            key="" if skip_fofa else fofa_key,
+            timeout=timeout,
+        )
 
     async def full_recon(self, domain: str) -> ReconReport:
         """全量被动信息收集"""
@@ -193,6 +202,8 @@ class ReconEngine:
             ext_tasks.append(self.censys.search_hosts(f"services.tls.certificates.leaf_data.subject.common_name: {domain}"))
         if self.github.has_token:
             ext_tasks.append(self.github.search(domain))
+        if self.fofa.has_credentials:
+            ext_tasks.append(self.fofa.search(domain))
 
         ext_results = await asyncio.gather(*ext_tasks, return_exceptions=True)
 
@@ -245,6 +256,19 @@ class ReconEngine:
                     report.risk_indicators.append(
                         f"GitHub: {len(report.github_leaks.leaks)} potential code leaks found"
                     )
+
+        # FOFA
+        if self.fofa.has_credentials:
+            idx += 1
+            if isinstance(ext_results[idx], FofaResult):
+                report.fofa = ext_results[idx]
+                for h in report.fofa.hosts:
+                    ip = h.get("ip", "")
+                    if ip and ip not in report.all_ips:
+                        report.all_ips.append(ip)
+                    host = h.get("host", "")
+                    if host and host not in report.all_domains and "*" not in host:
+                        report.all_domains.append(host)
 
         # ═══ 阶段 5: 汇总分析 ═══
         print(f"  [5/5] 汇总分析...")
@@ -432,6 +456,11 @@ class ReconEngine:
         if report.github_leaks:
             print()
             GitHubLeakScanner.print_result(report.github_leaks)
+
+        # FOFA
+        if report.fofa:
+            print()
+            FofaQuery.print_result(report.fofa)
 
         # 风险指标
         if report.risk_indicators:

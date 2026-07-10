@@ -1,0 +1,25 @@
+id: grafana-default-login
+info:
+  name: Grafana 默认凭据登录
+  severity: critical
+  description: Grafana 面板使用默认口令（admin:admin）可登录，进而读取仪表盘与数据源
+  tags: grafana,default-login,critical,monitoring
+  author: poxiao
+
+http:
+  - method: POST
+    path:
+      - "{{BaseURL}}/login"
+    headers:
+      Content-Type: "application/json"
+    body: '{"user":"admin","password":"admin"}'
+    matchers-condition: and
+    matchers:
+      - type: status
+        status: [200]
+      - type: word
+        words:
+          - "\"token\""
+          - "logged in"
+        condition: or
+        part: body

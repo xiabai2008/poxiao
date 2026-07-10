@@ -3,7 +3,7 @@
 import pytest
 import asyncio
 import time
-from src.stealth.rate_limiter import TokenBucket, RateLimiter
+from src.xiazhi.rate_limiter import TokenBucket, RateLimiter
 
 
 class TestTokenBucket:

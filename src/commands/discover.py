@@ -1,10 +1,9 @@
 """域名发现命令"""
 
-import asyncio
 from pathlib import Path
 
 from src.target.discovery import DomainDiscovery
-from src.utils.output import Out, C
+from src.utils.output import Out
 
 
 def cmd_discover(args):

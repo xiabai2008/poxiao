@@ -1,7 +1,7 @@
 """POC 匹配器测试"""
 
 import pytest
-from src.poc.matcher import MatcherEngine, Matcher
+from src.xiazhi.matcher import MatcherEngine, Matcher
 
 
 @pytest.fixture

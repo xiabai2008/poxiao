@@ -8,7 +8,7 @@
 import os
 import yaml
 from pathlib import Path
-from typing import Optional
+from typing import Any, Optional
 
 # Default config values
 DEFAULT_CONFIG = {
@@ -57,8 +57,8 @@ DEFAULT_CONFIG = {
 class Config:
     """Unified configuration manager"""
 
-    _instance = None
-    _config = None
+    _instance: Optional["Config"] = None
+    _config: dict = {}
 
     def __new__(cls):
         if cls._instance is None:
@@ -85,6 +85,10 @@ class Config:
             with open(path, "r", encoding="utf-8") as f:
                 user_config = yaml.safe_load(f) or {}
             self._deep_merge(self._config, user_config)
+        except yaml.YAMLError as e:
+            import sys
+            print(f"[!] 配置文件解析错误 {path}: {e}", file=sys.stderr)
+            print("[!] 使用默认配置继续", file=sys.stderr)
         except Exception:
             pass  # Silently fall back to defaults if config file is malformed
 
@@ -122,14 +126,14 @@ class Config:
             else:
                 base[k] = v
 
-    def get(self, section: str, key: str = None, default=None):
+    def get(self, section: str, key: Optional[str] = None, default: Any = None) -> Any:
         """Get config value. Usage: config.get("scan") or config.get("scan", "timeout")"""
-        sec = self._config.get(section, {})
+        sec: dict = self._config.get(section, {})
         if key is None:
             return sec
         return sec.get(key, default)
 
-    def __getitem__(self, section: str):
+    def __getitem__(self, section: str) -> dict:
         return self._config.get(section, {})
 
     @staticmethod

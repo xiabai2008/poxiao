@@ -18,6 +18,7 @@ dependencies = [
 dev = [
     "pytest>=8.0",
     "pytest-asyncio>=0.24",
+    "pytest-cov>=5.0",
 ]
 
 [project.scripts]
@@ -31,3 +32,19 @@ xiazhi = "xiazhi:main"
 [tool.setuptools.packages.find]
 where = ["."]
 include = ["src*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+# 覆盖率作为指标报告（非硬门槛）；ci_audit + 测试通过才是硬门禁。
+# 路线图目标 ≥60%，当前基线约 10%，随测试补齐逐步上调 fail_under。
+addopts = "-ra --cov=src --cov-report=term-missing"
+
+# mypy (P1-4 / R2)：渐进式，非 --strict。
+# Phase 1 仅对核心模块做关卡（见 .github/workflows/ci.yml），
+# 全仓约 150+ 处类型错误，按 R2 修订逐模块收紧，不承诺近期 --strict 零错误。
+[tool.mypy]
+python_version = "3.10"
+ignore_missing_imports = true
+warn_unused_ignores = false
+show_error_codes = true
+disallow_untyped_defs = false

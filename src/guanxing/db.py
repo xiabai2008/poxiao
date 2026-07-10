@@ -1,14 +1,27 @@
 """观星 — 资产监控平台数据库层"""
 
+import csv
+import io
 import json
 import sqlite3
+import os
 from contextlib import contextmanager
 from datetime import datetime
 from pathlib import Path
 from typing import Optional
 
+from . import notify
 
-DB_PATH = Path("scan_results/guanxing.db")
+
+def _get_db_path() -> Path:
+    """获取数据库路径，支持环境变量覆盖"""
+    custom = os.environ.get("POXIAO_GUANXING_DB", "")
+    if custom:
+        return Path(custom)
+    return Path("scan_results/guanxing.db")
+
+
+DB_PATH = _get_db_path()
 _initialized = False
 
 
@@ -16,13 +29,25 @@ _initialized = False
 def get_db():
     """数据库连接上下文管理器 (自动提交/回滚/关闭)"""
     global _initialized
-    DB_PATH.parent.mkdir(parents=True, exist_ok=True)
-    conn = sqlite3.connect(str(DB_PATH))
+    try:
+        DB_PATH.parent.mkdir(parents=True, exist_ok=True)
+    except OSError as e:
+        raise RuntimeError(f"无法创建数据库目录 {DB_PATH.parent}: {e}") from e
+
+    try:
+        conn = sqlite3.connect(str(DB_PATH))
+    except sqlite3.Error as e:
+        raise RuntimeError(f"无法连接数据库 {DB_PATH}: {e}") from e
+
     conn.row_factory = sqlite3.Row
-    conn.execute("PRAGMA journal_mode=WAL")  # 并发读写优化
+    try:
+        conn.execute("PRAGMA journal_mode=WAL")  # 并发读写优化
+    except sqlite3.Error:
+        pass  # WAL 模式不是必需的，某些系统可能不支持
+
     try:
         if not _initialized:
-            _create_tables(conn)
+            _migrate(conn)
             _initialized = True
         yield conn
         conn.commit()
@@ -31,6 +56,49 @@ def get_db():
         raise
     finally:
         conn.close()
+
+
+# Schema 版本：随结构演进递增，旧库自动迁移至最新。
+SCHEMA_VERSION = 1
+
+
+def _get_schema_version(conn: sqlite3.Connection) -> int:
+    """读取当前已落库的 schema 版本（无表时视为 0）。"""
+    conn.execute(
+        "CREATE TABLE IF NOT EXISTS _meta (key TEXT PRIMARY KEY, value TEXT)"
+    )
+    row = conn.execute(
+        "SELECT value FROM _meta WHERE key = 'schema_version'"
+    ).fetchone()
+    if row is None:
+        return 0
+    try:
+        return int(row[0])
+    except (ValueError, TypeError):
+        return 0
+
+
+def _set_schema_version(conn: sqlite3.Connection, version: int) -> None:
+    conn.execute(
+        "INSERT OR REPLACE INTO _meta(key, value) VALUES ('schema_version', ?)",
+        (str(version),),
+    )
+
+
+def _migrate(conn: sqlite3.Connection) -> None:
+    """幂等迁移：从当前版本升级到 SCHEMA_VERSION。
+
+    每次连接首次进入时调用；CREATE TABLE IF NOT EXISTS 保证可重复执行，
+    版本号避免重复执行已完成的迁移步骤。
+    """
+    _create_tables(conn)
+    current = _get_schema_version(conn)
+    # 未来迁移在下方按 current < N 追加，例如：
+    #   if current < 2:
+    #       conn.execute("ALTER TABLE targets ADD COLUMN foo TEXT")
+    #       current = 2
+    if current < SCHEMA_VERSION:
+        _set_schema_version(conn, SCHEMA_VERSION)
 
 
 def _create_tables(conn: sqlite3.Connection):
@@ -87,7 +155,7 @@ def init_db():
 # ── Target CRUD ──────────────────────────────────
 
 def upsert_target(url: str, host: str, status: str = "unknown",
-                  tech_stack: list = None, sensitive_count: int = 0,
+                  tech_stack: Optional[list] = None, sensitive_count: int = 0,
                   cve_count: int = 0) -> int:
     """插入或更新目标"""
     with get_db() as conn:
@@ -123,7 +191,7 @@ def upsert_target(url: str, host: str, status: str = "unknown",
 
 def add_scan(target_id: int, alive: bool, tech_stack: list,
              sensitive_paths: list, cve_matches: list,
-             response_time: float = 0):
+             response_time: float = 0) -> None:
     """记录一次扫描"""
     with get_db() as conn:
         now = datetime.now().isoformat()
@@ -141,18 +209,34 @@ def add_scan(target_id: int, alive: bool, tech_stack: list,
 
 
 def _record_change(conn: sqlite3.Connection, target_id: int,
-                   change_type: str, old_value: str, new_value: str):
-    """记录变更"""
+                   change_type: str, old_value: str, new_value: str) -> None:
+    """记录变更，并解耦推送告警 / 写本地日志"""
     conn.execute("""
         INSERT INTO changes (target_id, changed_at, change_type, old_value, new_value)
         VALUES (?, ?, ?, ?, ?)
     """, (target_id, datetime.now().isoformat(), change_type, old_value, new_value))
+    _notify_change({
+        "target_id": target_id,
+        "change_type": change_type,
+        "old_value": old_value,
+        "new_value": new_value,
+        "changed_at": datetime.now().isoformat(),
+    })
+
+
+def _notify_change(change: dict) -> None:
+    """推送变更事件与本地日志；任何失败均被吞掉，绝不中断 DB 写入。"""
+    try:
+        notify.push_change_event(change)
+        notify.append_change_log(change)
+    except Exception:
+        pass
 
 
 # ── 查询 ────────────────────────────────────────
 
-def get_targets(status: str = None, limit: int = 100, offset: int = 0,
-                search: str = None) -> tuple[list[dict], int]:
+def get_targets(status: Optional[str] = None, limit: int = 100, offset: int = 0,
+                search: Optional[str] = None) -> tuple[list[dict], int]:
     """获取目标列表，返回 (列表, 总数)。
 
     Args:
@@ -201,7 +285,7 @@ def get_scans(target_id: int, limit: int = 20) -> list[dict]:
         return [_row_to_dict(r) for r in rows]
 
 
-def get_changes(target_id: int = None, limit: int = 50) -> list[dict]:
+def get_changes(target_id: Optional[int] = None, limit: int = 50) -> list[dict]:
     """获取变更记录"""
     with get_db() as conn:
         if target_id:
@@ -225,7 +309,7 @@ def get_stats() -> dict:
         tech_rows = conn.execute(
             "SELECT tech_stack FROM targets WHERE tech_stack != '[]'"
         ).fetchall()
-        tech_dist = {}
+        tech_dist: dict[str, int] = {}
         for row in tech_rows:
             for t in json.loads(row[0]):
                 tech_dist[t] = tech_dist.get(t, 0) + 1
@@ -247,7 +331,7 @@ def get_stats() -> dict:
         }
 
 
-def import_from_summary(summary_path: str):
+def import_from_summary(summary_path: str) -> None:
     """从扫描汇总 JSON 导入数据"""
     import asyncio
     from pathlib import Path
@@ -275,7 +359,7 @@ def import_from_summary(summary_path: str):
                 t.get("duration_sec", 0))
 
 
-def _row_to_dict(row) -> dict:
+def _row_to_dict(row: Optional[sqlite3.Row]) -> dict:
     """将 sqlite3.Row 转为 dict"""
     if row is None:
         return {}
@@ -288,3 +372,35 @@ def _row_to_dict(row) -> dict:
             except (json.JSONDecodeError, TypeError):
                 pass
     return d
+
+
+def export_data(format: str = "json") -> tuple[str, str, str]:
+    """导出资产与变更为 CSV / JSON（P2-2 / X3：仅本地文件，无服务端）。
+
+    返回 (内容, MIME 类型, 建议文件名)。
+    """
+    targets, _ = get_targets(limit=100000)
+    changes = get_changes(limit=100000)
+    stats = get_stats()
+
+    if format == "csv":
+        buf = io.StringIO()
+        writer = csv.writer(buf)
+        writer.writerow([
+            "id", "url", "host", "status", "tech_stack",
+            "sensitive_count", "cve_count", "first_seen", "last_seen",
+        ])
+        for t in targets:
+            tech = ",".join(t.get("tech_stack") or [])
+            writer.writerow([
+                t.get("id"), t.get("url"), t.get("host"), t.get("status"),
+                tech, t.get("sensitive_count"), t.get("cve_count"),
+                t.get("first_seen"), t.get("last_seen"),
+            ])
+        return buf.getvalue(), "text/csv; charset=utf-8", "guanxing_targets.csv"
+
+    content = json.dumps(
+        {"targets": targets, "changes": changes, "stats": stats},
+        ensure_ascii=False, indent=2,
+    )
+    return content, "application/json; charset=utf-8", "guanxing_export.json"

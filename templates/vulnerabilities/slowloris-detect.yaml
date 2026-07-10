@@ -13,7 +13,7 @@ info:
 tcp:
   - host:
       - "{{Hostname}}"
-    port: {{Port}}
+    port: "{{Port}}"
     inputs:
       - data: "GET / HTTP/1.1\r\nHost: {{Hostname}}\r\n"
       - data: "X-a: b\r\n"

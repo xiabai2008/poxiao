@@ -29,8 +29,10 @@ from .template import (
 class TemplateLoader:
     """YAML 模板加载器"""
 
-    # 默认模板目录
-    DEFAULT_TEMPLATE_DIR = Path(__file__).parent.parent.parent / "templates"
+    # 默认模板目录（支持环境变量覆盖）
+    DEFAULT_TEMPLATE_DIR = Path(
+        os.environ.get("POXIAO_TEMPLATES_PATH", "")
+    ) if os.environ.get("POXIAO_TEMPLATES_PATH") else Path(__file__).parent.parent.parent / "templates"
 
     def __init__(self, template_dir: str = "", extra_dirs: list = None):
         """

@@ -1,6 +1,9 @@
 """扫描命令"""
 
 import asyncio
+import json
+import os
+import sys as _sys
 import time
 from pathlib import Path
 
@@ -96,13 +99,10 @@ def cmd_scan(args):
     Out.info(f"单目标报告: {reporter.output_dir}/")
 
     # ── Full depth: 调用 RayScan 做 SQLi+XSS 深度扫描 ──
-    import os
     if args.depth == "full" and alive_targets:
         Out.blank()
         Out.section("RayScan 深度检测", "🔬")
         try:
-            import sys as _sys
-
             # RayScan 路径: 环境变量 > 配置 > 默认路径
             raydir = os.environ.get(
                 "POXIAO_RAYSCAN_PATH",
@@ -164,7 +164,7 @@ def cmd_scan(args):
                     outdir = Path(reporter.output_dir) / "rayscan"
                     outdir.mkdir(exist_ok=True)
                     (outdir / f"{safe_name}.json").write_text(
-                        __import__("json").dumps(deep_findings, indent=2, ensure_ascii=False),
+                        json.dumps(deep_findings, indent=2, ensure_ascii=False),
                         encoding="utf-8",
                     )
                     async def _close_session():

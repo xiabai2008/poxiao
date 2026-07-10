@@ -34,7 +34,8 @@ class POCEngine:
 
     def __init__(self, timeout: float = 10.0, concurrency: int = 10,
                  follow_redirects: bool = True, verify_ssl: bool = False,
-                 stealth: bool = False, proxy_file: str = "",
+                 stealth: bool = False, enable_waf_bypass: bool = False,
+                 proxy_file: str = "",
                  proxy_list: list = None, qps: float = 10.0,
                  per_domain_qps: float = 3.0):
         self.timeout = timeout
@@ -45,9 +46,11 @@ class POCEngine:
         self.extractor_engine = ExtractorEngine()
         self.loader = TemplateLoader()
         self.stealth = stealth
+        self.enable_waf_bypass = enable_waf_bypass
         self._stealth_client = None
 
-        if stealth:
+        # WAF 绕过需要 StealthClient 承载；显式 --waf-bypass 时即使未开 --stealth 也构造它
+        if stealth or enable_waf_bypass:
             from src.xiazhi.stealth_client import StealthClient
             self._stealth_client = StealthClient(
                 proxy_file=proxy_file,
@@ -57,6 +60,7 @@ class POCEngine:
                 timeout=timeout,
                 verify_ssl=verify_ssl,
                 follow_redirects=follow_redirects,
+                enable_waf_bypass=enable_waf_bypass,
             )
 
     async def scan_target(self, target_url: str,

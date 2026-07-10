@@ -1,0 +1,20 @@
+id: git-index-exposure
+info:
+  name: Git 索引文件泄露
+  severity: high
+  description: .git/index 可访问，攻击者可据此恢复完整源码树与历史提交
+  tags: git,exposure,source-code,high
+  author: poxiao
+
+http:
+  - method: GET
+    path:
+      - "{{BaseURL}}/.git/index"
+    matchers-condition: and
+    matchers:
+      - type: status
+        status: [200]
+      - type: word
+        words:
+          - "DIRC"
+        part: body

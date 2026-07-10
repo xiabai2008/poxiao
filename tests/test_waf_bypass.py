@@ -1,7 +1,7 @@
 """WAF 绕过模块测试"""
 
 import pytest
-from src.stealth.waf_bypass import WAFBypass
+from src.xiazhi.waf_bypass import WAFBypass
 
 
 @pytest.fixture

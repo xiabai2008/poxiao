@@ -1,0 +1,28 @@
+id: springboot-actuator-env-exposure
+info:
+  name: Spring Boot Actuator /env 泄露
+  severity: critical
+  description: /actuator/env 暴露环境变量，可能包含数据库密码、API 密钥等敏感配置
+  tags: springboot,actuator,misconfig,java,critical
+  author: poxiao
+
+http:
+  - method: GET
+    path:
+      - "{{BaseURL}}/actuator/env"
+    matchers-condition: and
+    matchers:
+      - type: status
+        status: [200]
+      - type: word
+        words:
+          - "\"propertySources\""
+          - "\"activeProfiles\""
+          - "systemEnvironment"
+        condition: or
+        part: body
+    extractors:
+      - type: regex
+        regex:
+          - "(?i)(password|secret|token|key)\\s*[:=]"
+        name: env_secrets

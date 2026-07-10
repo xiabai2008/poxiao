@@ -2343,12 +2343,14 @@ BUILTIN_VULNS = [
         "fixed": "8.0.28 / 8.1.17 / 8.2.5",
         "cpe": "cpe:2.3:a:php:php:*:*:*:*:*:*:*:*",
     },
+    # CVE-2021-21708：PHP 8.0.16/8.1.3 安全发布唯一真实 CVE（filter 扩展 FILTER_VALIDATE_FLOAT UAF）。
+    # 核实来源：php.net/ChangeLog-8.php、php.watch 8.1.3 发布说明。2026-07-09 由主理人补入（替换此前虚构的 mbstring 记录）。
     {
         "component": "php",
-        "cve": "CVE-2022-21661",
+        "cve": "CVE-2021-21708",
         "severity": "HIGH",
         "cvss": 7.5,
-        "description": "PHP mbstring crafted input DoS",
+        "description": "PHP filter FILTER_VALIDATE_FLOAT UAF (php_filter_float, crafted numeric string)",
         "affected": "< 8.0.16 / < 8.1.3",
         "fixed": "8.0.16 / 8.1.3",
         "cpe": "cpe:2.3:a:php:php:*:*:*:*:*:*:*:*",
