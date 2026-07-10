@@ -457,7 +457,7 @@ class JingZhe:
         self, base: str, path: str, client: httpx.AsyncClient, is_catchall
     ) -> list[VerifiedFinding]:
         """扫描单个路径并返回发现列表"""
-        findings = []
+        findings: list[VerifiedFinding] = []
         full_url = f"{base}{path}"
         try:
             resp = await client.get(full_url, timeout=self.timeout)

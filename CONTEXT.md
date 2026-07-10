@@ -71,6 +71,7 @@
 | 2026-07-09 | 主理人 | §4/§2 增强：补入真实条目 `CVE-2021-21708`（filter UAF）；BUILTIN_VULNS 现为 257 条记录 / 257 唯一，README 与 X1 同步为 257 |
 | 2026-07-10 | 主理人 | §6 新增升级路线图索引；落实评审修订 F1~F3 / R1~R4（详见 `.workbuddy/delivery/后续开发升级方案.md`） |
 | 2026-07-10 | 主理人 | Phase 2 全 5 任务（P2-1~P2-5）落地：FOFA 接入/观星告警导出/WAF 默认关/HTML 报告/惊蛰模板+平台格式；pytest 124 passed、ci_audit PASS、mypy 核心零错误；§6.2.1/§6.3 同步 |
+| 2026-07-11 | 主理人 | Phase 3 全 4 任务（P3-1~P3-4）落地：SBOM(CycloneDX)/模板工具链(validate+diff)/渐进类型门禁扩至9模块/性能压测基准；新增 tools/gen_sbom|template_sync|type_check|bench 与 3 测试文件；pytest 135 passed、ci_audit PASS、type_check 9 模块零错误；§6.2.2/§6.4 同步 |
 
 ---
 
@@ -105,7 +106,14 @@
 - **P2-4 HTML 报告**：`src/utils/html_report.py` 新增 `render_html_report`（纯 stdlib `html`，所有动态字段 `html.escape` 防 XSS，不引 Jinja2 守 Q5）；CLI `report --format html` 输出 `report_<ts>.html`。`tests/test_html_report.py`（6 passed，覆盖 `<script>` 注入转义）。
 - **P2-5 惊蛰模板扩充 + 平台格式增强**：新增 9 个 Nuclei 风格模板（默认凭据×3：jenkins/grafana/phpmyadmin；Git 泄露×3：HEAD/index/.gitignore；Swagger×1：openapi-v3；Actuator×2：env/heapdump），均通过 `ci_audit.py`；`src/dawn/src_reporter.py` 新增 `PLATFORM_META` 平台专属字段（butian 厂商名/提交类型、vulbox 利用条件/危害、cnvd 影响产品/危害级别）+ `platform_fields()` + `generate_vuln_report(meta=...)` + `generate_batch(platform=...)`。`tests/test_src_reporter.py`（6 passed）。
 - **总体验收 M2**：`ci_audit.py` exit 0（模板 224 / CVE 257 唯一）；pytest **124 passed**（Phase 1 基线 92 + Phase 2 新增 32）；mypy 核心模块（`config.py`/`redline.py`/`guanxing/db.py`/`guanxing/web.py`）零错误。
-- 遗留（Phase 2 不解决，仅记录）：测试覆盖率约 10%（长期补测试工程）；git 未提交（仓库未配置 `user.name/user.email`）。
+- 遗留（Phase 2 不解决，仅记录）：测试覆盖率约 10%（长期补测试工程）。git 提交已于 2026-07-10 完成（`0918dd6` 推送 origin/main）。
+
+### 6.2.2 Phase 3 落地（2026-07-11，全绿）
+- **P3-1 SBOM 与供应链（D12 / A08）**：`tools/gen_sbom.py` 生成 **CycloneDX 1.5** SBOM JSON（基于 `importlib.metadata` 解析已安装版本 + `purl`，可选 SHA-256 完整性指纹）；`--include-dev` / `--no-hashes` / `--deps-file` 可控；纯 stdlib + setuptools，`mypy` 零错误（守 X3/Q5 精神）。`tests/test_gen_sbom.py`（4 passed）。
+- **P3-2 POC 模板工具链（D1 / X1）**：`tools/template_sync.py` 提供 `validate`（Nuclei 字段校验，不修改模板）与 `diff`（两目录按相对路径 + sha256 比对，added/removed/modified **计数作指标不判失败**，守 X1 不硬编码 215）；与 `ci_audit.py` 硬门禁互补。`tests/test_template_sync.py`（5 passed）。
+- **P3-3 类型化推进（D10 / R2）**：新增 `tools/type_check.py` 作为渐进式门禁**单一事实来源**（CI 与本地共用）；门禁模块由 4 核心扩展到 **9**（新增 `html_report`/`notify`/`jingzhe` + 两个 `tools/*`），全部零错误；不承诺全仓 `--strict`（R2）。`pyproject.toml` dev 依赖补 `mypy`；`.github/workflows/ci.yml` type-check job 改为调用 `type_check.py`。
+- **P3-4 性能压测（D11）**：`tools/bench.py` 合成 asyncio 并发基准（不触网），指标含吞吐/时延 P50~P99/错误率，并检测"超时雪崩"（错误率超阈值 exit 2，仅提示不阻断）。`tests/test_bench.py`（2 passed）。
+- **总体验收 M3**：`ci_audit.py` exit 0（CVE 257 / 模板 224）；`pytest` **135 passed**（Phase 2 基线 124 + Phase 3 新增 11）；`tools/type_check.py` 9 模块零错误；`bench.py --targets 100` 产出吞吐/时延指标无崩溃。
 
 ### 6.3 Phase 2 任务清单（✅ 全部完成，见 §6.2.1）
 
@@ -116,4 +124,13 @@
 | P2-3 WAF 接线修正 | 默认关（修正 X2）+ 显式 `--waf-bypass` | D7 / X2 / F1 | ✅ |
 | P2-4 HTML 报告 | stdlib 生成、动态文本转义 | D6 / Q5 / R3 | ✅ |
 | P2-5 惊蛰验证增强 | 默认凭据/Git/Swagger/Actuator 模板 + 平台格式增强 | F10~F12 | ✅ |
+
+### 6.4 Phase 3 任务清单（✅ 全部完成，见 §6.2.2）
+
+| 任务 | 目标 | 关联约束 | 状态 |
+| --- | --- | --- | --- |
+| P3-1 SBOM 与供应链 | CycloneDX SBOM + 依赖哈希（可审计） | D12 / A08 / X3 | ✅ |
+| P3-2 POC 模板工具链 | 模板 schema 校验 CLI + 社区模板增量 diff（计数作指标） | D1 / X1 | ✅ |
+| P3-3 类型化推进 | 渐进式门禁扩展到 9 模块零错误（不承诺全 strict） | D10 / R2 | ✅ |
+| P3-4 性能压测 | asyncio 合成基准 + 吞吐/雪崩指标 | D11 | ✅ |
 

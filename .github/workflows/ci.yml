@@ -52,12 +52,8 @@ jobs:
           python -m pip install --upgrade pip
           pip install -e ".[dev]"
 
-      # 渐进式关卡：仅对核心模块做 mypy 校验（非 --strict）。
+      # 渐进式关卡：仅对 curated 模块做 mypy 校验（非 --strict）。
+      # 模块列表由 tools/type_check.py 单一事实来源维护（含 Phase 3 扩展）。
       # 全仓约 150+ 处类型错误，按 R2 修订逐模块收紧，不承诺近期 --strict 零错误。
-      - name: mypy on curated core modules (hard gate)
-        run: |
-          python -m mypy \
-            src/config.py \
-            src/utils/redline.py \
-            src/guanxing/db.py \
-            src/guanxing/web.py
+      - name: mypy on curated modules (hard gate, P1-4 / P3-3)
+        run: python tools/type_check.py
