@@ -57,3 +57,28 @@ jobs:
       # 全仓约 150+ 处类型错误，按 R2 修订逐模块收紧，不承诺近期 --strict 零错误。
       - name: mypy on curated modules (hard gate, P1-4 / P3-3)
         run: python tools/type_check.py
+
+  build-wheel:
+    name: Build wheel (P4-1 / M4)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install build backend
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install build wheel
+
+      - name: Build wheel
+        run: python -m build --wheel
+
+      - name: Verify wheel installable + console script
+        run: |
+          python -m pip install dist/*.whl
+          poxiao --help

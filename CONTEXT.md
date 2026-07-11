@@ -72,6 +72,7 @@
 | 2026-07-10 | 主理人 | §6 新增升级路线图索引；落实评审修订 F1~F3 / R1~R4（详见 `.workbuddy/delivery/后续开发升级方案.md`） |
 | 2026-07-10 | 主理人 | Phase 2 全 5 任务（P2-1~P2-5）落地：FOFA 接入/观星告警导出/WAF 默认关/HTML 报告/惊蛰模板+平台格式；pytest 124 passed、ci_audit PASS、mypy 核心零错误；§6.2.1/§6.3 同步 |
 | 2026-07-11 | 主理人 | Phase 3 全 4 任务（P3-1~P3-4）落地：SBOM(CycloneDX)/模板工具链(validate+diff)/渐进类型门禁扩至9模块/性能压测基准；新增 tools/gen_sbom|template_sync|type_check|bench 与 3 测试文件；pytest 135 passed、ci_audit PASS、type_check 9 模块零错误；§6.2.2/§6.4 同步 |
+| 2026-07-11 | 主理人 | Phase 4 全 4 任务（P4-1~P4-4）落地：wheel 打包（补 build-system/修正 scripts 入口为唯一 `poxiao`/CI `build-wheel` job）/PR 模板+pr_check 校验 CI/用户+开发者文档/i18n deferred；`.gitignore` 补忽略（.coverage/dist/_*.txt）；本地 `python -m build --wheel` 成功 + `poxiao --help` 可运行；pytest 135 passed、ci_audit PASS、type_check 9 模块零错误；§6.5/§6.6 同步 |
 
 ---
 
@@ -133,4 +134,20 @@
 | P3-2 POC 模板工具链 | 模板 schema 校验 CLI + 社区模板增量 diff（计数作指标） | D1 / X1 | ✅ |
 | P3-3 类型化推进 | 渐进式门禁扩展到 9 模块零错误（不承诺全 strict） | D10 / R2 | ✅ |
 | P3-4 性能压测 | asyncio 合成基准 + 吞吐/雪崩指标 | D11 | ✅ |
+
+### 6.5 Phase 4 落地（2026-07-11，全绿）— 协作与分发（M4）
+- **P4-1 打包分发（D12 延续 / M4）**：`pyproject.toml` 新增 `[build-system]`（`setuptools>=61`+`wheel`）；修正 `[project.scripts]` 为唯一真实入口 `poxiao = "src.cli:main"`（全仓经 `search_content` 确认仅 `src/cli.py` 有 `main()`，原 `frostmoon/...:main` 入口不实）；补全 `readme`/`license`(SPDX `MIT`)/`authors`/`keywords`/`classifiers`；`.github/workflows/ci.yml` 新增 `build-wheel` job（ubuntu + `python -m build --wheel` + 安装冒烟 `poxiao --help`）。**本地验证**：`python -m build --wheel` 成功产出 `poxiao-3.0.0-py3-none-any.whl`，`pip install` 后 `poxiao --help` 正常列出全部 12 子命令。模板本阶段不进 wheel（运行时用源码 `templates/` 或 `--templates-dir`），文档已说明。
+- **P4-2 模板贡献流程（D1 / X1 / M4）**：新增 `.github/PULL_REQUEST_TEMPLATE.md`（模板须过 `template_sync validate`、id 唯一、必填字段、不硬编码数量）；新增 `.github/workflows/pr_check.yml`（PR 改动 `templates/**` 时跑 `template_sync validate` + `ci_audit` 硬门禁），与 `ci.yml` 主 CI 互补。
+- **P4-3 文档体系（M4）**：新增 `docs/USER_GUIDE.md`（安装/快速上手/模块速览/观星/红线）+ `docs/DEVELOPER.md`（仓库结构/CI 三件套/类型化渐进/模板贡献/SBOM/压测/i18n 方向），以 `CONTEXT.md` 为 ADR 基线。
+- **P4-4 i18n（D13，可选 / deferred）**：本阶段不实装代码改动；`docs/DEVELOPER.md` 记录后续方向（抽取文案层 + 验证英文报告/社区模板兼容）；HTML 报告已用 `html.escape` 守 Q5，天然兼容 UTF-8。
+- **工程改进**：`.gitignore` 新增忽略 `.coverage`、`dist/`、`*.egg-info/`、`_*.txt`（提交临时文件），杜绝误提交（此前 `_msg.txt` 曾误纳入）。
+- **总体验收 M4**：`python -m build --wheel` 成功且 `poxiao --help` 可运行；`ci_audit.py` PASS（CVE 257 / 模板 224）；`pytest` **135 passed**；`tools/type_check.py` 9 模块零错误；`pr_check.yml` + PR 模板到位；用户/开发者文档齐备。
+
+### 6.6 Phase 4 任务清单（✅ 全部完成，见 §6.5）
+| 任务 | 目标 | 关联约束 | 状态 |
+| --- | --- | --- | --- |
+| P4-1 打包分发 | wheel 可构建 + `poxiao` 一键安装运行（修正虚假入口） | D12 / M4 | ✅ |
+| P4-2 模板贡献流程 | PR 模板 + PR 校验 CI（template_sync validate + ci_audit） | D1 / X1 / M4 | ✅ |
+| P4-3 文档体系 | 用户手册 + 开发者指南 | M4 | ✅ |
+| P4-4 i18n | 框架 deferred（文档记录方向） | D13 | ⏸️（可选延后） |
 

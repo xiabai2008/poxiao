@@ -31,6 +31,16 @@ env/
 temp_*.txt
 *.tmp
 *.log
+# 提交脚本临时文件（_msg.txt / _cm.txt 等，曾被误提交）
+_*.txt
+
+# 测试/构建产物
+.coverage
+.coverage.*
+htmlcov/
+dist/
+build/
+*.egg-info/
 
 # 操作系统
 .DS_Store
