@@ -58,7 +58,7 @@ class Config:
     """Unified configuration manager"""
 
     _instance: Optional["Config"] = None
-    _config: dict = {}
+    _config = None  # 延迟初始化为 dict(DEFAULT_CONFIG)；用 None 作为“未初始化”哨兵
 
     def __new__(cls):
         if cls._instance is None:

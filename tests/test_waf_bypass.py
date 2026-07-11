@@ -107,8 +107,8 @@ class TestRequestInterval:
         intervals = [bypass.get_request_interval(base_interval=1.0, jitter=0.5) for _ in range(100)]
         # 应该有变化
         assert len(set(intervals)) > 1
-        # 应该在合理范围内
-        assert all(0.1 <= i <= 6.0 for i in intervals)
+        # 应该在合理范围内 (理论最大值 = base_interval + jitter + 长暂停 = 1.5 + 5.0 = 6.5)
+        assert all(0.1 <= i <= 6.5 for i in intervals)
 
     def test_should_pause(self, bypass):
         # 每 50 个请求应该暂停

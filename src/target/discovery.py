@@ -209,6 +209,10 @@ class DomainDiscovery:
         candidates = self.discover(company_name)
         return candidates[0].domain if candidates else None
 
+    def close(self):
+        """释放资源（当前无持久连接；保留接口以兼容 cmd_discover 的 finally）"""
+        pass
+
     def discover_batch(self, company_names: list[str],
                        verify: bool = True) -> dict[str, Optional[str]]:
         """批量发现（同步）"""

@@ -46,9 +46,12 @@ include = ["src*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-# 覆盖率作为指标报告（非硬门槛）；ci_audit + 测试通过才是硬门禁。
-# 路线图目标 ≥60%，当前基线约 10%，随测试补齐逐步上调 fail_under。
+# 路线图目标 ≥60%；P5 覆盖率提升阶段已达成，设为硬门槛防止回归。
+# 注：ci_audit + 测试全部通过仍是首要门禁，覆盖率门槛为次级保障。
 addopts = "-ra --cov=src --cov-report=term-missing"
+
+[tool.coverage.report]
+fail_under = 60
 
 # mypy (P1-4 / R2)：渐进式，非 --strict。
 # Phase 1 仅对核心模块做关卡（见 .github/workflows/ci.yml），

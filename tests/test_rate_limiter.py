@@ -79,3 +79,60 @@ class TestRateLimiter:
             wait = loop.run_until_complete(limiter.acquire("example.com"))
             assert wait <= 0.2  # 允许少量等待
         loop.close()
+
+
+class TestDomainBucket:
+    """主域名分组测试"""
+
+    def test_two_part_domain(self):
+        limiter = RateLimiter()
+        b = limiter._get_domain_bucket("example.com")
+        assert b is limiter.domain_buckets["example.com"]
+
+    def test_three_part_domain(self):
+        limiter = RateLimiter()
+        b = limiter._get_domain_bucket("sub.example.com")
+        assert b is limiter.domain_buckets["example.com"]
+
+    def test_cn_suffix_grouping(self):
+        limiter = RateLimiter()
+        b = limiter._get_domain_bucket("a.example.com.cn")
+        assert b is limiter.domain_buckets["example.com.cn"]
+
+    def test_other_suffix_grouping(self):
+        limiter = RateLimiter()
+        b = limiter._get_domain_bucket("a.example.xyz")
+        assert b is limiter.domain_buckets["example.xyz"]
+
+    def test_subdomains_share_bucket(self):
+        limiter = RateLimiter()
+        b1 = limiter._get_domain_bucket("x.example.com")
+        b2 = limiter._get_domain_bucket("y.example.com")
+        assert b1 is b2
+
+
+class TestStats:
+    """统计信息测试"""
+
+    def test_get_stats_empty(self):
+        limiter = RateLimiter()
+        assert limiter.get_stats() == {}
+
+    def test_get_stats_after_acquire(self):
+        limiter = RateLimiter(qps=100, burst=100)
+        loop = asyncio.new_event_loop()
+        loop.run_until_complete(limiter.acquire("example.com"))
+        loop.close()
+        stats = limiter.get_stats()
+        assert "example.com" in stats
+        assert stats["example.com"]["requests"] == 1
+
+    def test_print_stats(self, capsys):
+        limiter = RateLimiter(qps=100, burst=100)
+        loop = asyncio.new_event_loop()
+        loop.run_until_complete(limiter.acquire("example.com"))
+        loop.close()
+        limiter.print_stats()
+        out = capsys.readouterr().out
+        assert "限速统计" in out
+        assert "example.com" in out

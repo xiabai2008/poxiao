@@ -76,7 +76,7 @@ class CertInfo:
                         "%b  %d %H:%M:%S %Y %Z", "%Y-%m-%dT%H:%M:%S"]:
                 try:
                     exp = datetime.strptime(self.not_after.strip(), fmt)
-                    return (exp - datetime.utcnow()).days
+                    return (exp - datetime.now()).days
                 except ValueError:
                     continue
         except Exception:

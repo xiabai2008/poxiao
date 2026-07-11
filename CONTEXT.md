@@ -73,6 +73,7 @@
 | 2026-07-10 | 主理人 | Phase 2 全 5 任务（P2-1~P2-5）落地：FOFA 接入/观星告警导出/WAF 默认关/HTML 报告/惊蛰模板+平台格式；pytest 124 passed、ci_audit PASS、mypy 核心零错误；§6.2.1/§6.3 同步 |
 | 2026-07-11 | 主理人 | Phase 3 全 4 任务（P3-1~P3-4）落地：SBOM(CycloneDX)/模板工具链(validate+diff)/渐进类型门禁扩至9模块/性能压测基准；新增 tools/gen_sbom|template_sync|type_check|bench 与 3 测试文件；pytest 135 passed、ci_audit PASS、type_check 9 模块零错误；§6.2.2/§6.4 同步 |
 | 2026-07-11 | 主理人 | Phase 4 全 4 任务（P4-1~P4-4）落地：wheel 打包（补 build-system/修正 scripts 入口为唯一 `poxiao`/CI `build-wheel` job）/PR 模板+pr_check 校验 CI/用户+开发者文档/i18n deferred；`.gitignore` 补忽略（.coverage/dist/_*.txt）；本地 `python -m build --wheel` 成功 + `poxiao --help` 可运行；pytest 135 passed、ci_audit PASS、type_check 9 模块零错误；§6.5/§6.6 同步 |
+| 2026-07-11 | 主理人 | Phase 5 覆盖率提升落地：补齐命令层/工具层/引擎纯逻辑单测（poc_engine/guanxing_db/tech_stack/cve_match/crypto/matcher/vernalequinox 多模块/user_agents/wayback/rate_limiter 等）；修复 2 个真实产品 bug（`Config` 空配置路径、`DomainDiscovery.close` 缺失、`cert_info` 弃用 `utcnow`）；整体覆盖率由基线约 33% → **60.05%**，`pyproject.toml` 设 `fail_under=60` 硬门槛；pytest **505 passed**、ci_audit PASS、type_check 9 模块零错误；§6.7/§6.8 同步 |
 
 ---
 
@@ -97,7 +98,7 @@
 - **类型注解起步 (P1-4 / R2)**：`[tool.mypy]` 渐进式配置（非 `--strict`）；`config.py` / `redline.py` / `guanxing/db.py` / `guanxing/web.py` 已 mypy 零错误；CI 新增 `type-check` job 作为核心模块硬门禁。全仓约 150+ 处类型错误（多为隐式 Optional 默认值 + 少量真实类型问题），按 R2 逐模块收紧，不承诺近期 `--strict` 零错误。
 - **GuanXing schema 迁移**：`db.py` 增加 `SCHEMA_VERSION` 常量 + `_meta` 版本表 + 幂等 `_migrate()` 框架（CREATE TABLE IF NOT EXISTS + 版本号 guard），解决 WAL 之外缺失的 schema 演进能力。
 - 顺带修复 `guanxing/web.py:33` 真实类型 bug：`auth.username/password` 为 `str | None`，原本传给 `str` 参数；已放宽为 `Optional[str]`。
-- 覆盖率现状：整体约 10%（92 测试仅覆盖 `xiazhi` 子包），路线图目标 ≥60% 待补测试。
+- 覆盖率现状：基线约 10%（92 测试仅覆盖 `xiazhi` 子包）；**已于 Phase 5 达成路线图目标 ≥60%（实测 60.05%，`fail_under=60` 硬门槛）**，详见 §6.7。
 - **Phase 2 规格已定**：详见 `.workbuddy/delivery/Phase2_规格.md`（权威）。含 5 任务 P2-1~P2-5，并对原路线图做事实校正：① WAF 绕过在 `stealth_client.py` 默认 `True`（违反 X2），须翻转为默认关 + 显式 `--waf-bypass`；② 被动侦察 Censys/Wayback/GitHubLeak 已满足 ≥3，P2-1 重点补 FOFA + 密钥隔离/降级；③ HTML 报告锁定 Q5（仅 stdlib，`html.escape` + f-string，不引 Jinja2）。
 
 ### 6.2.1 Phase 2 落地（2026-07-10，全绿）
@@ -150,4 +151,21 @@
 | P4-2 模板贡献流程 | PR 模板 + PR 校验 CI（template_sync validate + ci_audit） | D1 / X1 / M4 | ✅ |
 | P4-3 文档体系 | 用户手册 + 开发者指南 | M4 | ✅ |
 | P4-4 i18n | 框架 deferred（文档记录方向） | D13 | ⏸️（可选延后） |
+
+### 6.7 Phase 5 落地（2026-07-11，全绿）— 覆盖率提升（路线图 ≥60% 达成，M5）
+- **P5-1 命令层/工具层单测补齐（F3 收口）**：补齐 `test_commands.py`/`test_utils.py`/`test_config.py` 等，覆盖 CLI 调度（`CMD_MAP`/`BANNER_MAP`）、`Config` 单例（含空配置路径修复）、`output`/`banner`/`redline`/`html_report` 等纯逻辑。
+- **P5-2 引擎纯逻辑单测补齐**：`test_poc_engine.py`（变量展开/端口解析/结果落盘打印）、`test_guanxing_db.py`（SQLite CRUD/统计/导入导出，89%）、`test_tech_stack.py`（95%）、`test_cve_match.py`（版本区间匹配，66%）、`test_matcher_extra.py`（94%）、`test_crypto_extra.py`（83%）、`test_vernalequinox.py`（DNS/Cert/IP/CDN/ReconEngine，78%）、`test_user_agents.py`（95%）、`test_wayback.py`（95%）、`test_rate_limiter.py`（100%）。
+- **P5-3 真实产品 bug 修复**：① `Config` 空配置/缺键路径异常；② `DomainDiscovery.close()` 缺失导致资源泄漏；③ `cert_info.py` `datetime.utcnow()`（Python 3.12 弃用）改为 `datetime.now()`；④ `template.py` 模块文档字符串 `\s` 无效转义 SyntaxWarning 修复（改原始字符串）。
+- **P5-4 覆盖率门禁落地**：`pyproject.toml` 新增 `[tool.coverage.report] fail_under = 60`，将路线图 ≥60% 目标变为 CI 次级硬门槛（首要门禁仍为 ci_audit + 测试全通过）。
+- **总体验收 M5**：`pytest` **505 passed**（Phase 4 基线 135 + Phase 5 新增 ~370）；整体覆盖率 **60.05%**（6976 语句 / 2787 遗漏），`fail_under=60` 达成；`ci_audit.py` PASS（CVE 257 / 模板 224）；`tools/type_check.py` 9 模块零错误。
+- 遗留（Phase 5 不解决，仅记录）：低 ROI 触网/重 IO 模块仍偏低（`poc.py`/`scan.py` 命令层 4~8%、`proxy_pool.py` 26%、`stealth_client.py` 31%、`whois_lookup.py` 36%、`icp_query.py` 40%、`frostmoon/collector.py` 17%、`jingzhe.py` 11%）；i18n 仍 deferred（见 P4-4）。
+
+### 6.8 Phase 5 任务清单（✅ 全部完成，见 §6.7）
+
+| 任务 | 目标 | 关联约束 | 状态 |
+| --- | --- | --- | --- |
+| P5-1 命令/工具层单测 | CLI 调度 + Config + 工具纯逻辑覆盖 | F3 | ✅ |
+| P5-2 引擎纯逻辑单测 | 各引擎纯函数/数据模型高覆盖 | F3 | ✅ |
+| P5-3 真实 bug 修复 | Config/close/utcnow/转义 4 处修复 | D10 | ✅ |
+| P5-4 覆盖率门禁 | `fail_under=60` 硬门槛 | F3 | ✅ |
 
