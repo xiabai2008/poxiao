@@ -13,6 +13,7 @@ from src.utils.banner import print_banner
 from src.utils.output import Out
 from src.utils.help import get_examples
 from src.commands import CMD_MAP, BANNER_MAP
+from src.i18n import set_locale
 
 
 def safe_run(func, *args, **kwargs):
@@ -60,6 +61,9 @@ def main():
         epilog=get_examples("main"),
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
+    # 全局语言选项（i18n / D13）：需在子命令前指定，如 `poxiao --lang en scan ...`
+    parser.add_argument("--lang", choices=["zh", "en"], default=None,
+                        help="界面语言 (zh=中文 / en=English)，默认中文；亦可设环境变量 POXIAO_LANG")
     sub = parser.add_subparsers(dest="command")
 
     # ── scan 命令 ─────────────────────────────────
@@ -213,6 +217,10 @@ def main():
     config_sub.add_parser("path", help="显示配置文件路径")
 
     args = parser.parse_args()
+
+    # 应用语言设置（i18n / D13）：--lang 优先于环境变量 POXIAO_LANG
+    if args.lang:
+        set_locale(args.lang)
 
     if not args.command:
         print_banner("main")

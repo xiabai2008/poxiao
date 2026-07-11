@@ -18,6 +18,8 @@ import sys
 import time
 from typing import List, Dict, Any, Optional
 
+from src.i18n import _
+
 
 class C:
     """ANSI 颜色"""
@@ -53,19 +55,19 @@ class Out:
     def title(text: str, icon: str = ""):
         """打印标题"""
         prefix = f"{icon} " if icon else ""
-        Out._print(f"\n{C.BOLD}{C.CYAN}{prefix}{text}{C.RESET}")
+        Out._print(f"\n{C.BOLD}{C.CYAN}{prefix}{_(text)}{C.RESET}")
         Out._print(f"{C.DIM}{'─' * 60}{C.RESET}")
 
     @staticmethod
     def subtitle(text: str):
         """打印副标题"""
-        Out._print(f"\n  {C.BOLD}{text}{C.RESET}")
+        Out._print(f"\n  {C.BOLD}{_(text)}{C.RESET}")
 
     @staticmethod
     def section(text: str, icon: str = ""):
         """打印区块标题"""
         prefix = f"{icon} " if icon else ""
-        Out._print(f"\n  {C.CYAN}{C.BOLD}{prefix}{text}{C.RESET}")
+        Out._print(f"\n  {C.CYAN}{C.BOLD}{prefix}{_(text)}{C.RESET}")
         Out._print(f"  {C.DIM}{'─' * 50}{C.RESET}")
 
     # ── 状态消息 ──────────────────────────────────────
@@ -73,27 +75,27 @@ class Out:
     @staticmethod
     def success(text: str):
         """成功消息"""
-        Out._print(f"  {C.GREEN}[+]{C.RESET} {text}")
+        Out._print(f"  {C.GREEN}[+]{C.RESET} {_(text)}")
 
     @staticmethod
     def error(text: str):
         """错误消息"""
-        Out._print(f"  {C.RED}[!]{C.RESET} {text}")
+        Out._print(f"  {C.RED}[!]{C.RESET} {_(text)}")
 
     @staticmethod
     def warning(text: str):
         """警告消息"""
-        Out._print(f"  {C.YELLOW}[*]{C.RESET} {text}")
+        Out._print(f"  {C.YELLOW}[*]{C.RESET} {_(text)}")
 
     @staticmethod
     def info(text: str):
         """信息消息"""
-        Out._print(f"  {C.BLUE}[i]{C.RESET} {text}")
+        Out._print(f"  {C.BLUE}[i]{C.RESET} {_(text)}")
 
     @staticmethod
     def dim(text: str):
         """暗淡消息"""
-        Out._print(f"  {C.DIM}{text}{C.RESET}")
+        Out._print(f"  {C.DIM}{_(text)}{C.RESET}")
 
     # ── 关键值对 ──────────────────────────────────────
 
@@ -101,13 +103,13 @@ class Out:
     def kv(key: str, value: str, indent: int = 2):
         """打印 key: value 对"""
         spaces = " " * indent
-        Out._print(f"{spaces}{C.DIM}{key}:{C.RESET} {value}")
+        Out._print(f"{spaces}{C.DIM}{_(key)}:{C.RESET} {value}")
 
     @staticmethod
     def kv_row(key: str, value: str, key_width: int = 16, indent: int = 4):
         """打印对齐的 key: value 行"""
         spaces = " " * indent
-        padded_key = key.ljust(key_width)
+        padded_key = _(key).ljust(key_width)
         Out._print(f"{spaces}{C.DIM}{padded_key}{C.RESET} {value}")
 
     # ── 进度条 ────────────────────────────────────────
@@ -219,16 +221,16 @@ class Out:
     @staticmethod
     def summary(items: Dict[str, Any], title: str = "扫描摘要"):
         """打印统计摘要"""
-        Out.section(title)
+        Out.section(_(title))
         for key, value in items.items():
             if isinstance(value, dict):
-                Out._print(f"    {C.DIM}{key}:{C.RESET}")
+                Out._print(f"    {C.DIM}{_(key)}:{C.RESET}")
                 for k, v in value.items():
                     Out._print(f"      {k}: {v}")
             elif isinstance(value, list):
-                Out._print(f"    {C.DIM}{key}:{C.RESET} {', '.join(str(v) for v in value[:5])}")
+                Out._print(f"    {C.DIM}{_(key)}:{C.RESET} {', '.join(str(v) for v in value[:5])}")
             else:
-                Out._print(f"    {C.DIM}{key}:{C.RESET} {value}")
+                Out._print(f"    {C.DIM}{_(key)}:{C.RESET} {value}")
 
     # ── 分隔线 ────────────────────────────────────────
 

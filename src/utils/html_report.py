@@ -8,6 +8,8 @@ import html
 from datetime import datetime
 from typing import Any, Dict, List
 
+from src.i18n import _, get_locale
+
 
 def _tech_list(target: Dict[str, Any]) -> List[str]:
     """统一提取技术栈为字符串列表（兼容 dict / list / 其他）"""
@@ -20,7 +22,7 @@ def _tech_list(target: Dict[str, Any]) -> List[str]:
 
 
 def _risk_level(target: Dict[str, Any]) -> str:
-    """根据 CVE / 敏感路径计数粗略评估风险等级"""
+    """根据 CVE / 敏感路径计数粗略评估风险等级（返回中文标签）"""
     cve = len(target.get("cve_matches", []) or [])
     sens = len(target.get("sensitive_paths", []) or [])
     if cve > 0:
@@ -50,7 +52,7 @@ def render_html_report(summary: Dict[str, Any]) -> str:
     rows: List[str] = []
     for t in targets:
         url = t.get("target_url") or t.get("url") or ""
-        alive = "存活" if t.get("alive") else "不可达"
+        alive = _("存活") if t.get("alive") else _("不可达")
         techs = _tech_list(t)
         sens = len(t.get("sensitive_paths", []) or [])
         cves = len(t.get("cve_matches", []) or [])
@@ -63,20 +65,22 @@ def render_html_report(summary: Dict[str, Any]) -> str:
             f"<td>{html.escape(', '.join(techs))}</td>"
             f"<td>{sens}</td>"
             f"<td>{cves}</td>"
-            f'<td><span style="color:{color};font-weight:700">{html.escape(risk)}</span></td>'
+            f'<td><span style="color:{color};font-weight:700">{html.escape(_(risk))}</span></td>'
             "</tr>"
         )
 
     rows_html = "".join(rows) if rows else (
-        '<tr><td colspan="6" class="text-muted">无目标数据</td></tr>'
+        f'<tr><td colspan="6" class="text-muted">{_("无目标数据")}</td></tr>'
     )
 
+    lang = "en" if get_locale() == "en" else "zh-CN"
+
     return f"""<!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="{lang}">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>破晓 · 扫描报告</title>
+<title>{_("破晓 · 扫描报告")}</title>
 <style>
 body {{ font-family: -apple-system, "Segoe UI", "Microsoft YaHei", sans-serif; margin: 24px; color: #222; }}
 h1 {{ font-size: 20px; }}
@@ -87,10 +91,10 @@ th {{ background: #f5f5f5; }}
 </style>
 </head>
 <body>
-<h1>破晓 · 扫描报告</h1>
-<p class="text-muted">目标数: {len(targets)} | 生成时间: {html.escape(str(scan_time))}</p>
+<h1>{_("破晓 · 扫描报告")}</h1>
+<p class="text-muted">{_("目标")}: {len(targets)} | {_("生成时间")}: {html.escape(str(scan_time))}</p>
 <table>
-<thead><tr><th>目标</th><th>状态</th><th>技术栈</th><th>敏感路径</th><th>CVE</th><th>风险</th></tr></thead>
+<thead><tr><th>{_("目标")}</th><th>{_("状态")}</th><th>{_("技术栈")}</th><th>{_("敏感路径")}</th><th>CVE</th><th>{_("风险")}</th></tr></thead>
 <tbody>
 {rows_html}
 </tbody>

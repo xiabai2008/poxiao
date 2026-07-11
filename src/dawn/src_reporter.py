@@ -7,6 +7,8 @@ severity auto-adjustment, per-type fix suggestions, Chinese severity labels.
 from pathlib import Path
 from typing import Optional
 
+from src.i18n import _, get_locale
+
 
 class SRCReporter:
     """SRC 平台报告生成器"""
@@ -23,6 +25,20 @@ class SRCReporter:
         "LOW": "低危",
         "info": "信息",
         "INFO": "信息",
+    }
+
+    # 漏洞等级→英文（i18n / D13）
+    SEVERITY_EN = {
+        "critical": "Critical",
+        "CRITICAL": "Critical",
+        "high": "High",
+        "HIGH": "High",
+        "medium": "Medium",
+        "MEDIUM": "Medium",
+        "low": "Low",
+        "LOW": "Low",
+        "info": "Info",
+        "INFO": "Info",
     }
 
     # 漏洞类型→中文分类
@@ -51,6 +67,54 @@ class SRCReporter:
         "directory_listing": "目录遍历",
         "missing_header": "缺少安全响应头",
     }
+
+    # 漏洞类型→英文分类（i18n / D13）
+    VULN_TYPE_EN = {
+        "sqli": "SQL Injection",
+        "xss": "Cross-Site Scripting (XSS)",
+        "cmdi": "Command Injection",
+        "lfi": "File Inclusion",
+        "rce": "Remote Code Execution",
+        "ssrf": "Server-Side Request Forgery (SSRF)",
+        "xxe": "XML External Entity (XXE)",
+        "info_leak": "Sensitive Information Disclosure",
+        "cors": "CORS Misconfiguration",
+        "backup": "Backup File Disclosure",
+        "config": "Configuration File Disclosure",
+        "git": "Git Information Disclosure",
+        "source": "Source Code Disclosure",
+        "debug": "Debug Information Disclosure",
+        "admin": "Unauthorized Access",
+        "api": "API Information Disclosure",
+        "db": "Database Admin Panel Exposure",
+        "swagger": "Swagger/API Docs Disclosure",
+        "actuator": "Spring Boot Actuator Exposure",
+        "phpinfo": "phpinfo Disclosure",
+        "default_cred": "Default Credentials",
+        "directory_listing": "Directory Listing",
+        "missing_header": "Missing Security Headers",
+    }
+
+    # 严重级别排序（与 locale 无关）
+    _SEV_RANK = {
+        "critical": 0, "CRITICAL": 0,
+        "high": 1, "HIGH": 1,
+        "medium": 2, "MEDIUM": 2,
+        "low": 3, "LOW": 3,
+        "info": 4, "INFO": 4,
+    }
+
+    def _sev_label(self, severity: str) -> str:
+        """返回当前语言下的严重级别标签"""
+        if get_locale() == "en":
+            return self.SEVERITY_EN.get(severity, severity)
+        return self.SEVERITY_CN.get(severity, severity)
+
+    def _type_label(self, vuln_type: str) -> str:
+        """返回当前语言下的漏洞类型标签"""
+        if get_locale() == "en":
+            return self.VULN_TYPE_EN.get(vuln_type, vuln_type)
+        return self.VULN_TYPE_MAP.get(vuln_type, vuln_type)
 
     # 平台特定格式配置
     PLATFORM_CONFIG = {
@@ -131,8 +195,8 @@ class SRCReporter:
                   渲染 PLATFORM_META 中声明的字段。
         """
         cfg = self.PLATFORM_CONFIG.get(platform, self.PLATFORM_CONFIG["butian"])
-        sev_cn = self.SEVERITY_CN.get(severity, severity)
-        type_cn = self.VULN_TYPE_MAP.get(vuln_type, vuln_type)
+        sev_cn = self._sev_label(severity)
+        type_cn = self._type_label(vuln_type)
 
         # 如果没传 evidence 但有 finding 数据，自动生成
         if not evidence and finding and cfg["include_evidence"]:
@@ -142,24 +206,24 @@ class SRCReporter:
         lines = []
         lines.append(f"{h} {title}")
         lines.append("")
-        lines.append(f"{h}# 基本信息")
+        lines.append(f"{h}# {_('基本信息')}")
         lines.append("")
-        lines.append(f"- **{cfg['severity_field']}**: {sev_cn}")
-        lines.append(f"- **{cfg['url_field']}**: {vuln_url}")
-        lines.append(f"- **漏洞类型**: {type_cn}")
+        lines.append(f"- **{_(cfg['severity_field'])}**: {sev_cn}")
+        lines.append(f"- **{_(cfg['url_field'])}**: {vuln_url}")
+        lines.append(f"- **{_('漏洞类型')}**: {type_cn}")
 
         # 平台专属元数据字段（P2-5 增强）
         if meta:
             for label, key in self.platform_fields(platform):
                 val = meta.get(key, "")
                 if val:
-                    lines.append(f"- **{label}**: {val}")
+                    lines.append(f"- **{_(label)}**: {val}")
         lines.append("")
-        lines.append(f"{h}# 漏洞描述")
+        lines.append(f"{h}# {_('漏洞描述')}")
         lines.append("")
         lines.append(description)
         lines.append("")
-        lines.append(f"{h}# 复现步骤")
+        lines.append(f"{h}# {_('复现步骤')}")
         lines.append("")
         for i, step in enumerate(steps, 1):
             lines.append(f"{i}. {step}")
@@ -167,14 +231,14 @@ class SRCReporter:
 
         # 证据部分（补天/漏洞盒子要求）
         if evidence and cfg["include_evidence"]:
-            lines.append(f"{h}# HTTP 证据")
+            lines.append(f"{h}# {_('HTTP 证据')}")
             lines.append("")
             lines.append("```http")
             lines.append(evidence)
             lines.append("```")
             lines.append("")
 
-        lines.append(f"{h}# 修复建议")
+        lines.append(f"{h}# {_('修复建议')}")
         lines.append("")
         lines.append(suggestion or self._default_suggestion(vuln_type))
         lines.append("")
@@ -319,15 +383,13 @@ class SRCReporter:
             filepath.write_text(r["report"], encoding="utf-8")
 
         # 生成索引
-        index_lines = ["# SRC 报告索引", ""]
-        sev_order = {"严重": 0, "高危": 1, "中危": 2, "低危": 3}
-        all_reports.sort(key=lambda x: sev_order.get(
-            self.SEVERITY_CN.get(x["severity"], ""), 99
-        ))
+        index_lines = [_("SRC 报告索引"), ""]
+        all_reports.sort(key=lambda x: self._SEV_RANK.get(x["severity"], 99))
 
         for i, r in enumerate(all_reports):
-            sev = self.SEVERITY_CN.get(r["severity"], r["severity"])
-            icon = "🔴" if sev in ("严重", "高危") else "🟡" if sev == "中危" else "🔵"
+            sev = self._sev_label(r["severity"])
+            rank = self._SEV_RANK.get(r["severity"], 99)
+            icon = "🔴" if rank <= 1 else "🟡" if rank == 2 else "🔵"
             index_lines.append(f"{i+1}. {icon} [{sev}] {r['title']}")
 
         index_path = out / "INDEX.md"

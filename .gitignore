@@ -6,6 +6,8 @@ scan_results/*.json
 scan_results/*.md
 scan_results/src_reports/
 scan_results/rayscan/
+recon_report.json
+*_reports/
 
 # Python
 __pycache__/

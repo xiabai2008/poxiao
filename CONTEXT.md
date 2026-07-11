@@ -74,6 +74,7 @@
 | 2026-07-11 | 主理人 | Phase 3 全 4 任务（P3-1~P3-4）落地：SBOM(CycloneDX)/模板工具链(validate+diff)/渐进类型门禁扩至9模块/性能压测基准；新增 tools/gen_sbom|template_sync|type_check|bench 与 3 测试文件；pytest 135 passed、ci_audit PASS、type_check 9 模块零错误；§6.2.2/§6.4 同步 |
 | 2026-07-11 | 主理人 | Phase 4 全 4 任务（P4-1~P4-4）落地：wheel 打包（补 build-system/修正 scripts 入口为唯一 `poxiao`/CI `build-wheel` job）/PR 模板+pr_check 校验 CI/用户+开发者文档/i18n deferred；`.gitignore` 补忽略（.coverage/dist/_*.txt）；本地 `python -m build --wheel` 成功 + `poxiao --help` 可运行；pytest 135 passed、ci_audit PASS、type_check 9 模块零错误；§6.5/§6.6 同步 |
 | 2026-07-11 | 主理人 | Phase 5 覆盖率提升落地：补齐命令层/工具层/引擎纯逻辑单测（poc_engine/guanxing_db/tech_stack/cve_match/crypto/matcher/vernalequinox 多模块/user_agents/wayback/rate_limiter 等）；修复 2 个真实产品 bug（`Config` 空配置路径、`DomainDiscovery.close` 缺失、`cert_info` 弃用 `utcnow`）；整体覆盖率由基线约 33% → **60.05%**，`pyproject.toml` 设 `fail_under=60` 硬门槛；pytest **505 passed**、ci_audit PASS、type_check 9 模块零错误；§6.7/§6.8 同步 |
+| 2026-07-11 | 主理人 | Phase 6 i18n 落地（D13，路线图最后一项未启动交付物闭环）：新增 `src/i18n`（`_`/`set_locale`/`get_locale` + `EN` 目录，键即中文回退零破坏）；`Out` 输出层 + CLI `--lang {zh,en}`（兼 `POXIAO_LANG`）接入；`src_reporter`/`html_report` 严重级别/类型/章节/表头 locale 化（英文报告验证）；`tests/test_i18n.py`（12 passed，i18n 92%）；pytest **517 passed**、整体覆盖率 **60.50%**、ci_audit PASS、type_check 9 模块零错误；§6.9/§6.10 同步 |
 
 ---
 
@@ -158,7 +159,7 @@
 - **P5-3 真实产品 bug 修复**：① `Config` 空配置/缺键路径异常；② `DomainDiscovery.close()` 缺失导致资源泄漏；③ `cert_info.py` `datetime.utcnow()`（Python 3.12 弃用）改为 `datetime.now()`；④ `template.py` 模块文档字符串 `\s` 无效转义 SyntaxWarning 修复（改原始字符串）。
 - **P5-4 覆盖率门禁落地**：`pyproject.toml` 新增 `[tool.coverage.report] fail_under = 60`，将路线图 ≥60% 目标变为 CI 次级硬门槛（首要门禁仍为 ci_audit + 测试全通过）。
 - **总体验收 M5**：`pytest` **505 passed**（Phase 4 基线 135 + Phase 5 新增 ~370）；整体覆盖率 **60.05%**（6976 语句 / 2787 遗漏），`fail_under=60` 达成；`ci_audit.py` PASS（CVE 257 / 模板 224）；`tools/type_check.py` 9 模块零错误。
-- 遗留（Phase 5 不解决，仅记录）：低 ROI 触网/重 IO 模块仍偏低（`poc.py`/`scan.py` 命令层 4~8%、`proxy_pool.py` 26%、`stealth_client.py` 31%、`whois_lookup.py` 36%、`icp_query.py` 40%、`frostmoon/collector.py` 17%、`jingzhe.py` 11%）；i18n 仍 deferred（见 P4-4）。
+- 遗留（Phase 5 不解决，仅记录）：低 ROI 触网/重 IO 模块仍偏低（`poc.py`/`scan.py` 命令层 4~8%、`proxy_pool.py` 26%、`stealth_client.py` 31%、`whois_lookup.py` 36%、`icp_query.py` 40%、`frostmoon/collector.py` 17%、`jingzhe.py` 11%）；i18n 已于 Phase 6（D13）落地（见 §6.9）。
 
 ### 6.8 Phase 5 任务清单（✅ 全部完成，见 §6.7）
 
@@ -168,4 +169,24 @@
 | P5-2 引擎纯逻辑单测 | 各引擎纯函数/数据模型高覆盖 | F3 | ✅ |
 | P5-3 真实 bug 修复 | Config/close/utcnow/转义 4 处修复 | D10 | ✅ |
 | P5-4 覆盖率门禁 | `fail_under=60` 硬门槛 | F3 | ✅ |
+
+### 6.9 Phase 6 落地（2026-07-11，全绿）— 国际化 (i18n / D13，M6)
+
+> 路线图唯一尚未启动的交付物（P4-4 deferred）于本阶段闭环。采用**「键即中文原文、未译回退」**轻量设计，对既有中文输出零破坏，译文增量补充即可，不要求全量翻译。
+
+- **P6-1 文案层核心（D13）**：新增 `src/i18n/__init__.py`（`_()` / `set_locale()` / `get_locale()` / `is_english()`）与 `src/i18n/messages.py`（`EN` 英文目录，覆盖状态词/报告章节/严重级别/漏洞类型/HTML 表头共 ~50 条）。语言解析优先级：`--lang` > 环境变量 `POXIAO_LANG` > 默认 `zh_CN`；支持别名 `zh/en/zh_cn/en_us/中文/英语`。
+- **P6-2 输出层接入**：`src/utils/output.py` 的 `Out` 状态/标题/章节/键值方法统一经 `_()` 翻译；`src/cli.py` 增加全局 `--lang {zh,en}` 选项（须在子命令前指定，如 `poxiao --lang en scan ...`）。
+- **P6-3 英文报告（D13 验收）**：`src/dawn/src_reporter.py` 章节标题/平台字段标签 + 严重级别(`SEVERITY_EN`)/漏洞类型(`VULN_TYPE_EN`) locale 化，索引排序与 locale 解耦；`src/utils/html_report.py` 表头/风险/状态标签翻译 + `lang` 属性随 locale 切换（en → `lang="en"`）。
+- **P6-4 测试（F3 收口）**：`tests/test_i18n.py`（12 passed）覆盖核心翻译/回退/别名/环境变量解析、`Out` 集成、SRC 报告英文渲染、HTML 报告英文渲染与中文默认；`src/i18n` 覆盖率 92%。
+- **总体验收 M6**：`pytest` **517 passed**（Phase 5 基线 505 + Phase 6 新增 12）；整体覆盖率 **60.50%**，`fail_under=60` 达成；`ci_audit.py` PASS（CVE 257 / 模板 224）；`tools/type_check.py` 9 模块零错误。
+- 已知限制（记录，非阻塞）：SRC 报告的**自由文本描述**（`_finding_description` 等句子模板）与部分命令内联提示语暂未翻译，en 模式下仍为中文——结构标签/级别/类型已全英文化；译文目录可随社区贡献持续扩充。社区 Nuclei 模板为数据文件，未被改动，英文报告/社区模板兼容性天然保留。
+
+### 6.10 Phase 6 任务清单（✅ 全部完成，见 §6.9）
+
+| 任务 | 目标 | 关联约束 | 状态 |
+| --- | --- | --- | --- |
+| P6-1 文案层核心 | `src/i18n` + `EN` 目录 + locale 解析 | D13 | ✅ |
+| P6-2 输出层接入 | `Out` 经 `_()` + CLI `--lang` | D13 | ✅ |
+| P6-3 英文报告 | src_reporter/html_report locale 化 | D13 | ✅ |
+| P6-4 测试 | `tests/test_i18n.py`（12 passed） | F3 | ✅ |
 
