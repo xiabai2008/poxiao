@@ -306,18 +306,18 @@ class SRCReporter:
             severity = cve.get("severity", "MEDIUM")
             desc = cve.get("description", "")
 
-            title = f"[{host}] 疑似 {cve_id}: {desc[:50]}"
+            title = _("[{0}] 疑似 {1}: {2}").format(host, cve_id, desc[:50])
             description = (
-                f"目标使用可能存在 {cve_id} 漏洞的组件。\n"
-                f"建议验证该漏洞是否可被实际利用。\n\n"
-                f"漏洞描述: {desc}"
+                _("目标使用可能存在 {0} 漏洞的组件。").format(cve_id) + "\n"
+                + _("建议验证该漏洞是否可被实际利用。") + "\n\n"
+                + _("漏洞描述: {0}").format(desc)
             )
             steps = [
-                "使用破晓扫描，识别到目标技术栈可能受此 CVE 影响",
-                f"手动验证：参考 {cve_id} 公开 PoC 进行复现",
-                "记录复现结果（截图/响应内容）",
+                _("使用破晓扫描，识别到目标技术栈可能受此 CVE 影响"),
+                _("手动验证：参考 {0} 公开 PoC 进行复现").format(cve_id),
+                _("记录复现结果（截图/响应内容）"),
             ]
-            suggestion = f"升级受影响的组件版本，参考 {cve_id} 公告中的修复版本。"
+            suggestion = _("升级受影响的组件版本，参考 {0} 公告中的修复版本。").format(cve_id)
 
             report = self.generate_vuln_report(
                 title=title,
@@ -406,27 +406,27 @@ class SRCReporter:
     # ── 辅助方法 ─────────────────────────────────
 
     def _finding_title(self, category: str, url: str) -> str:
-        cat_cn = {
-            "git": "Git 仓库信息泄露",
-            "config": "配置文件可访问",
-            "backup": "备份文件泄露",
-            "debug": "调试信息泄露",
-            "admin": "后台管理页面暴露",
-            "api": "API 接口信息泄露",
-            "source": "源代码泄露",
-            "db": "数据库管理入口暴露",
-            "swagger": "Swagger/API文档泄露",
-            "actuator": "Spring Boot Actuator信息泄露",
-            "phpinfo": "phpinfo信息泄露",
-            "default_cred": "默认凭据登录",
-            "directory_listing": "目录遍历",
-            "missing_header": "缺少安全响应头",
-            "sqli": "SQL注入漏洞",
-            "xss": "跨站脚本攻击(XSS)",
-            "ssrf": "服务端请求伪造(SSRF)",
-            "cors": "CORS跨域配置不当",
+        cat = {
+            "git": _("Git 仓库信息泄露"),
+            "config": _("配置文件可访问"),
+            "backup": _("备份文件泄露"),
+            "debug": _("调试信息泄露"),
+            "admin": _("后台管理页面暴露"),
+            "api": _("API 接口信息泄露"),
+            "source": _("源代码泄露"),
+            "db": _("数据库管理入口暴露"),
+            "swagger": _("Swagger/API文档泄露"),
+            "actuator": _("Spring Boot Actuator信息泄露"),
+            "phpinfo": _("phpinfo信息泄露"),
+            "default_cred": _("默认凭据登录"),
+            "directory_listing": _("目录遍历"),
+            "missing_header": _("缺少安全响应头"),
+            "sqli": _("SQL注入漏洞"),
+            "xss": _("跨站脚本攻击(XSS)"),
+            "ssrf": _("服务端请求伪造(SSRF)"),
+            "cors": _("CORS跨域配置不当"),
         }
-        return cat_cn.get(category, f"敏感信息泄露 ({category})")
+        return cat.get(category, _("敏感信息泄露 ({})").format(category))
 
     def _finding_severity(self, category: str, status: int, finding: dict = None) -> str:
         """根据漏洞类型和上下文自动判定严重等级
@@ -510,80 +510,83 @@ class SRCReporter:
 
     def _finding_description(self, category: str, path_url: str, target_url: str) -> str:
         templates = {
-            "git": (
-                f"目标站点 {target_url} 的 {path_url} 可被外部访问，存在 Git 版本控制信息泄露风险。"
-                f"攻击者可利用此漏洞下载完整源代码、历史提交记录及可能包含的数据库密码、API密钥等敏感配置信息。"
-            ),
-            "config": (
-                f"目标站点 {target_url} 的 {path_url} 存在配置文件泄露风险。"
-                f"配置文件可能包含数据库连接信息、API密钥、云服务凭证等敏感数据，可被攻击者直接利用进行进一步入侵。"
-            ),
-            "backup": (
-                f"目标站点 {target_url} 的 {path_url} 可能存在备份文件。"
-                f"备份文件可能包含源代码、数据库转储或配置文件，攻击者可下载后分析获取敏感信息。"
-            ),
-            "admin": (
-                f"目标站点 {target_url} 的 {path_url} 暴露了后台管理页面。"
-                f"攻击者可利用该页面进行暴力破解、默认凭据尝试或直接访问管理功能。"
-            ),
-            "debug": (
-                f"目标站点 {target_url} 的 {path_url} 存在调试信息泄露。"
-                f"调试页面可能泄露服务器配置、环境变量、数据库连接等敏感信息。"
-            ),
-            "api": (
-                f"目标站点 {target_url} 的 {path_url} 暴露了 API 接口文档。"
-                f"攻击者可获取完整接口列表，发现未授权访问接口或参数注入点。"
-            ),
-            "db": (
-                f"目标站点 {target_url} 的 {path_url} 暴露了数据库管理工具入口。"
-                f"攻击者可能通过默认凭据或漏洞直接操作数据库。"
-            ),
-            "source": (
-                f"目标站点 {target_url} 的 {path_url} 存在源代码泄露风险。"
-                f"攻击者可获取服务器端源代码，分析业务逻辑发现更多安全漏洞。"
-            ),
-            "swagger": (
-                f"目标站点 {target_url} 的 {path_url} 暴露了 Swagger/OpenAPI 文档。"
-                f"文档包含完整的 API 接口定义、参数说明和数据模型，攻击者可据此发现未授权接口或参数注入点。"
-            ),
-            "actuator": (
-                f"目标站点 {target_url} 的 {path_url} 暴露了 Spring Boot Actuator 端点。"
-                f"Actuator 端点可能泄露环境变量（含数据库密码、API密钥）、堆转储、配置信息等敏感数据。"
-            ),
-            "phpinfo": (
-                f"目标站点 {target_url} 的 {path_url} 暴露了 phpinfo() 页面。"
-                f"该页面泄露 PHP 版本、服务器配置、环境变量、已加载扩展等信息，攻击者可据此构造针对性攻击。"
-            ),
-            "default_cred": (
-                f"目标站点 {target_url} 的 {path_url} 存在默认凭据登录漏洞。"
-                f"攻击者可使用默认用户名和密码直接登录系统，获取管理权限。"
-            ),
-            "directory_listing": (
-                f"目标站点 {target_url} 的 {path_url} 开启了目录遍历功能。"
-                f"攻击者可浏览目录结构，发现敏感文件（配置文件、备份文件、源代码等）。"
-            ),
-            "missing_header": (
-                f"目标站点 {target_url} 缺少安全响应头。"
-                f"缺少安全头部可能导致点击劫持、MIME 嗅探、XSS 等安全风险。"
-            ),
-            "sqli": (
-                f"目标站点 {target_url} 的 {path_url} 存在 SQL 注入漏洞。"
-                f"攻击者可通过构造恶意 SQL 语句获取、篡改或删除数据库数据，甚至获取服务器权限。"
-            ),
-            "xss": (
-                f"目标站点 {target_url} 的 {path_url} 存在跨站脚本攻击(XSS)漏洞。"
-                f"攻击者可注入恶意脚本，窃取用户 Cookie、会话令牌或执行钓鱼攻击。"
-            ),
-            "ssrf": (
-                f"目标站点 {target_url} 的 {path_url} 存在服务端请求伪造(SSRF)漏洞。"
-                f"攻击者可利用该漏洞访问内网资源、云元数据服务或进行端口扫描。"
-            ),
-            "cors": (
-                f"目标站点 {target_url} 的 {path_url} 存在 CORS 跨域配置不当问题。"
-                f"攻击者可从恶意网站发起跨域请求，窃取用户数据。"
-            ),
+            "git": _(
+                "目标站点 {0} 的 {1} 可被外部访问，存在 Git 版本控制信息泄露风险。"
+                "攻击者可利用此漏洞下载完整源代码、历史提交记录及可能包含的数据库密码、API密钥等敏感配置信息。"
+            ).format(target_url, path_url),
+            "config": _(
+                "目标站点 {0} 的 {1} 存在配置文件泄露风险。"
+                "配置文件可能包含数据库连接信息、API密钥、云服务凭证等敏感数据，可被攻击者直接利用进行进一步入侵。"
+            ).format(target_url, path_url),
+            "backup": _(
+                "目标站点 {0} 的 {1} 可能存在备份文件。"
+                "备份文件可能包含源代码、数据库转储或配置文件，攻击者可下载后分析获取敏感信息。"
+            ).format(target_url, path_url),
+            "admin": _(
+                "目标站点 {0} 的 {1} 暴露了后台管理页面。"
+                "攻击者可利用该页面进行暴力破解、默认凭据尝试或直接访问管理功能。"
+            ).format(target_url, path_url),
+            "debug": _(
+                "目标站点 {0} 的 {1} 存在调试信息泄露。"
+                "调试页面可能泄露服务器配置、环境变量、数据库连接等敏感信息。"
+            ).format(target_url, path_url),
+            "api": _(
+                "目标站点 {0} 的 {1} 暴露了 API 接口文档。"
+                "攻击者可获取完整接口列表，发现未授权访问接口或参数注入点。"
+            ).format(target_url, path_url),
+            "db": _(
+                "目标站点 {0} 的 {1} 暴露了数据库管理工具入口。"
+                "攻击者可能通过默认凭据或漏洞直接操作数据库。"
+            ).format(target_url, path_url),
+            "source": _(
+                "目标站点 {0} 的 {1} 存在源代码泄露风险。"
+                "攻击者可获取服务器端源代码，分析业务逻辑发现更多安全漏洞。"
+            ).format(target_url, path_url),
+            "swagger": _(
+                "目标站点 {0} 的 {1} 暴露了 Swagger/OpenAPI 文档。"
+                "文档包含完整的 API 接口定义、参数说明和数据模型，攻击者可据此发现未授权接口或参数注入点。"
+            ).format(target_url, path_url),
+            "actuator": _(
+                "目标站点 {0} 的 {1} 暴露了 Spring Boot Actuator 端点。"
+                "Actuator 端点可能泄露环境变量（含数据库密码、API密钥）、堆转储、配置信息等敏感数据。"
+            ).format(target_url, path_url),
+            "phpinfo": _(
+                "目标站点 {0} 的 {1} 暴露了 phpinfo() 页面。"
+                "该页面泄露 PHP 版本、服务器配置、环境变量、已加载扩展等信息，攻击者可据此构造针对性攻击。"
+            ).format(target_url, path_url),
+            "default_cred": _(
+                "目标站点 {0} 的 {1} 存在默认凭据登录漏洞。"
+                "攻击者可使用默认用户名和密码直接登录系统，获取管理权限。"
+            ).format(target_url, path_url),
+            "directory_listing": _(
+                "目标站点 {0} 的 {1} 开启了目录遍历功能。"
+                "攻击者可浏览目录结构，发现敏感文件（配置文件、备份文件、源代码等）。"
+            ).format(target_url, path_url),
+            "missing_header": _(
+                "目标站点 {0} 缺少安全响应头。"
+                "缺少安全头部可能导致点击劫持、MIME 嗅探、XSS 等安全风险。"
+            ).format(target_url, path_url),
+            "sqli": _(
+                "目标站点 {0} 的 {1} 存在 SQL 注入漏洞。"
+                "攻击者可通过构造恶意 SQL 语句获取、篡改或删除数据库数据，甚至获取服务器权限。"
+            ).format(target_url, path_url),
+            "xss": _(
+                "目标站点 {0} 的 {1} 存在跨站脚本攻击(XSS)漏洞。"
+                "攻击者可注入恶意脚本，窃取用户 Cookie、会话令牌或执行钓鱼攻击。"
+            ).format(target_url, path_url),
+            "ssrf": _(
+                "目标站点 {0} 的 {1} 存在服务端请求伪造(SSRF)漏洞。"
+                "攻击者可利用该漏洞访问内网资源、云元数据服务或进行端口扫描。"
+            ).format(target_url, path_url),
+            "cors": _(
+                "目标站点 {0} 的 {1} 存在 CORS 跨域配置不当问题。"
+                "攻击者可从恶意网站发起跨域请求，窃取用户数据。"
+            ).format(target_url, path_url),
         }
-        return templates.get(category, f"目标站点 {target_url} 的 {path_url} 存在信息泄露风险。")
+        return templates.get(
+            category,
+            _("目标站点 {0} 的 {1} 存在信息泄露风险。").format(target_url, path_url),
+        )
 
     def _finding_steps(self, category: str, path_url: str, finding: dict = None) -> list[str]:
         """根据漏洞类型生成专用复现步骤
@@ -600,104 +603,104 @@ class SRCReporter:
 
         steps_map = {
             "git": [
-                f"访问 {path_url}（或 {base_url}/.git/HEAD），确认返回 200 状态码",
-                f"访问 {base_url}/.git/config，获取 Git 配置信息",
-                f"使用 GitHack 等工具下载源码：GitHack.py {base_url}/.git/",
+                _("访问 {0}（或 {1}/.git/HEAD），确认返回 200 状态码").format(path_url, base_url),
+                _("访问 {0}/.git/config，获取 Git 配置信息").format(base_url),
+                _("使用 GitHack 等工具下载源码：GitHack.py {0}/.git/").format(base_url),
             ],
             "backup": [
-                f"访问 {path_url}，确认返回 200 状态码",
-                "下载备份文件，检查文件内容",
-                "确认文件包含敏感信息（数据库配置、源码等）",
+                _("访问 {0}，确认返回 200 状态码").format(path_url),
+                _("下载备份文件，检查文件内容"),
+                _("确认文件包含敏感信息（数据库配置、源码等）"),
             ],
             "swagger": [
-                f"访问 {path_url}，确认返回 Swagger/OpenAPI 文档",
-                "查看 API 接口列表，记录敏感接口",
-                "测试接口是否可未授权访问",
+                _("访问 {0}，确认返回 Swagger/OpenAPI 文档").format(path_url),
+                _("查看 API 接口列表，记录敏感接口"),
+                _("测试接口是否可未授权访问"),
             ],
             "api": [
-                f"访问 {path_url}，确认返回 API 文档或接口信息",
-                "查看接口列表，记录敏感接口",
-                "测试接口是否可未授权访问",
+                _("访问 {0}，确认返回 API 文档或接口信息").format(path_url),
+                _("查看接口列表，记录敏感接口"),
+                _("测试接口是否可未授权访问"),
             ],
             "default_cred": [
-                f"访问 {path_url} 登录页面",
-                "使用默认凭据 {username}:{password} 尝试登录".format(
+                _("访问 {0} 登录页面").format(path_url),
+                _("使用默认凭据 {username}:{password} 尝试登录").format(
                     username=finding.get("username", "admin"),
                     password=finding.get("password", "admin"),
                 ),
-                "确认登录成功，获取后台访问权限",
+                _("确认登录成功，获取后台访问权限"),
             ],
             "directory_listing": [
-                f"访问 {path_url}，确认返回目录列表页面",
-                "浏览目录结构，记录敏感文件",
-                "尝试访问敏感文件确认可读取",
+                _("访问 {0}，确认返回目录列表页面").format(path_url),
+                _("浏览目录结构，记录敏感文件"),
+                _("尝试访问敏感文件确认可读取"),
             ],
             "config": [
-                f"访问 {path_url}，确认返回配置文件内容",
-                "检查配置文件中的敏感信息（数据库连接、API Key 等）",
-                "确认信息可被利用",
+                _("访问 {0}，确认返回配置文件内容").format(path_url),
+                _("检查配置文件中的敏感信息（数据库连接、API Key 等）"),
+                _("确认信息可被利用"),
             ],
             "actuator": [
-                f"访问 {base_url}/actuator，确认返回 Actuator 端点列表",
-                f"访问 {base_url}/actuator/env，获取环境变量",
-                f"访问 {base_url}/actuator/heapdump，下载堆转储分析敏感信息",
+                _("访问 {0}/actuator，确认返回 Actuator 端点列表").format(base_url),
+                _("访问 {0}/actuator/env，获取环境变量").format(base_url),
+                _("访问 {0}/actuator/heapdump，下载堆转储分析敏感信息").format(base_url),
             ],
             "debug": [
-                f"访问 {path_url}，确认返回 phpinfo() 或调试信息页面",
-                "记录 PHP 版本、服务器配置、环境变量",
-                "检查是否包含敏感信息（数据库密码、API Key 等）",
+                _("访问 {0}，确认返回 phpinfo() 或调试信息页面").format(path_url),
+                _("记录 PHP 版本、服务器配置、环境变量"),
+                _("检查是否包含敏感信息（数据库密码、API Key 等）"),
             ],
             "phpinfo": [
-                f"访问 {path_url}，确认返回 phpinfo() 页面",
-                "记录 PHP 版本、服务器配置、环境变量",
-                "检查是否包含敏感信息（数据库密码、API Key 等）",
+                _("访问 {0}，确认返回 phpinfo() 页面").format(path_url),
+                _("记录 PHP 版本、服务器配置、环境变量"),
+                _("检查是否包含敏感信息（数据库密码、API Key 等）"),
             ],
             "sqli": [
-                f"访问 {path_url}，注入单引号 ' 观察响应",
-                f'使用 SQLMap 验证：sqlmap -u "{path_url}" --batch',
-                "确认可注入，获取数据库信息",
+                _("访问 {0}，注入单引号 ' 观察响应").format(path_url),
+                _("使用 SQLMap 验证：sqlmap -u \"{0}\" --batch").format(path_url),
+                _("确认可注入，获取数据库信息"),
             ],
             "xss": [
-                f"访问 {path_url}，注入 payload: <script>alert(1)</script>",
-                "确认 payload 被反射/存储",
-                "在浏览器中触发弹窗验证",
+                _("访问 {0}，注入 payload: <script>alert(1)</script>").format(path_url),
+                _("确认 payload 被反射/存储"),
+                _("在浏览器中触发弹窗验证"),
             ],
             "ssrf": [
-                f"访问 {path_url}，注入内网地址：http://127.0.0.1/",
-                "观察响应是否包含内网信息",
-                "尝试访问云元数据：http://169.254.169.254/",
+                _("访问 {0}，注入内网地址：http://127.0.0.1/").format(path_url),
+                _("观察响应是否包含内网信息"),
+                _("尝试访问云元数据：http://169.254.169.254/"),
             ],
             "cors": [
-                "使用 curl 发送请求，设置 Origin: https://evil.com",
-                "检查响应头 Access-Control-Allow-Origin 是否为 *",
-                "确认 Access-Control-Allow-Credentials: true",
+                _("使用 curl 发送请求，设置 Origin: https://evil.com"),
+                _("检查响应头 Access-Control-Allow-Origin 是否为 *"),
+                _("确认 Access-Control-Allow-Credentials: true"),
             ],
             "missing_header": [
-                f"使用 curl -I {path_url} 检查响应头",
-                f"确认 {finding.get('header_name', '安全响应头')} 缺失",
-                "说明缺失该头部的安全风险",
+                _("使用 curl -I {0} 检查响应头").format(path_url),
+                _("确认 {0} 缺失").format(finding.get("header_name", _("安全响应头"))),
+                _("说明缺失该头部的安全风险"),
             ],
             "admin": [
-                f"访问 {path_url}，确认管理后台页面可访问",
-                "记录页面信息（框架、版本等）",
-                "尝试默认凭据或暴力破解登录",
+                _("访问 {0}，确认管理后台页面可访问").format(path_url),
+                _("记录页面信息（框架、版本等）"),
+                _("尝试默认凭据或暴力破解登录"),
             ],
             "db": [
-                f"访问 {path_url}，确认数据库管理工具可访问",
-                "记录工具类型和版本信息",
-                "尝试默认凭据登录（如 root:root、admin:admin）",
+                _("访问 {0}，确认数据库管理工具可访问").format(path_url),
+                _("记录工具类型和版本信息"),
+                _("尝试默认凭据登录（如 root:root、admin:admin）"),
             ],
             "source": [
-                f"访问 {path_url}，确认返回源代码文件",
-                "检查文件内容，确认包含业务逻辑代码",
-                "分析代码中的硬编码密钥、注释信息等",
+                _("访问 {0}，确认返回源代码文件").format(path_url),
+                _("检查文件内容，确认包含业务逻辑代码"),
+                _("分析代码中的硬编码密钥、注释信息等"),
             ],
         }
 
         return steps_map.get(category, [
-            f"使用浏览器访问 {path_url}",
-            "观察到页面返回了敏感信息/配置/管理功能",
-            "截图保存证据",
+            _("使用浏览器访问 {0}").format(path_url),
+            _("观察到页面返回了敏感信息/配置/管理功能"),
+            _("截图保存证据"),
         ])
 
     def _generate_evidence(self, finding: dict) -> str:
@@ -740,81 +743,81 @@ class SRCReporter:
 
     def _default_suggestion(self, vuln_type: str) -> str:
         suggestions = {
-            "git": (
+            "git": _(
                 "1. 从生产环境删除 .git 目录\n"
                 "2. 在 Web 服务器配置中禁止访问 .git 路径（Nginx: location ~ /\\.git { deny all; }）\n"
                 "3. 部署时使用 `git archive` 导出而非直接 clone\n"
                 "4. 在 .gitignore 中排除敏感配置文件"
             ),
-            "config": (
+            "config": _(
                 "1. 将配置文件移至 Web 根目录之外\n"
                 "2. 配置 Web 服务器禁止访问 .env / .config / .yaml 等文件\n"
                 "3. 敏感配置使用环境变量或密钥管理服务\n"
                 "4. 定期检查并清理残留配置文件"
             ),
-            "backup": (
+            "backup": _(
                 "1. 立即删除 Web 目录下的备份文件\n"
                 "2. 配置服务器禁止访问 .bak / .zip / .tar / .sql 等文件\n"
                 "3. 备份文件存储在非 Web 可访问的目录\n"
                 "4. 定期清理临时文件和历史备份"
             ),
-            "swagger": (
+            "swagger": _(
                 "1. 在生产环境禁用 Swagger UI 和 API 文档端点\n"
                 "2. 如需保留，添加 IP 白名单或认证机制\n"
                 "3. 配置 Spring Boot: springdoc.api-docs.enabled=false\n"
                 "4. 使用 Nginx 屏蔽 /swagger-ui.html、/v2/api-docs 等路径"
             ),
-            "api": (
+            "api": _(
                 "1. 在生产环境关闭 API 文档自动生成\n"
                 "2. 对 API 接口添加认证和授权机制\n"
                 "3. 限制 API 接口的访问权限\n"
                 "4. 使用 API 网关统一管理接口访问"
             ),
-            "default_cred": (
+            "default_cred": _(
                 "1. 立即修改所有默认密码\n"
                 "2. 实施密码策略：最小长度、复杂度要求\n"
                 "3. 启用双因素认证(2FA)\n"
                 "4. 限制登录尝试次数，防止暴力破解\n"
                 "5. 修改默认用户名，避免使用 admin/root"
             ),
-            "directory_listing": (
+            "directory_listing": _(
                 "1. 在 Web 服务器配置中禁用目录列表\n"
                 "   Nginx: autoindex off;\n"
                 "   Apache: Options -Indexes\n"
                 "2. 为每个目录添加默认首页文件（index.html）\n"
                 "3. 将敏感文件移至 Web 根目录之外"
             ),
-            "admin": (
+            "admin": _(
                 "1. 对管理后台加强访问控制（IP 白名单 / VPN）\n"
                 "2. 启用双因素认证(2FA)\n"
                 "3. 避免使用常见管理路径（/admin、/manager）\n"
                 "4. 修改默认端口，增加访问门槛"
             ),
-            "debug": (
+            "debug": _(
                 "1. 在生产环境关闭 debug 模式\n"
                 "2. 删除测试文件（phpinfo.php / test.php / debug 页面）\n"
                 "3. 配置 PHP: display_errors = Off\n"
                 "4. 日志输出到文件而非页面"
             ),
-            "phpinfo": (
+            "phpinfo": _(
                 "1. 立即删除服务器上的 phpinfo.php 文件\n"
                 "2. 在 php.ini 中设置 expose_php = Off\n"
                 "3. 配置 display_errors = Off，避免泄露路径信息\n"
                 "4. 定期扫描并清理测试文件"
             ),
-            "db": (
+            "db": _(
                 "1. 限制数据库管理工具的访问 IP\n"
                 "2. 使用强密码并定期更换\n"
                 "3. 禁用 phpMyAdmin / Adminer 等工具的远程访问\n"
                 "4. 将管理工具部署在内网，通过 VPN 访问"
             ),
-            "source": (
+            "source": _(
                 "1. 删除服务器上的编辑器临时文件（.swp / ~ / .bak）\n"
                 "2. 配置 Web 服务器禁止访问 .swp / ~ / .bak 文件\n"
                 "3. 使用 .gitignore 排除编辑器临时文件\n"
                 "4. 部署前检查并清理非必要文件"
             ),
-            "actuator": (
+            "actuator": _(
                 "1. 限制 Actuator 端点访问，仅暴露必要端点\n"
                 "   management.endpoints.web.exposure.include=health,info\n"
                 "2. 为 Actuator 端点添加认证\n"
@@ -822,34 +825,34 @@ class SRCReporter:
                 "3. 使用 Spring Security 限制 /actuator 路径\n"
                 "4. 在生产环境禁用 /env 和 /heapdump 端点"
             ),
-            "sqli": (
+            "sqli": _(
                 "1. 使用参数化查询（PreparedStatement）替代字符串拼接\n"
                 "2. 对用户输入进行严格的输入验证和过滤\n"
                 "3. 部署 WAF（Web 应用防火墙）拦截 SQL 注入攻击\n"
                 "4. 使用 ORM 框架减少手动 SQL 编写\n"
                 "5. 遵循最小权限原则配置数据库用户"
             ),
-            "xss": (
+            "xss": _(
                 "1. 对所有用户输入进行输出编码（HTML / JS / URL 编码）\n"
                 "2. 添加 Content-Security-Policy (CSP) 响应头\n"
                 "3. 设置 HttpOnly 标记保护 Cookie\n"
                 "4. 使用模板引擎的自动转义功能\n"
                 "5. 对用户输入进行严格的白名单验证"
             ),
-            "ssrf": (
+            "ssrf": _(
                 "1. 对用户可控的 URL 进行白名单验证\n"
                 "2. 禁止请求内网地址（10.x / 172.16-31.x / 192.168.x）\n"
                 "3. 禁止访问云元数据地址（169.254.169.254）\n"
                 "4. 限制请求协议（仅允许 http/https）\n"
                 "5. 使用 DNS 解析验证目标地址"
             ),
-            "cors": (
+            "cors": _(
                 "1. 限制 Access-Control-Allow-Origin 为可信域名，不使用通配符 *\n"
                 "2. 不要同时设置 Origin: * 和 Credentials: true\n"
                 "3. 限制允许的 HTTP 方法（Access-Control-Allow-Methods）\n"
                 "4. 定期审查 CORS 配置"
             ),
-            "missing_header": (
+            "missing_header": _(
                 "1. 添加缺失的安全响应头\n"
                 "   X-Content-Type-Options: nosniff\n"
                 "   X-Frame-Options: DENY\n"
@@ -859,11 +862,11 @@ class SRCReporter:
                 "2. 在 Web 服务器或应用框架中统一配置\n"
                 "3. 使用安全中间件自动添加响应头"
             ),
-            "cve": (
+            "cve": _(
                 "1. 升级相关组件到最新安全版本\n"
                 "2. 关注官方安全公告及时修复\n"
                 "3. 如无法升级，使用 WAF 规则临时防护\n"
                 "4. 评估漏洞影响范围，优先修复高危漏洞"
             ),
         }
-        return suggestions.get(vuln_type, "建议联系厂商进行安全加固。")
+        return suggestions.get(vuln_type, _("建议联系厂商进行安全加固。"))

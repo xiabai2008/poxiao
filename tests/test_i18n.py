@@ -154,3 +154,60 @@ class TestHtmlReport:
         assert 'lang="zh-CN"' in html
         assert "破晓 · 扫描报告" in html
         assert "目标" in html
+
+
+class TestSrcFreeText:
+    """D13 延伸：SRC 报告自由文本（描述/步骤/建议/CVE）i18n 闭环"""
+
+    def test_zh_preserved(self):
+        set_locale("zh_CN")
+        r = SRCReporter()
+        reports = r.generate_from_sensitive(
+            target_url="http://example.com",
+            host="example.com",
+            findings=[{
+                "category": "git", "url": "http://example.com/.git/", "status": 200,
+                "content_preview": "ref: refs/heads/master",
+            }],
+            platform="butian",
+        )
+        report = reports[0]["report"]
+        # 中文自由文本应保留（零破坏）
+        assert "可被外部访问，存在 Git 版本控制信息泄露风险。" in report
+        assert "从生产环境删除 .git 目录" in report
+        assert "确认返回 200 状态码" in report
+        # 不应出现英文自由文本
+        assert "Git version control information disclosure risk" not in report
+        assert "Remove the .git directory" not in report
+
+    def test_en_translated(self):
+        set_locale("en")
+        r = SRCReporter()
+        reports = r.generate_from_sensitive(
+            target_url="http://example.com",
+            host="example.com",
+            findings=[{
+                "category": "git", "url": "http://example.com/.git/", "status": 200,
+                "content_preview": "ref: refs/heads/master",
+            }],
+            platform="butian",
+        )
+        report = reports[0]["report"]
+        assert "Git version control information disclosure risk" in report
+        assert "Remove the .git directory from the production environment" in report
+        assert "and confirm a 200 status code is returned" in report
+        # 不应出现中文自由文本
+        assert "可被外部访问，存在 Git 版本控制信息泄露风险。" not in report
+        assert "从生产环境删除 .git 目录" not in report
+
+    def test_en_cve_report(self):
+        set_locale("en")
+        r = SRCReporter()
+        reports = r.generate_from_cve(host="example.com", cve_matches=[{
+            "cve": "CVE-2021-44228", "severity": "CRITICAL", "description": "Log4j RCE",
+        }])
+        report = reports[0]["report"]
+        assert "Suspected CVE-2021-44228" in report
+        assert "may be affected by the CVE-2021-44228 vulnerability" in report
+        assert "Scanned with PoXiao" in report
+        assert "Upgrade the affected component version" in report

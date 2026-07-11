@@ -75,6 +75,7 @@
 | 2026-07-11 | 主理人 | Phase 4 全 4 任务（P4-1~P4-4）落地：wheel 打包（补 build-system/修正 scripts 入口为唯一 `poxiao`/CI `build-wheel` job）/PR 模板+pr_check 校验 CI/用户+开发者文档/i18n deferred；`.gitignore` 补忽略（.coverage/dist/_*.txt）；本地 `python -m build --wheel` 成功 + `poxiao --help` 可运行；pytest 135 passed、ci_audit PASS、type_check 9 模块零错误；§6.5/§6.6 同步 |
 | 2026-07-11 | 主理人 | Phase 5 覆盖率提升落地：补齐命令层/工具层/引擎纯逻辑单测（poc_engine/guanxing_db/tech_stack/cve_match/crypto/matcher/vernalequinox 多模块/user_agents/wayback/rate_limiter 等）；修复 2 个真实产品 bug（`Config` 空配置路径、`DomainDiscovery.close` 缺失、`cert_info` 弃用 `utcnow`）；整体覆盖率由基线约 33% → **60.05%**，`pyproject.toml` 设 `fail_under=60` 硬门槛；pytest **505 passed**、ci_audit PASS、type_check 9 模块零错误；§6.7/§6.8 同步 |
 | 2026-07-11 | 主理人 | Phase 6 i18n 落地（D13，路线图最后一项未启动交付物闭环）：新增 `src/i18n`（`_`/`set_locale`/`get_locale` + `EN` 目录，键即中文回退零破坏）；`Out` 输出层 + CLI `--lang {zh,en}`（兼 `POXIAO_LANG`）接入；`src_reporter`/`html_report` 严重级别/类型/章节/表头 locale 化（英文报告验证）；`tests/test_i18n.py`（12 passed，i18n 92%）；pytest **517 passed**、整体覆盖率 **60.50%**、ci_audit PASS、type_check 9 模块零错误；§6.9/§6.10 同步 |
+| 2026-07-11 | 主理人 | Phase 6 延伸（D13 收口）：SRC 报告自由文本全量英文化闭环——`_finding_title`/`_finding_description`/`_finding_steps`/`_default_suggestion`/`generate_from_cve` 经 `_()` + `{0}/{1}` 占位符 `.format` 接入（新增 ~110 条 EN 自由文本译文，键即中文原文回退，中文输出零破坏）；`tests/test_i18n.py` 增 3 用例校验 zh 保留/en 翻译/CVE；pytest **520 passed**、整体覆盖率 **60.60%**、ci_audit PASS；§6.9 已知限制项已消除 |
 
 ---
 
@@ -179,7 +180,8 @@
 - **P6-3 英文报告（D13 验收）**：`src/dawn/src_reporter.py` 章节标题/平台字段标签 + 严重级别(`SEVERITY_EN`)/漏洞类型(`VULN_TYPE_EN`) locale 化，索引排序与 locale 解耦；`src/utils/html_report.py` 表头/风险/状态标签翻译 + `lang` 属性随 locale 切换（en → `lang="en"`）。
 - **P6-4 测试（F3 收口）**：`tests/test_i18n.py`（12 passed）覆盖核心翻译/回退/别名/环境变量解析、`Out` 集成、SRC 报告英文渲染、HTML 报告英文渲染与中文默认；`src/i18n` 覆盖率 92%。
 - **总体验收 M6**：`pytest` **517 passed**（Phase 5 基线 505 + Phase 6 新增 12）；整体覆盖率 **60.50%**，`fail_under=60` 达成；`ci_audit.py` PASS（CVE 257 / 模板 224）；`tools/type_check.py` 9 模块零错误。
-- 已知限制（记录，非阻塞）：SRC 报告的**自由文本描述**（`_finding_description` 等句子模板）与部分命令内联提示语暂未翻译，en 模式下仍为中文——结构标签/级别/类型已全英文化；译文目录可随社区贡献持续扩充。社区 Nuclei 模板为数据文件，未被改动，英文报告/社区模板兼容性天然保留。
+- **P6-5 自由文本全量英文化（D13 收口）**：SRC 报告自由文本（`_finding_title`/`_finding_description`/`_finding_steps`/`_default_suggestion`/`generate_from_cve`）经 `_()` + `{0}/{1}` 占位符 `.format` 接入 `EN` 目录（新增 ~110 条自由文本译文，键即中文原文、未译回退，中文输出零破坏）；`tests/test_i18n.py` 增 3 用例（zh 保留 / en 翻译 / CVE 报告）。
+- **总体验收 M6+**：`pytest` **520 passed**（Phase 6 基线 517 + 延伸新增 3）；整体覆盖率 **60.60%**，`fail_under=60` 达成；`ci_audit.py` PASS（CVE 257 / 模板 224）；`tools/type_check.py` 9 模块零错误。SRC 报告在 en 模式下已全英文化（结构标签 + 自由文本 + 级别 + 类型），中文默认输出零破坏；Nuclei 模板为数据文件未被改动。
 
 ### 6.10 Phase 6 任务清单（✅ 全部完成，见 §6.9）
 
@@ -189,4 +191,5 @@
 | P6-2 输出层接入 | `Out` 经 `_()` + CLI `--lang` | D13 | ✅ |
 | P6-3 英文报告 | src_reporter/html_report locale 化 | D13 | ✅ |
 | P6-4 测试 | `tests/test_i18n.py`（12 passed） | F3 | ✅ |
+| P6-5 自由文本英文化 | SRC 标题/描述/步骤/建议/CVE 经 `_()` 全量 locale 化（~110 条译文） | D13 | ✅ |
 
