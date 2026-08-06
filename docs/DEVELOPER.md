@@ -1,7 +1,7 @@
 # 破晓 开发者指南（DEVELOPER GUIDE）
 
 > 面向贡献者。仓库结构、CI 三件套、模板贡献、类型化策略。
-> ADR 基线见 `CONTEXT.md`；用户向见 `docs/USER_GUIDE.md`。
+> ADR 基线见 `docs/DEVELOPER.md`；用户向见 `docs/USER_GUIDE.md`。
 
 ## 1. 仓库结构
 ```

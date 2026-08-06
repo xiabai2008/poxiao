@@ -1,7 +1,7 @@
 # 破晓 用户手册（USER GUIDE）
 
 > 面向安全工程师 / 红队。安装、快速上手、常用模块说明。
-> 架构决策基线见 `CONTEXT.md`；开发者向见 `docs/DEVELOPER.md`。
+> 开发者向见 `docs/DEVELOPER.md`。
 
 ## 1. 安装
 

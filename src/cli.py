@@ -100,6 +100,16 @@ def main():
     subdomain_parser.add_argument("--no-alive", action="store_true", help="跳过存活验证")
     subdomain_parser.add_argument("-o", "--output", help="输出文件")
 
+    # ── mcp 命令 ──────────────────────────────
+    mcp_parser = sub.add_parser("mcp", help="启动 MCP 服务端 (AI 辅助，stdio/SSE)",
+        epilog=get_examples("mcp"), formatter_class=argparse.RawDescriptionHelpFormatter)
+    mcp_parser.add_argument("--transport", default="stdio", choices=["stdio", "sse"],
+        help="传输方式：stdio（默认，本地 AI 助手接入）或 sse（HTTP 网络接入）")
+    mcp_parser.add_argument("--host", default="127.0.0.1",
+        help="SSE 监听地址（--transport sse 时生效，默认 127.0.0.1 仅本机）")
+    mcp_parser.add_argument("--port", type=int, default=8765,
+        help="SSE 监听端口（--transport sse 时生效，默认 8765）")
+
     # ── monitor 命令 ───────────────────────────
     monitor_parser = sub.add_parser("monitor", help="资产监控平台（观星）",
         epilog=get_examples("monitor"), formatter_class=argparse.RawDescriptionHelpFormatter)
@@ -234,10 +244,12 @@ def main():
     # 命令分发
     handler = CMD_MAP.get(args.command)
     if handler:
-        # 启动安全红线自检（仅告警，不阻断）— P1-3 / D5 / R1
-        from src.utils.redline import check_security_config
-        for _w in check_security_config():
-            Out.warning(_w)
+        # mcp 模式 stdout 必须专用于 JSON-RPC 协议流，跳过一切 stdout 输出（含 redline 告警）
+        if args.command != "mcp":
+            # 启动安全红线自检（仅告警，不阻断）— P1-3 / D5 / R1
+            from src.utils.redline import check_security_config
+            for _w in check_security_config():
+                Out.warning(_w)
         safe_run(handler, args)
     else:
         parser.print_help()

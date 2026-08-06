@@ -2,7 +2,16 @@
 
 **二十四节气安全工具链** — SRC 挖洞全流程自动化
 
+[![CI](https://img.shields.io/github/actions/workflow/status/xiabai2008/poxiao/ci.yml?label=CI&logo=github)](https://github.com/xiabai2008/poxiao/actions)
+[![Python](https://img.shields.io/badge/python-3.10%2B-blue)](https://www.python.org/)
+[![License](https://img.shields.io/github/license/xiabai2008/poxiao)](LICENSE)
+[![Release](https://img.shields.io/github/v/release/xiabai2008/poxiao)](https://github.com/xiabai2008/poxiao/releases)
+
 > 破晓是凌晨的第一道光，霜月是清冷的收集，春分是全面的侦察，惊蛰是万物的验证，观星是持续的监控，夏至是隐匿的扫描。
+
+> ⚠️ **法律与道德声明**：PoXiao 是安全研究工具，**仅限对您拥有合法授权或已获书面许可的目标使用**。
+> 未经授权的扫描可能违反当地法律，使用者须自行承担全部责任。开发者不对任何滥用行为负责。
+> 相关漏洞报告指引见 [SECURITY.md](SECURITY.md)。
 
 ---
 
@@ -46,9 +55,10 @@
 ## 快速开始
 
 ```bash
-# 安装
-cd 破晓
-pip install -e .
+# 安装（源码）
+git clone https://github.com/xiabai2008/poxiao.git
+cd poxiao
+pip install -e ".[dev]"
 
 # 核心扫描
 poxiao scan targets.txt                    # 扫描目标列表
@@ -65,7 +75,56 @@ xiazhi scan example.com -t templates/ --stealth  # 隐匿扫描
 # 配置管理
 poxiao config init                         # 创建配置文件
 poxiao config show                         # 查看当前配置
+
+# MCP 服务端（AI 助手接入）
+poxiao mcp                                 # 启动 stdio MCP 服务端，供 Claude/CodeBuddy 等调用
 ```
+
+---
+
+## MCP 服务端（AI 辅助）
+
+破晓支持 **MCP (Model Context Protocol)**，以 **stdio** 与 **SSE(HTTP)** 两种传输暴露核心能力，让 AI 助手直接调用扫描能力并消费结构化 JSON 结果（纯 stdlib，无额外依赖）。
+
+```bash
+poxiao mcp                                 # stdio 传输（本地 AI 助手接入，默认）
+poxiao mcp --transport sse                 # SSE/HTTP 传输，监听 127.0.0.1:8765
+poxiao mcp --transport sse --host 0.0.0.0 --port 9000
+```
+
+stdio 客户端配置（Claude Desktop / CodeBuddy 等）：
+
+```json
+{
+  "mcpServers": {
+    "poxiao": { "command": "poxiao", "args": ["mcp"] }
+  }
+}
+```
+
+SSE 客户端配置（Cursor / 支持 SSE 的客户端）：
+
+```json
+{
+  "mcpServers": {
+    "poxiao": { "url": "http://127.0.0.1:8765/sse" }
+  }
+}
+```
+
+> SSE 默认仅监听回环地址 `127.0.0.1`（私有化定位，避免误暴露）；如需局域网接入再显式指定 `--host`。
+
+暴露的 7 个工具：
+
+| 工具 | 说明 |
+|------|------|
+| `scan_targets` | 核心扫描：存活+技术栈+CVE+敏感路径（三层降噪） |
+| `check_alive` | 快速存活检测 |
+| `subdomain_enum` | 霜月子域名收集（证书透明+DNS 爆破+泛解析） |
+| `passive_recon` | 春分被动情报（Whois/备案/DNS/证书/IP/历史/GitHub） |
+| `verify_target` | 惊蛰漏洞自动验证（默认口令/Swagger/Git/Actuator…） |
+| `poc_scan` | 夏至 POC 模板扫描 |
+| `util_codec` | 编解码/加解密（base64/hex/jwt/auto…） |
 
 ---
 
@@ -164,15 +223,14 @@ monitor:
 
 ---
 
-## 实测数据
+## 项目规模
 
 ```
-110+ 厂商扫描
-7.6 秒 / 30 目标
-58.com → 89 子域名（54 存活）
-CVE 数据库: 257 条内置 + NVD 在线查询
-POC 模板: 215 个
-补天品牌: 107 个
+内置 CVE 漏洞库:  257 条唯一 CVE ID（+ NVD 在线查询）
+POC 模板:         224 个（Nuclei 风格）
+补天品牌库:       107 个
+扫描性能:         约 7.6 秒 / 30 目标（示例测试集）
+降噪效果:         误报率从 94% → 约 5%
 ```
 
 ---
@@ -201,6 +259,17 @@ POC 模板: 215 个
 - **渐进输出** — 扫完一个出结果，不等全部
 - **工具独立** — 每个工具可单独使用，也可编排协作
 - **高置信度** — 三层降噪，误报率 < 5%
+
+---
+
+## 文档与贡献
+
+- [用户手册](docs/USER_GUIDE.md) — 安装、配置、各工具详细用法
+- [开发者指南](docs/DEVELOPER.md) — 仓库结构、CI、类型化、模板贡献
+- [更新日志](CHANGELOG.md) — 版本历史与变更
+- [贡献指南](CONTRIBUTING.md) — 如何参与贡献
+- [安全策略](SECURITY.md) — 漏洞报告流程
+- [行为准则](CODE_OF_CONDUCT.md) — 社区规范
 
 ---
 

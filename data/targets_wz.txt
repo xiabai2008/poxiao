@@ -1,4 +1,0 @@
-https://data.wenzhou.gov.cn                        # 温州市数据开放平台
-https://mail.wenzhou.gov.cn                        # mail
-https://open.wenzhou.gov.cn                        # Error report
-https://www.wenzhou.gov.cn                         # 温州市人民政府https://hrss.wenzhou.gov.cn

@@ -55,11 +55,24 @@ class DNSResult:
     error: str = ""
 
     def to_dict(self):
-        d = asdict(self)
-        # 将 defaultdict 转为普通 dict
-        d["records"] = {k: [r.to_dict() if hasattr(r, 'to_dict') else r for r in v]
-                       for k, v in self.records.items()}
-        return d
+        # 注意：不能直接用 dataclasses.asdict(self)——records/doh_records 是
+        # defaultdict，asdict 会用 type(obj)(items) 重建，把 items 误当 default_factory，
+        # 导致 `TypeError: first argument must be callable or None`。这里手动构建并转普通 dict。
+        return {
+            "domain": self.domain,
+            "records": {k: [r.to_dict() if hasattr(r, "to_dict") else r for r in v]
+                        for k, v in self.records.items()},
+            "nameservers": list(self.nameservers),
+            "doh_records": dict(self.doh_records),
+            "dnssec_enabled": self.dnssec_enabled,
+            "cname_chain": list(self.cname_chain),
+            "mx_domains": list(self.mx_domains),
+            "spf_record": self.spf_record,
+            "dmarc_record": self.dmarc_record,
+            "txt_records": list(self.txt_records),
+            "source": self.source,
+            "error": self.error,
+        }
 
     @property
     def all_ips(self) -> List[str]:

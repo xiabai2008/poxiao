@@ -118,6 +118,30 @@ EXAMPLES = {
   poxiao config show                           # 显示当前生效的配置
   poxiao config path                           # 显示配置文件路径
 """,
+    "mcp": """
+示例 (stdio 接入 AI 助手):
+  poxiao mcp                                   # 启动 stdio MCP 服务端
+  poxiao mcp --transport stdio                 # 同上（默认）
+
+示例 (SSE / HTTP 网络接入):
+  poxiao mcp --transport sse                   # 监听 127.0.0.1:8765
+  poxiao mcp --transport sse --host 0.0.0.0 --port 9000
+
+stdio 客户端配置 (Claude Desktop / CodeBuddy 等):
+  {
+    "mcpServers": {
+      "poxiao": { "command": "poxiao", "args": ["mcp"] }
+    }
+  }
+SSE 客户端配置 (Cursor / 支持 SSE 的客户端):
+  {
+    "mcpServers": {
+      "poxiao": { "url": "http://127.0.0.1:8765/sse" }
+    }
+  }
+可用工具: scan_targets / check_alive / subdomain_enum /
+         passive_recon / verify_target / poc_scan / util_codec
+""",
 }
 
 

@@ -6,6 +6,7 @@ from .check import cmd_check
 from .subdomain import cmd_subdomain
 from .monitor import cmd_monitor
 from .verify import cmd_verify
+from .mcp import cmd_mcp
 from .recon import cmd_recon
 from .poc import cmd_poc
 from .stealth import cmd_stealth
@@ -21,6 +22,7 @@ CMD_MAP = {
     "subdomain": cmd_subdomain,
     "verify": cmd_verify,
     "monitor": cmd_monitor,
+    "mcp": cmd_mcp,
     "recon": cmd_recon,
     "poc": cmd_poc,
     "stealth": cmd_stealth,

@@ -124,7 +124,7 @@ class StealthClient:
                    data=None, json_data=None, **kwargs) -> httpx.Response:
         """POST 请求"""
         return await self.request("POST", url, headers=headers,
-                                  data=data, json=json_data, **kwargs)
+                                  data=data, json_data=json_data, **kwargs)
 
     async def request(self, method: str, url: str,
                       headers: Dict = None,
