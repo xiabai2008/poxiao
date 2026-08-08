@@ -22,6 +22,12 @@ def cmd_recon(args):
         os.environ["CENSYS_API_SECRET"] = args.censys_secret
     if args.github_token:
         os.environ["GITHUB_TOKEN"] = args.github_token
+    if args.quake_token:
+        os.environ["QUAKE_TOKEN"] = args.quake_token
+    if args.hunter_key:
+        os.environ["HUNTER_API_KEY"] = args.hunter_key
+    if args.hunter_email:
+        os.environ["HUNTER_EMAIL"] = args.hunter_email
 
     engine = ReconEngine(
         timeout=args.timeout,
@@ -31,6 +37,9 @@ def cmd_recon(args):
         censys_id=args.censys_id,
         censys_secret=args.censys_secret,
         github_token=args.github_token,
+        quake_token=args.quake_token,
+        hunter_key=args.hunter_key,
+        hunter_email=args.hunter_email,
     )
 
     # 配置框

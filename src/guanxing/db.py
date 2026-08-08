@@ -148,7 +148,7 @@ def _create_tables(conn: sqlite3.Connection):
 # 保持向后兼容
 def init_db():
     """初始化数据库表 (向后兼容)"""
-    with get_db() as conn:
+    with get_db():
         pass  # 表已在 context manager 中自动创建
 
 
@@ -257,12 +257,14 @@ def get_targets(status: Optional[str] = None, limit: int = 100, offset: int = 0,
 
         where = (" WHERE " + " AND ".join(conditions)) if conditions else ""
 
+        # nosec B608 — where 由固定条件模板拼接（status = ? / host LIKE ?），
+        # 值全部经 params 参数化绑定，无用户可控片段
         total = conn.execute(
-            f"SELECT COUNT(*) FROM targets{where}", params
+            f"SELECT COUNT(*) FROM targets{where}", params  # nosec B608
         ).fetchone()[0]
 
         rows = conn.execute(
-            f"SELECT * FROM targets{where} ORDER BY last_seen DESC LIMIT ? OFFSET ?",
+            f"SELECT * FROM targets{where} ORDER BY last_seen DESC LIMIT ? OFFSET ?",  # nosec B608
             params + [limit, offset]
         ).fetchall()
         return [_row_to_dict(r) for r in rows], total
@@ -333,7 +335,6 @@ def get_stats() -> dict:
 
 def import_from_summary(summary_path: str) -> None:
     """从扫描汇总 JSON 导入数据"""
-    import asyncio
     from pathlib import Path
 
     data = json.loads(Path(summary_path).read_text(encoding="utf-8"))

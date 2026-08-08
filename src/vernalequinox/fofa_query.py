@@ -120,7 +120,7 @@ class FofaQuery:
 
     @staticmethod
     def print_result(r: FofaResult):
-        print(f"  FOFA 资产")
+        print("  FOFA 资产")
         print(f"  {'─' * 50}")
         if r.error:
             print(f"  (跳过/降级) {r.error}")

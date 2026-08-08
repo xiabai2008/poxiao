@@ -2,15 +2,13 @@
 
 import functools
 import os
-from flask import Flask, jsonify, request, redirect, url_for, Response
+from flask import Flask, request, Response
 from markupsafe import escape
 from pathlib import Path
-import json as _json
 
 from .db import (
     get_targets, get_target_by_id, get_scans, get_changes,
-    get_stats, import_from_summary, upsert_target, add_scan,
-    export_data,
+    get_stats, import_from_summary, export_data,
 )
 
 app = Flask(__name__)
@@ -194,8 +192,12 @@ def dashboard():
 def targets_list():
     q = request.args.get("q", "").strip()
     status = request.args.get("status", "")
-    page = max(int(request.args.get("page", 1)), 1)
-    per_page = min(max(int(request.args.get("per_page", 20)), 1), 200)
+    try:
+        page = max(int(request.args.get("page", 1)), 1)
+        per_page = min(max(int(request.args.get("per_page", 20)), 1), 200)
+    except (TypeError, ValueError):
+        # 非数字分页参数回退默认值，避免 500
+        page, per_page = 1, 20
     offset = (page - 1) * per_page
 
     targets, total = get_targets(
@@ -449,6 +451,6 @@ def api_export() -> Response:
 
 def start_server(host: str = "127.0.0.1", port: int = 5099, debug: bool = False):
     """启动 Web 服务器"""
-    print(f"GuanXing Asset Monitor")
+    print("GuanXing Asset Monitor")
     print(f"   http://localhost:{port}")
     app.run(host=host, port=port, debug=debug)

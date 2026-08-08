@@ -2,7 +2,7 @@
 import sys
 import asyncio
 from src.frostmoon import ShuangYue
-from src.utils.output import Out, C
+from src.utils.output import Out
 
 
 def main():

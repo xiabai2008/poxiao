@@ -6,6 +6,10 @@
 [![Python](https://img.shields.io/badge/python-3.10%2B-blue)](https://www.python.org/)
 [![License](https://img.shields.io/github/license/xiabai2008/poxiao)](LICENSE)
 [![Release](https://img.shields.io/github/v/release/xiabai2008/poxiao)](https://github.com/xiabai2008/poxiao/releases)
+[![Code style: ruff](https://img.shields.io/badge/code_style-ruff-000000.svg)](https://github.com/astral-sh/ruff)
+[![Tests](https://img.shields.io/badge/tests-749%20passed-green)](https://github.com/xiabai2008/poxiao/actions)
+[![Coverage](https://img.shields.io/badge/coverage-71%25-brightgreen)](https://github.com/xiabai2008/poxiao/actions)
+[![Platform](https://img.shields.io/badge/windows%20%7C%20linux%20%7C%20macos-1f425f)](https://github.com/xiabai2008/poxiao/releases)
 
 > 破晓是凌晨的第一道光，霜月是清冷的收集，春分是全面的侦察，惊蛰是万物的验证，观星是持续的监控，夏至是隐匿的扫描。
 
@@ -20,6 +24,56 @@
 **先识别技术栈，再匹配 CVE，三层降噪消除假阳性。**
 
 不盲目 payload 轰炸，不追求模板数量，只追求高置信度结果。
+
+---
+
+## 快速开始
+
+```bash
+# 方式一：源码安装
+git clone https://github.com/xiabai2008/poxiao.git
+cd poxiao
+pip install -e ".[dev]"
+
+# 方式二：单文件二进制（免 Python 环境）
+# 从 Release 下载 poxiao-win-x64.exe / poxiao-linux-x64 / poxiao-macos-x64
+
+# 核心扫描
+poxiao scan targets.txt                    # 扫描目标列表
+poxiao scan example.com --report butian    # 生成补天报告
+poxiao scan example.com --sarif            # 同时输出 SARIF（对接 GitHub Code Scanning）
+
+# 被动侦察（FOFA / Quake / Hunter 三测绘引擎合并资产）
+poxiao recon example.com --quake-token $QUAKE_TOKEN --hunter-key $KEY --hunter-email you@mail.com
+
+# 漏洞验证
+jingzhe https://example.com                # 默认凭据/Git 泄露/Swagger/Actuator 验证
+poxiao poc scan example.com -t templates/  # POC 模板扫描
+poxiao poc scan example.com --history      # 与上次扫描对比（新增/消失）
+
+# 带外回调（盲注/XXE/SSRF 验证）
+poxiao oast serve --port 8899              # 公网机/内网穿透后配 POXIAO_OAST_BASE
+poxiao poc scan https://target -t templates/ --oast --oast-check
+
+# 被动代理（xray 式：浏览器挂代理自动记录流量）
+poxiao proxy serve --port 8080
+poxiao proxy query --domain example.com
+
+# 资产监控
+guanxing serve                             # 观星 Web 仪表盘（变化告警可推飞书/钉钉）
+
+# 模板签名（防供应链投毒）
+python tools/template_sync.py genkey priv.pem pub.pem
+python tools/template_sync.py sign templates --key priv.pem
+python tools/template_sync.py verify templates --key pub.pem
+
+# 社区模板同步（nuclei-templates，独立目录不污染默认库）
+python tools/template_sync.py sync community --subdirs http,cves
+
+# MCP 服务端（AI 助手接入）
+poxiao mcp                                 # stdio（Claude/CodeBuddy）
+poxiao mcp --transport sse --token xxx     # SSE（Cursor 等，token 鉴权）
+```
 
 ---
 
@@ -45,39 +99,49 @@
 |------|------|------|
 | **破晓 Dawn** | `poxiao scan` | 核心扫描器：技术栈指纹 + CVE 精确匹配 + 三层降噪 + SRC 报告 |
 | **霜月 FrostMoon** | `frostmoon` | 子域名收集：crt.sh + certspotter + OTX + DNS 爆破 + 泛解析检测 |
-| **春分 VernalEquinox** | `vernalequinox` | 被动侦察：WHOIS + ICP + DNS + 证书 + IP 情报 + Wayback + GitHub 泄露 |
+| **春分 VernalEquinox** | `vernalequinox` | 被动侦察：WHOIS + ICP + DNS + 证书 + IP 情报 + Wayback + GitHub 泄露 + FOFA/Quake/Hunter |
 | **惊蛰 JingZhe** | `jingzhe` | 漏洞验证：默认凭据 + Git 泄露 + Swagger + Actuator + 配置文件检测 |
-| **观星 GuanXing** | `guanxing` | 资产监控：Web 仪表盘 + 变化追踪 + 认证 + 分页 |
+| **观星 GuanXing** | `guanxing` | 资产监控：Web 仪表盘 + 变化追踪 + 认证 + 分页 + Webhook 告警 |
 | **夏至 XiaZhi** | `xiazhi` | 隐匿扫描：POC 模板引擎 + 代理池 + UA 轮换 + WAF 绕过 |
+| **OAST** | `poxiao oast` | 带外回调：盲注/XXE/SSRF 验证基础设施（本地自建，无外部服务） |
+| **被动代理** | `poxiao proxy` | xray 式工作流：浏览器挂代理记录流量 + 敏感参数标记 |
 
 ---
 
-## 快速开始
+## 新能力速览
 
+### SARIF 2.1.0 输出（对接 GitHub Code Scanning / GitLab SAST）
 ```bash
-# 安装（源码）
-git clone https://github.com/xiabai2008/poxiao.git
-cd poxiao
-pip install -e ".[dev]"
+poxiao report --format sarif            # 从最近扫描汇总生成
+poxiao scan example.com --sarif         # 扫描完成自动生成
+```
+CVE 按严重级别映射 error/warning/note，规则自动去重，含 partialFingerprints。
 
-# 核心扫描
-poxiao scan targets.txt                    # 扫描目标列表
-poxiao scan example.com --report butian    # 生成补天报告
+### 模板 ECDSA 签名（防供应链投毒）
+模板以原始字节签名（ECDSA P-256），任何改动即失效。签名清单 `.signatures.json` 随模板目录存放：
+```bash
+python tools/template_sync.py genkey priv.pem pub.pem
+python tools/template_sync.py sign templates --key priv.pem      # 224 个模板一键签名
+python tools/template_sync.py verify templates --key pub.pem     # 校验（bad 即失败）
+poxiao poc scan example.com --verify-signatures --public-key pub.pem  # 引擎侧可选校验
+```
 
-# 独立工具
-frostmoon example.com --brute              # 子域名收集
-vernalequinox example.com                  # 被动侦察
-jingzhe https://example.com                # 漏洞验证
-guanxing serve                             # 启动监控仪表盘
-xiazhi scan example.com -t templates/      # POC 扫描
-xiazhi scan example.com -t templates/ --stealth  # 隐匿扫描
+### OAST 带外回调（盲注/XXE/SSRF 验证）
+POC 模板可用 `{{oast-url}}`/`{{oast-domain}}` 变量生成随机子域；目标若触发回调（DNS/HTTP），`--oast-check` 自动确认命中：
+```bash
+POXIAO_OAST_BASE=http://your-oast.example.com poxiao oast serve   # 公网机
+poxiao poc scan https://target --oast --oast-check                # 扫描机
+```
 
-# 配置管理
-poxiao config init                         # 创建配置文件
-poxiao config show                         # 查看当前配置
+### 测绘引擎闭环
+FOFA + Quake + Hunter 三引擎被动资产合并（密钥按源隔离、限流、失败降级），查询结果自动并入侦察报告与资产库。
 
-# MCP 服务端（AI 助手接入）
-poxiao mcp                                 # 启动 stdio MCP 服务端，供 Claude/CodeBuddy 等调用
+### Webhook 告警（飞书/钉钉）
+观星监控到资产变化时自动推送（URL 自动识别或 `monitor.webhook_type` 强制指定）：
+```yaml
+monitor:
+  webhook_url: "https://open.feishu.cn/open-apis/bot/v2/hook/xxx"
+  webhook_type: "feishu"   # feishu | dingtalk | raw（留空按 URL 自动识别）
 ```
 
 ---
@@ -89,7 +153,7 @@ poxiao mcp                                 # 启动 stdio MCP 服务端，供 Cl
 ```bash
 poxiao mcp                                 # stdio 传输（本地 AI 助手接入，默认）
 poxiao mcp --transport sse                 # SSE/HTTP 传输，监听 127.0.0.1:8765
-poxiao mcp --transport sse --host 0.0.0.0 --port 9000
+poxiao mcp --transport sse --host 0.0.0.0 --port 9000 --token <密钥>  # 远程接入（token 鉴权）
 ```
 
 stdio 客户端配置（Claude Desktop / CodeBuddy 等）：
@@ -107,12 +171,12 @@ SSE 客户端配置（Cursor / 支持 SSE 的客户端）：
 ```json
 {
   "mcpServers": {
-    "poxiao": { "url": "http://127.0.0.1:8765/sse" }
+    "poxiao": { "url": "http://127.0.0.1:8765/sse", "headers": { "Authorization": "Bearer <token>" } }
   }
 }
 ```
 
-> SSE 默认仅监听回环地址 `127.0.0.1`（私有化定位，避免误暴露）；如需局域网接入再显式指定 `--host`。
+> SSE 默认仅监听回环地址 `127.0.0.1`；设置 `--token` 后 GET /sse 与 POST /messages 均须携带 Bearer 令牌或 `?token=` 参数（恒时比较）。令牌也可经环境变量 `POXIAO_MCP_TOKEN` 提供。
 
 暴露的 7 个工具：
 
@@ -145,31 +209,31 @@ SSE 客户端配置（Cursor / 支持 SSE 的客户端）：
 ```
 破晓/
 ├── src/
-│   ├── dawn/              # 核心扫描器 (7 模块)
-│   │   ├── engine.py      # HTTP 扫描 + 技术栈识别
+│   ├── dawn/              # 核心扫描器
+│   │   ├── engine.py      # HTTP 扫描 + 技术栈识别（连接池复用）
 │   │   ├── tech_stack.py  # 指纹库 (Server/Language/CMS/CDN/WAF)
 │   │   ├── cve_match.py   # CVE 匹配 (257 条内置 + NVD 在线)
 │   │   ├── sensitive.py   # 敏感路径 + 三层降噪
 │   │   └── reporter.py    # SRC 报告生成
 │   ├── frostmoon/         # 霜月 — 子域名收集
-│   ├── vernalequinox/     # 春分 — 被动侦察 (10 模块)
+│   ├── vernalequinox/     # 春分 — 被动侦察（DNS/WHOIS/ICP/证书/IP/FOFA/Quake/Hunter）
 │   ├── jingzhe/           # 惊蛰 — 漏洞验证
-│   ├── guanxing/          # 观星 — 资产监控
-│   ├── xiazhi/            # 夏至 — 隐匿扫描 + POC 引擎 (10 模块)
+│   ├── guanxing/          # 观星 — 资产监控（SQLite + Web + Webhook）
+│   ├── xiazhi/            # 夏至 — 隐匿扫描 + POC 引擎 + 模板签名
+│   ├── oast/              # OAST 带外回调服务器
+│   ├── proxy/             # 被动代理
+│   ├── mcp/               # MCP 服务端（stdio + SSE）
 │   ├── config.py          # 统一配置系统
 │   ├── target/            # 目标管理
-│   └── utils/             # 共享工具
+│   └── utils/             # 共享工具（sarif/html_report/i18n…）
 │
-├── templates/             # POC 模板库 (215 个)
+├── templates/             # POC 模板库 (224 个)
 ├── configs/               # 配置文件
 │   └── brands.json        # 补天品牌数据库 (107 品牌)
+├── tools/                 # 运维工具链（ci_audit/template_sync/type_check/bench/gen_sbom）
 │
 ├── poxiao.py              # 破晓入口
-├── frostmoon.py           # 霜月入口
-├── vernalequinox.py       # 春分入口
-├── jingzhe.py             # 惊蛰入口
-├── guanxing.py            # 观星入口
-├── xiazhi.py              # 夏至入口
+├── poxiao.spec            # PyInstaller 单文件打包配置
 └── pyproject.toml
 ```
 
@@ -204,6 +268,8 @@ recon:
 monitor:
   host: "127.0.0.1"         # 默认只监听本地
   port: 5099
+  webhook_url: ""           # 变化告警（飞书/钉钉/自建，留空关闭）
+  webhook_type: ""          # feishu | dingtalk | raw（留空按 URL 自动识别）
 ```
 
 ---
@@ -212,13 +278,16 @@ monitor:
 
 | 变量 | 用途 |
 |------|------|
-| `POXIAO_SCAN_CONCURRENCY` | 扫描并发数 |
-| `POXIAO_SCAN_TIMEOUT` | 扫描超时 |
+| `POXIAO_SCAN_CONCURRENCY` / `POXIAO_SCAN_TIMEOUT` | 扫描并发/超时 |
 | `POXIAO_NVD_API_KEY` | NVD API Key |
 | `SHODAN_API_KEY` | Shodan API Key |
 | `FOFA_KEY` / `FOFA_EMAIL` | FOFA API |
+| `QUAKE_TOKEN` | Quake API Token |
+| `HUNTER_API_KEY` / `HUNTER_EMAIL` | Hunter API |
 | `CENSYS_API_ID` / `CENSYS_API_SECRET` | Censys API |
 | `GITHUB_TOKEN` | GitHub 代码泄露扫描 |
+| `POXIAO_OAST_BASE` | OAST 公网域名基址（`{{oast-url}}` 变量） |
+| `POXIAO_MCP_TOKEN` | MCP SSE 访问令牌 |
 | `POXIAO_MONITOR_USER` / `POXIAO_MONITOR_PASS` | 仪表盘认证 |
 
 ---
@@ -227,10 +296,25 @@ monitor:
 
 ```
 内置 CVE 漏洞库:  257 条唯一 CVE ID（+ NVD 在线查询）
-POC 模板:         224 个（Nuclei 风格）
+POC 模板:         741 个（Nuclei 风格，含 517 个精选社区模板，ECDSA 签名校验）
+                  精选流程: template_select.py（国内组件/CVE 热榜/高危类型评分）
 补天品牌库:       107 个
-扫描性能:         约 7.6 秒 / 30 目标（示例测试集）
+测试:             787 passed（覆盖率 72%，fail_under=60 硬门槛）
+质量门禁:         ruff 全绿 · bandit 0 issue · mypy 10 模块零错误 · ci_audit PASS
+分发:             wheel + 单文件二进制（Windows/Linux/macOS）
+性能:             约 142 目标/秒（合成压测，P99 516ms）
 降噪效果:         误报率从 94% → 约 5%
+```
+
+## 模板精选（P2-4）
+
+从 nuclei-templates 社区库筛选高价值模板进正式库（国内组件/CVE 近三年/高危类型评分，high/critical 才入选）：
+
+```bash
+python tools/template_sync.py sync community --subdirs http,cves,exposures,misconfig,default-logins
+python tools/template_select.py community --min-score 6 --apply   # 精选合入 templates/nuclei_selected/
+python tools/template_sync.py validate templates/nuclei_selected   # 校验（硬门禁）
+python tools/template_sync.py sign templates --key priv.pem        # 签名
 ```
 
 ---
@@ -239,12 +323,13 @@ POC 模板:         224 个（Nuclei 风格）
 
 | 组件 | 技术 |
 |------|------|
-| HTTP | httpx（异步） |
+| HTTP | httpx（异步，连接池复用） |
 | DNS | dnspython |
 | 证书透明 | crt.sh / certspotter / AlienVault OTX |
-| IP 情报 | Shodan / Censys / FOFA |
+| 测绘引擎 | FOFA / Quake / Hunter / Shodan / Censys |
 | 历史 URL | Wayback Machine |
 | 代码泄露 | GitHub Search API |
+| 模板签名 | cryptography（ECDSA P-256） |
 | 数据库 | SQLite |
 | Web | Flask + Bootstrap 5 |
 | 配置 | YAML + 环境变量 |
@@ -254,18 +339,19 @@ POC 模板:         224 个（Nuclei 风格）
 
 ## 设计原则
 
-- **异步优先** — 所有网络 I/O 用 asyncio
-- **无外部依赖** — 不用 Docker、不用 Redis、SQLite 单文件
+- **异步优先** — 所有网络 I/O 用 asyncio，连接池复用
+- **无外部依赖** — 不用 Docker、不用 Redis、SQLite 单文件；OAST 本地自建
 - **渐进输出** — 扫完一个出结果，不等全部
 - **工具独立** — 每个工具可单独使用，也可编排协作
 - **高置信度** — 三层降噪，误报率 < 5%
+- **安全默认值** — 令牌/端口可配、SSE 默认回环、模板签名可选
 
 ---
 
 ## 文档与贡献
 
 - [用户手册](docs/USER_GUIDE.md) — 安装、配置、各工具详细用法
-- [开发者指南](docs/DEVELOPER.md) — 仓库结构、CI、类型化、模板贡献
+- [开发者指南](docs/DEVELOPER.md) — 仓库结构、CI 四件套、类型化渐进、模板贡献
 - [更新日志](CHANGELOG.md) — 版本历史与变更
 - [贡献指南](CONTRIBUTING.md) — 如何参与贡献
 - [安全策略](SECURITY.md) — 漏洞报告流程

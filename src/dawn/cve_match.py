@@ -3,13 +3,10 @@
 内置常见中文 CMS 漏洞库 + NVD API 查询接口
 """
 
-import json
 import os
 import re
 import time
-from dataclasses import dataclass, field
-from pathlib import Path
-from typing import Optional
+from dataclasses import dataclass
 
 
 @dataclass
@@ -105,7 +102,7 @@ BUILTIN_VULNS = [
         "fixed": "1.25.3",
     },
     {
-        "component": "nginx",
+        "component": "njs",
         "cve": "CVE-2022-26945",
         "severity": "CRITICAL",
         "cvss": 9.8,
@@ -197,7 +194,7 @@ BUILTIN_VULNS = [
         "severity": "HIGH",
         "cvss": 7.5,
         "description": "IIS 6.0 WebDAV 远程缓冲区溢出 RCE",
-        "affected": "IIS 6.0 (Windows Server 2003)",
+        "affected": "6.0",
         "fixed": "已EOL",
     },
     {
@@ -206,7 +203,7 @@ BUILTIN_VULNS = [
         "severity": "CRITICAL",
         "cvss": 9.8,
         "description": "Windows HTTP.sys RCE (IIS, 蠕虫级漏洞)",
-        "affected": "Windows Server 2019/2022",
+        "affected": "10.0",
         "fixed": "KB5009557",
     },
     {
@@ -215,7 +212,7 @@ BUILTIN_VULNS = [
         "severity": "CRITICAL",
         "cvss": 9.8,
         "description": "Windows HTTP.sys RCE (IIS, 蠕虫级)",
-        "affected": "Windows Server 2004/20H2",
+        "affected": "10.0",
         "fixed": "KB5003173",
     },
     {
@@ -224,7 +221,7 @@ BUILTIN_VULNS = [
         "severity": "HIGH",
         "cvss": 7.5,
         "description": "IIS HTTP Protocol Stack memory leak RCE",
-        "affected": "Windows Server 2004/20H2",
+        "affected": "10.0",
         "fixed": "KB5003637",
     },
     # ══════════════════════════════════════════════════════════
@@ -311,7 +308,7 @@ BUILTIN_VULNS = [
         "severity": "HIGH",
         "cvss": 7.2,
         "description": "DedeCMS V5.7 SP2 前台任意文件上传 → getshell",
-        "affected": "V5.7 SP2",
+        "affected": "5.7",
         "fixed": "",
     },
     {
@@ -389,7 +386,7 @@ BUILTIN_VULNS = [
         "severity": "CRITICAL",
         "cvss": 9.8,
         "description": "Discuz! ML! v3.4 前台任意代码执行",
-        "affected": "ML! v3.4",
+        "affected": "3.4",
         "fixed": "",
     },
     {
@@ -407,7 +404,7 @@ BUILTIN_VULNS = [
         "severity": "HIGH",
         "cvss": 8.1,
         "description": "Discuz! X3.4 SSRF via proxy utility",
-        "affected": "<= X3.4",
+        "affected": "<= 3.4",
         "fixed": "",
     },
     {
@@ -416,7 +413,7 @@ BUILTIN_VULNS = [
         "severity": "HIGH",
         "cvss": 8.1,
         "description": "Discuz! X3.4 后台 SSRF via flash 模块",
-        "affected": "<= X3.4",
+        "affected": "<= 3.4",
         "fixed": "",
     },
     # ══════════════════════════════════════════════════════════
@@ -1070,7 +1067,7 @@ BUILTIN_VULNS = [
         "severity": "CRITICAL",
         "cvss": 9.8,
         "description": "Confluence Server hardcoded password (Questions for Confluence)",
-        "affected": "Questions plugin < 2.7.35 / < 3.0.2",
+        "affected": "<= 2.7.34 / <= 3.0.1",
         "fixed": "2.7.35 / 3.0.2",
     },
     # ══════════════════════════════════════════════════════════
@@ -1337,7 +1334,7 @@ BUILTIN_VULNS = [
         "severity": "CRITICAL",
         "cvss": 10.0,
         "description": "IIS HTTP.sys RCE via crafted HTTP request (MS15-034)",
-        "affected": "Windows Server 2008 R2 - 2012 R2",
+        "affected": "7.5 - 8.5",
         "fixed": "KB3042553",
         "cpe": "cpe:2.3:a:microsoft:iis:*:*:*:*:*:*:*:*",
     },
@@ -2099,7 +2096,7 @@ BUILTIN_VULNS = [
         "severity": "HIGH",
         "cvss": 8.0,
         "description": "Jenkins stored XSS via Jervis plugin",
-        "affected": "Jervis plugin < 1.2",
+        "affected": "< 1.2",
         "fixed": "1.2",
         "cpe": "cpe:2.3:a:jenkins:jenkins:*:*:*:*:*:*:*:*",
     },
@@ -2389,7 +2386,7 @@ BUILTIN_VULNS = [
         "severity": "HIGH",
         "cvss": 7.5,
         "description": "Discuz! X3.4 arbitrary file read via crafted request",
-        "affected": "<= X3.4",
+        "affected": "<= 3.4",
         "fixed": "",
         "cpe": "cpe:2.3:a:discuz:discuz!::*:*:*:*:*:*:*",
     },
@@ -2796,10 +2793,10 @@ class CVEMatcher:
     def _version_less_than(cls, ver_parts: list[int], ver_penalty: int,
                            limit_parts: list[int], limit_penalty: int = 0) -> bool:
         """Compare two versions considering suffix penalties."""
-        p, l = cls._pad_versions(ver_parts, limit_parts)
-        if p < l:
+        p, lmt = cls._pad_versions(ver_parts, limit_parts)
+        if p < lmt:
             return True
-        if p == l:
+        if p == lmt:
             return ver_penalty < limit_penalty
         return False
 
@@ -2807,18 +2804,18 @@ class CVEMatcher:
     def _version_less_equal(cls, ver_parts: list[int], ver_penalty: int,
                             limit_parts: list[int], limit_penalty: int = 0) -> bool:
         """Compare two versions considering suffix penalties."""
-        p, l = cls._pad_versions(ver_parts, limit_parts)
-        if p < l:
+        p, lmt = cls._pad_versions(ver_parts, limit_parts)
+        if p < lmt:
             return True
-        if p == l:
+        if p == lmt:
             return ver_penalty <= limit_penalty
         return False
 
     @classmethod
     def _version_equal(cls, ver_parts: list[int], ver_penalty: int,
                        limit_parts: list[int], limit_penalty: int = 0) -> bool:
-        p, l = cls._pad_versions(ver_parts, limit_parts)
-        return p == l and ver_penalty == limit_penalty
+        p, lmt = cls._pad_versions(ver_parts, limit_parts)
+        return p == lmt and ver_penalty == limit_penalty
 
     @classmethod
     def _version_in_range(cls, version: str, affected: str) -> bool:
@@ -2902,8 +2899,11 @@ class CVEMatcher:
                 return False
             return cls._version_less_equal(ver_parts, ver_penalty, limit, 0)
 
-        # "1.2.3 - 1.5.0"
-        m = re.match(r"v?([\d.]+)\s*-\s*v?([\d.]+)", affected)
+        # "1.2.3 - 1.5.0"（支持预发布/补丁后缀，如 "9.0.0-M1 - 9.0.98"）
+        m = re.match(
+            r"v?([\d.]+)(?:[-+][\w.]+)?\s*-\s*v?([\d.]+)(?:[-+][\w.]+)?",
+            affected,
+        )
         if m:
             try:
                 lo = [int(x) for x in m.group(1).split(".")]

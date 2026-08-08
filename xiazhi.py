@@ -1,9 +1,8 @@
 """夏至 XiaZhi — 隐匿扫描引擎 + POC 模板执行入口"""
 import sys
 import asyncio
-from pathlib import Path
 from src.xiazhi import POCEngine, TemplateLoader
-from src.utils.output import Out, C
+from src.utils.output import Out
 
 
 def main():

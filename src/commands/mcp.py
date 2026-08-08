@@ -1,6 +1,7 @@
 """MCP 服务端命令 — 启动破晓 Model Context Protocol 服务端 (stdio / SSE)"""
 
 import logging
+import os
 import sys
 
 from src.mcp.server import MCPServer
@@ -24,10 +25,13 @@ def cmd_mcp(args):
 
         host = getattr(args, "host", "127.0.0.1")
         port = int(getattr(args, "port", 8765))
-        server = SSEServer(host=host, port=port)
+        token = getattr(args, "token", "") or os.environ.get("POXIAO_MCP_TOKEN", "")
+        server = SSEServer(host=host, port=port, token=token)
         server._make()  # 提前绑定端口，便于打印真实地址
         sys.stderr.write(
-            f"破晓 MCP 服务端已启动 (SSE): http://{host}:{server.port}/sse  按 Ctrl-C 退出。\n"
+            f"破晓 MCP 服务端已启动 (SSE): http://{host}:{server.port}/sse"
+            + ("  (token 鉴权已启用)" if token else "  (无鉴权，仅限本机/内网)")
+            + "\n"
         )
         sys.stderr.flush()
         try:

@@ -91,7 +91,7 @@ class WaybackQuery:
     @staticmethod
     def print_result(r: WaybackResult):
         """Format and print Wayback results"""
-        print(f"  Wayback Machine")
+        print("  Wayback Machine")
         print(f"  {'─' * 50}")
 
         if r.error:

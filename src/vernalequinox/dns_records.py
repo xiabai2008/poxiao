@@ -12,9 +12,8 @@ DNS 记录全量枚举模块
 """
 
 import asyncio
-import json
 from dataclasses import dataclass, field, asdict
-from typing import List, Dict, Optional, Tuple
+from typing import List, Dict
 from collections import defaultdict
 
 try:
@@ -280,7 +279,7 @@ class DNSCollector:
     @staticmethod
     def print_result(r: DNSResult):
         """格式化打印 DNS 结果"""
-        print(f"  🌐 DNS 记录")
+        print("  🌐 DNS 记录")
         print(f"  {'─' * 50}")
 
         # A 记录

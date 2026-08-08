@@ -83,7 +83,7 @@ class GitHubLeakScanner:
     @staticmethod
     def print_result(r: GitHubLeakResult):
         """Format and print GitHub leak results"""
-        print(f"  GitHub Leak Scan")
+        print("  GitHub Leak Scan")
         print(f"  {'─' * 50}")
 
         if r.error:
@@ -91,7 +91,7 @@ class GitHubLeakScanner:
             return
 
         if not r.leaks:
-            print(f"  No leaks found")
+            print("  No leaks found")
             return
 
         print(f"  Potential leaks: {len(r.leaks)}")

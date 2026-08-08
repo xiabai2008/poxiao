@@ -42,7 +42,6 @@ EN: Dict[str, str] = {
     "高危": "High",
     "中危": "Medium",
     "低危": "Low",
-    "信息": "Info",
 
     # ── 漏洞类型 (vuln type) ──────────────────────────
     "SQL注入": "SQL Injection",
@@ -83,18 +82,13 @@ EN: Dict[str, str] = {
     "不可达": "Unreachable",
 
     # ── SRC 报告自由文本（D13 延伸）───────────────────
-    # 标题（_finding_title）
+    # 标题（_finding_title）；与上方"漏洞类型"重复的键已在上方定义，
+    # 重复定义会覆盖，此处仅保留独立键。
     "Git 仓库信息泄露": "Git Repository Information Disclosure",
     "配置文件可访问": "Configuration File Accessible",
-    "备份文件泄露": "Backup File Disclosure",
-    "调试信息泄露": "Debug Information Disclosure",
     "后台管理页面暴露": "Admin Panel Exposed",
     "API 接口信息泄露": "API Endpoint Information Disclosure",
-    "源代码泄露": "Source Code Disclosure",
-    "数据库管理入口暴露": "Database Admin Panel Exposed",
-    "Swagger/API文档泄露": "Swagger/API Docs Disclosure",
     "Spring Boot Actuator信息泄露": "Spring Boot Actuator Information Disclosure",
-    "phpinfo信息泄露": "phpinfo Information Disclosure",
     "默认凭据登录": "Default Credentials Login",
     "SQL注入漏洞": "SQL Injection Vulnerability",
     "CORS跨域配置不当": "CORS Misconfiguration",

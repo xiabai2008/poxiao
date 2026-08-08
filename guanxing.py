@@ -1,6 +1,6 @@
 """观星 GuanXing — 资产监控仪表盘入口"""
 import sys
-from src.guanxing import start_server, init_db, get_stats, import_from_summary
+from src.guanxing import start_server, get_stats, import_from_summary
 from src.utils.output import Out
 
 

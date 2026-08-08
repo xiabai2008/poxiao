@@ -21,11 +21,9 @@ IP 情报收集模块
 """
 
 import asyncio
-import json
-import re
 import os
 from dataclasses import dataclass, field, asdict
-from typing import List, Dict, Optional
+from typing import List, Dict
 
 
 @dataclass

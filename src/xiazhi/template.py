@@ -34,7 +34,7 @@ requests:
 """
 
 from dataclasses import dataclass, field
-from typing import List, Dict, Optional, Any
+from typing import List, Dict
 
 
 @dataclass
@@ -65,7 +65,8 @@ class Matcher:
     condition: str = "or"               # or / and (多个 words/regex 之间的关系)
 
     def to_dict(self):
-        return {k: v for k, v in self.__dict__.items() if v and v != [] and v != False and v != "word" and v != "body" and v != "or"}
+        return {k: v for k, v in self.__dict__.items()
+                if v and v != [] and v is not False and v != "word" and v != "body" and v != "or"}
 
 
 @dataclass
@@ -96,6 +97,7 @@ class HTTPRequest:
     headers: Dict[str, str] = field(default_factory=dict)
     body: str = ""                       # 请求体
     content_type: str = ""               # Content-Type
+    raw: str = ""                        # P2-1: nuclei raw HTTP 报文原文（解析后仍保留）
     # 匹配逻辑
     matchers_condition: str = "and"      # and / or (多个 matcher 之间)
     matchers: List[Matcher] = field(default_factory=list)
@@ -116,6 +118,7 @@ class HTTPRequest:
             "path": self.path,
             "headers": self.headers,
             "body": self.body,
+            "raw": self.raw[:200] if self.raw else "",
             "matchers_condition": self.matchers_condition,
             "matchers": [m.to_dict() for m in self.matchers],
             "extractors": [e.to_dict() for e in self.extractors],

@@ -490,8 +490,8 @@ class JingZhe:
                     return findings
                 if "x5secdata" in tlow:
                     return findings
-                lines = [l.strip() for l in text.splitlines()
-                         if l.strip() and not l.startswith('#')]
+                lines = [ln.strip() for ln in text.splitlines()
+                         if ln.strip() and not ln.startswith('#')]
                 if lines:
                     findings.append(VerifiedFinding(
                         url=full_url, finding_type="git",

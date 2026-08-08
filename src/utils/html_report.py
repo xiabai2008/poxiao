@@ -5,7 +5,6 @@
 """
 
 import html
-from datetime import datetime
 from typing import Any, Dict, List
 
 from src.i18n import _, get_locale

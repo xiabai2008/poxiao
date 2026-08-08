@@ -17,7 +17,7 @@
 
 import asyncio
 import time
-from typing import Dict, Optional
+from typing import Dict
 from collections import defaultdict
 
 
@@ -153,7 +153,7 @@ class RateLimiter:
 
     def print_stats(self):
         """打印统计"""
-        print(f"  📊 限速统计")
+        print("  📊 限速统计")
         print(f"  {'─' * 40}")
         for domain, stats in sorted(self._stats.items(), key=lambda x: -x[1]["requests"]):
             if stats["requests"] > 0:

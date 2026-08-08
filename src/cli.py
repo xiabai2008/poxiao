@@ -4,16 +4,16 @@ import argparse
 import sys
 import os
 import traceback
-from pathlib import Path
 
 from src.utils.win_utf8 import fix_windows_utf8
 fix_windows_utf8()
 
-from src.utils.banner import print_banner
-from src.utils.output import Out
-from src.utils.help import get_examples
-from src.commands import CMD_MAP, BANNER_MAP
-from src.i18n import set_locale
+# noqa: E402 — 必须先 fix_windows_utf8 再导入含中文输出的模块
+from src.utils.banner import print_banner  # noqa: E402
+from src.utils.output import Out  # noqa: E402
+from src.utils.help import get_examples  # noqa: E402
+from src.commands import CMD_MAP, BANNER_MAP  # noqa: E402
+from src.i18n import set_locale  # noqa: E402
 
 
 def safe_run(func, *args, **kwargs):
@@ -76,6 +76,8 @@ def main():
     scan_parser.add_argument("--timeout", type=float, default=5.0, help="HTTP 超时秒数")
     scan_parser.add_argument("--no-sensitive", action="store_true", help="跳过敏感路径检测")
     scan_parser.add_argument("-o", "--output", default="scan_results", help="报告输出目录")
+    scan_parser.add_argument("--sarif", action="store_true",
+                             help="扫描完成后同时生成 SARIF 2.1.0 报告（对接 GitHub Code Scanning）")
 
     # ── discover 命令 ────────────────────────────
     discover_parser = sub.add_parser("discover", help="公司名 → 域名发现",
@@ -109,12 +111,42 @@ def main():
         help="SSE 监听地址（--transport sse 时生效，默认 127.0.0.1 仅本机）")
     mcp_parser.add_argument("--port", type=int, default=8765,
         help="SSE 监听端口（--transport sse 时生效，默认 8765）")
+    mcp_parser.add_argument("--token", default="",
+        help="SSE 访问令牌（--transport sse 时生效；留空则仅建议回环监听，"
+             "设置后 GET /sse 与 POST /messages 均须携带 Bearer 令牌或 ?token= 参数）")
+
+    # ── oast 命令（P1-D）────────────────────────────
+    oast_parser = sub.add_parser("oast", help="OAST 带外回调服务器（盲注/XXE/SSRF 验证）",
+        epilog=get_examples("oast"), formatter_class=argparse.RawDescriptionHelpFormatter)
+    oast_subs = oast_parser.add_subparsers(dest="oast_action")
+    oast_serve = oast_subs.add_parser("serve", help="启动回调服务器")
+    oast_serve.add_argument("--host", default="0.0.0.0", help="监听地址（默认 0.0.0.0）")
+    oast_serve.add_argument("--port", type=int, default=8899, help="监听端口（默认 8899）")
+    oast_query = oast_subs.add_parser("query", help="查询回调记录")
+    oast_query.add_argument("--domain", default="", help="按子域/标签过滤")
+    oast_query.add_argument("--limit", type=int, default=100, help="最大条数")
+    oast_subs.add_parser("flush", help="清空回调记录")
+
+    # ── proxy 命令（P1-E）────────────────────────────
+    proxy_parser = sub.add_parser("proxy", help="被动代理（xray 式，浏览器挂代理记录流量）",
+        epilog=get_examples("proxy"), formatter_class=argparse.RawDescriptionHelpFormatter)
+    proxy_subs = proxy_parser.add_subparsers(dest="proxy_action")
+    proxy_serve = proxy_subs.add_parser("serve", help="启动被动代理")
+    proxy_serve.add_argument("--host", default="127.0.0.1", help="监听地址（默认 127.0.0.1）")
+    proxy_serve.add_argument("--port", type=int, default=8080, help="监听端口（默认 8080）")
+    proxy_query = proxy_subs.add_parser("query", help="查询代理流量记录")
+    proxy_query.add_argument("--domain", default="", help="按 URL 包含过滤")
+    proxy_query.add_argument("--limit", type=int, default=100, help="最大条数")
 
     # ── monitor 命令 ───────────────────────────
     monitor_parser = sub.add_parser("monitor", help="资产监控平台（观星）",
         epilog=get_examples("monitor"), formatter_class=argparse.RawDescriptionHelpFormatter)
     mon_subs = monitor_parser.add_subparsers(dest="mon_action")
-    mon_subs.add_parser("serve", help="启动 Web 面板")
+    mon_serve = mon_subs.add_parser("serve", help="启动 Web 面板")
+    mon_serve.add_argument("--host", default="",
+        help="监听地址（默认读配置 monitor.host，缺省 127.0.0.1）")
+    mon_serve.add_argument("--port", type=int, default=0,
+        help="监听端口（默认读配置 monitor.port，缺省 5099）")
     mon_import = mon_subs.add_parser("import", help="导入扫描结果")
     mon_import.add_argument("path", help="扫描汇总 JSON 文件")
     mon_subs.add_parser("stats", help="查看统计")
@@ -137,6 +169,9 @@ def main():
     recon_parser.add_argument("--fofa-key", default="", help="FOFA API Key")
     recon_parser.add_argument("--fofa-email", default="", help="FOFA 邮箱")
     recon_parser.add_argument("--censys-id", default="", help="Censys API ID")
+    recon_parser.add_argument("--quake-token", default="", help="Quake API Token（P1-F）")
+    recon_parser.add_argument("--hunter-key", default="", help="Hunter API Key（P1-F）")
+    recon_parser.add_argument("--hunter-email", default="", help="Hunter 账号邮箱（P1-F）")
     recon_parser.add_argument("--censys-secret", default="", help="Censys API Secret")
     recon_parser.add_argument("--github-token", default="", help="GitHub Token")
     recon_parser.add_argument("-o", "--output", default="", help="报告输出路径")
@@ -165,6 +200,17 @@ def main():
     poc_scan.add_argument("--loop", action="store_true", help="持续性扫描")
     poc_scan.add_argument("--interval", type=int, default=3600, help="循环间隔秒数")
     poc_scan.add_argument("--history", action="store_true", help="显示历史对比")
+    poc_scan.add_argument("--oast", action="store_true",
+                          help="启用 OAST 变量（{{oast-url}}/{{oast-domain}}）并追踪子域")
+    poc_scan.add_argument("--oast-check", action="store_true",
+                          help="扫描后查询 OAST 回调服务器，确认带外命中（需先 poxiao oast serve）")
+    poc_scan.add_argument("--verify-signatures", action="store_true",
+                          help="启用模板 ECDSA 签名校验（P1-C，未签名/不匹配的模板拒绝加载）")
+    poc_scan.add_argument("--public-key", default="",
+                          help="签名校验用公钥 PEM 路径（--verify-signatures 时必填）")
+    poc_scan.add_argument("--include-community", action="store_true",
+                          help="P2-5: 同时加载社区模板库（默认 templates-community/，"
+                               "可用 POXIAO_COMMUNITY_PATH 覆盖；社区库标注实验性）")
     # poc history
     poc_hist = poc_sub.add_parser("history", help="查看目标扫描历史")
     poc_hist.add_argument("target", help="目标 URL")
@@ -215,8 +261,8 @@ def main():
         epilog=get_examples("report"), formatter_class=argparse.RawDescriptionHelpFormatter)
     report_parser.add_argument("summary", nargs="?", help="扫描汇总 JSON 文件")
     report_parser.add_argument("-o", "--output", default="scan_results", help="输出目录")
-    report_parser.add_argument("--format", default="src", choices=["src", "html"],
-                               help="报告格式（src=文本/Markdown，html=网页）")
+    report_parser.add_argument("--format", default="src", choices=["src", "html", "sarif"],
+                               help="报告格式（src=文本/Markdown，html=网页，sarif=SARIF 2.1.0）")
 
     # ── config 命令 ─────────────────────────────────
     config_parser = sub.add_parser("config", help="配置管理",

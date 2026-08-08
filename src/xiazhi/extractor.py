@@ -10,7 +10,7 @@
 
 import re
 import json
-from typing import Dict, List, Optional
+from typing import Dict, List
 from .template import Extractor
 
 

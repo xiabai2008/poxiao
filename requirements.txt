@@ -20,6 +20,9 @@ dnspython>=2.6.0
 # Whois 查询
 python-whois>=0.9.0
 
+# P1-C 模板签名 (ECDSA P-256) — 可选，未安装时签名/校验功能提示安装，扫描不受影响
+cryptography>=42.0.0
+
 # 开发依赖 (可选)
 # pytest>=8.0
 # pytest-asyncio>=0.24

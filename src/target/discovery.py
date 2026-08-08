@@ -7,6 +7,7 @@
 import asyncio
 import os
 import re
+import sys
 from dataclasses import dataclass
 from typing import Optional
 
@@ -41,6 +42,9 @@ class DomainDiscovery:
         custom = os.environ.get("POXIAO_BRANDS_PATH", "")
         if custom:
             path = Path(custom)
+        elif getattr(sys, "_MEIPASS", ""):
+            # B1: PyInstaller 单文件打包解包路径
+            path = Path(sys._MEIPASS) / "configs" / "brands.json"  # noqa: SLF001
         else:
             path = Path(__file__).parent.parent.parent / "configs" / "brands.json"
 
@@ -245,8 +249,8 @@ class DomainDiscovery:
     def discover_from_file(self, filepath: str,
                            output_path: str = None) -> dict[str, Optional[str]]:
         """从文件批量发现并保存"""
-        lines = [l.strip() for l in open(filepath, encoding='utf-8').readlines()
-                if l.strip() and not l.startswith('#')]
+        lines = [ln.strip() for ln in open(filepath, encoding='utf-8').readlines()
+                if ln.strip() and not ln.startswith('#')]
         results = self.discover_batch(lines)
 
         if output_path:

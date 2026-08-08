@@ -13,6 +13,8 @@ from .stealth import cmd_stealth
 from .util import cmd_util
 from .report import cmd_report
 from .config import cmd_config
+from .oast import cmd_oast
+from .proxy import cmd_proxy
 
 # 命令映射表
 CMD_MAP = {
@@ -29,6 +31,8 @@ CMD_MAP = {
     "util": cmd_util,
     "report": cmd_report,
     "config": cmd_config,
+    "oast": cmd_oast,
+    "proxy": cmd_proxy,
 }
 
 # Banner 映射表

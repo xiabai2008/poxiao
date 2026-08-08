@@ -430,7 +430,7 @@ if __name__ == "__main__":
     elif shell == "fish":
         print(generate_fish())
     else:
-        print(f"用法: python poxiao_completion.py [bash|zsh|fish]")
-        print(f"  bash:  eval \"$(python poxiao_completion.py bash)\"")
-        print(f"  zsh:   eval \"$(python poxiao_completion.py zsh)\"")
-        print(f"  fish:  python poxiao_completion.py fish > ~/.config/fish/completions/poxiao.fish")
+        print("用法: python poxiao_completion.py [bash|zsh|fish]")
+        print("  bash:  eval \"$(python poxiao_completion.py bash)\"")
+        print("  zsh:   eval \"$(python poxiao_completion.py zsh)\"")
+        print("  fish:  python poxiao_completion.py fish > ~/.config/fish/completions/poxiao.fish")

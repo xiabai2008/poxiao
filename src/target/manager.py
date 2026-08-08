@@ -2,9 +2,8 @@
 
 import asyncio
 import hashlib
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from pathlib import Path
-from typing import Optional
 from urllib.parse import urlparse
 
 import httpx
@@ -112,16 +111,21 @@ class TargetManager:
         return target
 
     async def check_alive(self, targets: list[Target]) -> list[Target]:
-        """并发存活检测"""
+        """并发存活检测（E3: 单共享客户端，连接池复用）"""
         sem = asyncio.Semaphore(self.concurrency)
 
-        async def _bounded(t: Target) -> Target:
+        async def _bounded(t: Target, client: httpx.AsyncClient) -> Target:
             async with sem:
-                async with httpx.AsyncClient(verify=False, timeout=self.timeout) as client:
-                    return await self._check_one(t, client)
+                return await self._check_one(t, client)
 
-        tasks = [_bounded(t) for t in targets]
-        return await asyncio.gather(*tasks)
+        async with httpx.AsyncClient(
+            verify=False, timeout=self.timeout,
+            headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+                                   "AppleWebKit/537.36 (KHTML, like Gecko) "
+                                   "Chrome/126.0.0.0 Safari/537.36"},
+        ) as client:
+            tasks = [_bounded(t, client) for t in targets]
+            return await asyncio.gather(*tasks)
 
     def check_alive_sync(self, targets: list[Target]) -> list[Target]:
         """同步版存活检测"""

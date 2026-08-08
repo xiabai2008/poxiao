@@ -22,7 +22,6 @@
 """
 
 import os
-from typing import Dict
 
 from src.i18n.messages import EN
 

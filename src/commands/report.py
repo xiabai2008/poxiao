@@ -7,7 +7,7 @@ from pathlib import Path
 
 from src.dawn.src_reporter import SRCReporter
 from src.utils.html_report import render_html_report
-from src.utils.output import Out, C
+from src.utils.output import Out
 
 
 def cmd_report(args):
@@ -33,8 +33,18 @@ def cmd_report(args):
     data = json.loads(Path(summary_path).read_text(encoding="utf-8"))
     targets = data.get("targets", [])
 
+    fmt = getattr(args, "format", "src")
+
+    # SARIF 2.1.0（P1-A：对接 GitHub Code Scanning / GitLab SAST）
+    if fmt == "sarif":
+        from src.utils.sarif import write_sarif
+        ts = datetime.now().strftime("%Y%m%d_%H%M%S")
+        out_path = write_sarif(data, str(Path(args.output) / f"report_{ts}.sarif"))
+        Out.success(f"SARIF 报告: {out_path}")
+        return
+
     # HTML 报告（P2-4 / Q5：纯标准库，不引 Jinja2）
-    if getattr(args, "format", "src") == "html":
+    if fmt == "html":
         html_doc = render_html_report(data)
         ts = datetime.now().strftime("%Y%m%d_%H%M%S")
         out_dir = Path(args.output)

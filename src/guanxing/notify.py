@@ -1,15 +1,16 @@
-"""观星 — 变化告警与本地变更日志（P2-2 / D9 / X3 / R4）
+"""观星 — 变化告警与本地变更日志（P2-2 / D9 / X3 / R4；P1-B 飞书/钉钉适配）
 
 约束：
 - 仅本地：webhook（用户自配 URL）+ 本地 JSONL 日志；无邮件、无服务端（X3/R4）。
 - 解耦：notify 任何失败均被调用方吞掉，绝不中断 DB 写入。
+- 消息格式：按 webhook URL 自动识别 飞书(open.feishu.cn)/钉钉(oapi.dingtalk.com)，
+  或配置 `monitor.webhook_type`（feishu|dingtalk|raw）强制指定。
 """
 
 import json
 import os
 import threading
 from pathlib import Path
-from typing import Optional
 
 import httpx
 
@@ -18,6 +19,52 @@ from src.config import get_config
 
 def _log_path() -> Path:
     return Path(os.environ.get("POXIAO_GUANXING_LOG", "scan_results/guanxing_changes.log"))
+
+
+def _webhook_type(url: str) -> str:
+    """识别 webhook 类型：feishu / dingtalk / raw（按 URL 或配置）"""
+    try:
+        configured = get_config().get("monitor", "webhook_type", "") or ""
+        if configured in ("feishu", "dingtalk", "raw"):
+            return configured
+    except Exception:
+        pass
+    low = url.lower()
+    if "open.feishu.cn" in low or "open.larksuite.com" in low:
+        return "feishu"
+    if "oapi.dingtalk.com" in low:
+        return "dingtalk"
+    return "raw"
+
+
+def _change_to_text(change: dict) -> str:
+    """变更事件 → 人类可读文本"""
+    return (
+        f"【观星资产变更】\n"
+        f"- 目标ID: {change.get('target_id', '?')}\n"
+        f"- 类型: {change.get('change_type', '?')}\n"
+        f"- 变更: {change.get('old_value', '')} → {change.get('new_value', '')}\n"
+        f"- 时间: {change.get('changed_at', '?')}"
+    )
+
+
+def _build_payload(url: str, change: dict) -> dict:
+    """按 webhook 类型构建消息载荷"""
+    wtype = _webhook_type(url)
+    text = _change_to_text(change)
+
+    if wtype == "feishu":
+        return {
+            "msg_type": "text",
+            "content": {"text": text},
+        }
+    if wtype == "dingtalk":
+        return {
+            "msgtype": "markdown",
+            "markdown": {"title": "观星资产变更", "text": text.replace("\n", "\n\n")},
+        }
+    # raw: 原样 JSON（向后兼容）
+    return change
 
 
 def push_change_event(change: dict) -> None:
@@ -38,7 +85,8 @@ def push_change_event(change: dict) -> None:
 def _post_webhook(url: str, change: dict) -> None:
     """实际执行 webhook POST（在后台线程中调用）。"""
     try:
-        resp = httpx.post(url, json=change, timeout=5.0)
+        payload = _build_payload(url, change)
+        resp = httpx.post(url, json=payload, timeout=5.0)
         if resp.status_code >= 400:
             print(f"[guanxing] webhook 返回非 2xx: {resp.status_code}")
     except Exception as e:

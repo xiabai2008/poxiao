@@ -1,8 +1,7 @@
 """惊蛰 JingZhe — 漏洞验证器入口"""
 import sys
 import asyncio
-from pathlib import Path
-from src.jingzhe import JingZhe, VerifiedFinding
+from src.jingzhe import JingZhe
 from src.utils.output import Out, C
 
 
@@ -48,7 +47,7 @@ def main():
         findings = asyncio.run(jz.verify(target))
 
     Out.blank()
-    Out.section(f"验证结果", "*")
+    Out.section("验证结果", "*")
     if findings:
         score_info = jz.score(findings)
         Out.success(f"发现 {len(findings)} 个漏洞 (风险评分: {score_info['total_score']})")

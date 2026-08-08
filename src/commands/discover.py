@@ -17,12 +17,12 @@ def cmd_discover(args):
             if not filepath.exists():
                 Out.error(f"文件不存在: {args.file}")
                 return
-            names = [l.strip() for l in filepath.read_text(encoding="utf-8").splitlines()
-                    if l.strip() and not l.strip().startswith("#")]
+            names = [ln.strip() for ln in filepath.read_text(encoding="utf-8").splitlines()
+                    if ln.strip() and not ln.strip().startswith("#")]
         elif args.name:
             if Path(args.name).exists():
-                names = [l.strip() for l in Path(args.name).read_text(encoding="utf-8").splitlines()
-                        if l.strip() and not l.strip().startswith("#")]
+                names = [ln.strip() for ln in Path(args.name).read_text(encoding="utf-8").splitlines()
+                        if ln.strip() and not ln.strip().startswith("#")]
             else:
                 names = [args.name]
         else:

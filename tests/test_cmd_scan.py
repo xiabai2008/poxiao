@@ -51,6 +51,9 @@ class _FakeEngine:
     async def scan_one(self, url):
         return _ScanResult(url)
 
+    async def aclose(self):
+        pass
+
 
 class _FakeReporter:
     def __init__(self, *a, **k):

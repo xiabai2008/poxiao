@@ -229,8 +229,13 @@ class SensitivePathDetector:
         "suspended domain", "account suspended",
     )
 
-    async def scan(self, base_url: str, tech: str = "") -> list[PathFind]:
-        """扫描目标 — 六层降噪"""
+    async def scan(self, base_url: str, tech: str = "",
+                   client: Optional[httpx.AsyncClient] = None) -> list[PathFind]:
+        """扫描目标 — 六层降噪
+
+        Args:
+            client: 可选共享 HTTP 客户端（E3 连接池复用；缺省自建）
+        """
         paths = self.get_paths(tech)
         sem = asyncio.Semaphore(self.concurrency)
         results: list[PathFind] = []
@@ -242,7 +247,7 @@ class SensitivePathDetector:
             "_poxiao_catchall_xk33_check_",
         ]
 
-        async with httpx.AsyncClient(verify=False, timeout=self.timeout) as client:
+        async def _run():
             # ── Layer 3 增强: 多探针校准 ──
             probe_results: list[tuple[int, float, str]] = []  # (size, elapsed, preview)
             probe_status_counts: dict[int, int] = {}
@@ -269,10 +274,6 @@ class SensitivePathDetector:
             catchall_sizes = [pr[0] for pr in probe_results if pr[0] > 0]
             catchall_previews = [pr[2] for pr in probe_results if pr[2]]
             probe_times = [pr[1] for pr in probe_results]
-            # 若多数探针返回 200 且有内容 → 确定 catchall
-            catchall_200_count = sum(
-                1 for _, _, p in probe_results if True  # 200 的都已在 probe_results 里
-            )
             # 用中位数尺寸做校准
             catchall_median_size = int(statistics.median(catchall_sizes)) if catchall_sizes else 0
             catchall_avg_time = statistics.mean(probe_times) if probe_times else 0.0
@@ -285,6 +286,15 @@ class SensitivePathDetector:
 
             tasks = [_worker(p, cat) for p, cat in paths]
             await asyncio.gather(*tasks)
+            return catchall_median_size, catchall_avg_time, catchall_previews, probe_results
+
+        # E3: 复用调用方 client 或自建（自建需保证 _run 内 client 已绑定）
+        if client is None:
+            async with httpx.AsyncClient(verify=False, timeout=self.timeout) as own_client:
+                client = own_client
+                catchall_median_size, catchall_avg_time, catchall_previews, probe_results = await _run()
+        else:
+            catchall_median_size, catchall_avg_time, catchall_previews, probe_results = await _run()
 
         # ═══════════════════════════════════════════════════════
         # 降噪层 1: 内容特征 — 不该返回 HTML 但返回了 HTML (增强版)

@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "poxiao"
-version = "3.0.0"
+version = "3.1.0"
 description = "破晓 — 二十四节气安全工具链 (Dawn + FrostMoon + VernalEquinox + JingZhe + GuanXing + XiaZhi)"
 requires-python = ">=3.10"
 readme = "README.md"
@@ -33,6 +33,7 @@ dependencies = [
     "flask>=3.0.0",
     "dnspython>=2.6.0",
     "python-whois>=0.9.0",
+    "cryptography>=42.0.0",  # P1-C 模板签名 (ECDSA P-256)
 ]
 
 [project.urls]
@@ -47,6 +48,8 @@ dev = [
     "pytest-asyncio>=0.24",
     "pytest-cov>=5.0",
     "mypy>=1.8",
+    "ruff>=0.15",   # E1 lint
+    "bandit>=1.9",  # E2 安全扫描
 ]
 
 # 仅 poxiao 主入口有确证的 main()（全仓 search 确认）；其余模块经 `poxiao <subcommand>` 调度，
@@ -76,3 +79,33 @@ ignore_missing_imports = true
 warn_unused_ignores = false
 show_error_codes = true
 disallow_untyped_defs = false
+
+# ruff (E1)：默认规则集（E/F），保证基础正确性；全仓当前零告警
+[tool.ruff]
+target-version = "py310"
+line-length = 110
+exclude = ["build", "dist", ".git", ".mypy_cache", ".pytest_cache", "*.egg-info"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W"]
+# E501 行长交由 formatter 处理，此处不强制
+ignore = ["E501"]
+
+# banner.py 的 ASCII 艺术图尾随空格为对齐设计，跳过 W291
+[tool.ruff.lint.per-file-ignores]
+"src/utils/banner.py" = ["W291"]
+
+# bandit (E2)：skips 均为有意设计（安全设计已冻结/非安全用途），
+# 有争议项（SQL 拼接/urlopen/pycryptodome 误报）在代码处以 # nosec 标注
+[tool.bandit]
+exclude_dirs = ["tests", "build", "dist", ".git"]
+skips = [
+    "B110",  # try/except pass — 扫描器容错设计（不阻断）
+    "B112",  # try/except continue — 同上
+    "B311",  # random 用于 UA 轮换/随机串/抖动，非密码学用途
+    "B105",  # 空字符串默认值/占位符被误报为硬编码密码
+    "B107",  # 变量名为 secrets/token 的默认参数误报
+    "B104",  # 有意绑定 0.0.0.0（oast 回调/proxy 服务器，文档已声明）
+    "B324",  # MD5/SHA1 用于内容指纹与降噪，非安全用途
+    "B501",  # verify=False — CONTEXT.md R1 冻结（内网/自签），redline 启动告警兜底
+]

@@ -12,8 +12,6 @@ Whois 查询模块
 import asyncio
 import re
 from dataclasses import dataclass, field, asdict
-from typing import Optional
-import json
 
 
 @dataclass

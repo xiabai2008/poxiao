@@ -58,6 +58,29 @@ jobs:
       - name: mypy on curated modules (hard gate, P1-4 / P3-3)
         run: python tools/type_check.py
 
+  lint-sec:
+    name: ruff lint + bandit security (E1 / E2)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install ruff + bandit
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install ruff bandit
+
+      - name: ruff check (hard gate)
+        run: python -m ruff check src/ tools/ *.py
+
+      - name: bandit security scan (hard gate, skips 见 pyproject [tool.bandit])
+        run: python -m bandit -r src/ tools/ -c pyproject.toml
+
   build-wheel:
     name: Build wheel (P4-1 / M4)
     runs-on: ubuntu-latest

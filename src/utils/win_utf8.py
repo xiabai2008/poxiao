@@ -10,7 +10,7 @@ def fix_windows_utf8():
         return
 
     # 设置控制台代码页
-    os.system("chcp 65001 >nul 2>&1")
+    os.system("chcp 65001 >nul 2>&1")  # nosec B605 B607 — 固定常量命令，无用户输入
     # 设置环境变量
     os.environ["PYTHONIOENCODING"] = "utf-8"
     # 重新配置标准流

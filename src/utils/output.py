@@ -15,8 +15,7 @@
 """
 
 import sys
-import time
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any
 
 from src.i18n import _
 
@@ -153,7 +152,7 @@ class Out:
     # ── 表格 ──────────────────────────────────────────
 
     @staticmethod
-    def table(headers: List[str], rows: List[List[str]], 
+    def table(headers: List[str], rows: List[List[str]],
               colors: List[str] = None, max_widths: List[int] = None):
         """打印表格"""
         if not rows:
@@ -205,7 +204,7 @@ class Out:
     def box(title: str, lines: List[str], color: str = C.CYAN):
         """打印信息框"""
         # 计算最大宽度
-        max_w = max(len(title), max(len(l) for l in lines) if lines else 0) + 4
+        max_w = max(len(title), max(len(x) for x in lines) if lines else 0) + 4
         max_w = min(max_w, 60)
 
         Out._print(f"\n  {color}┌{'─' * max_w}┐{C.RESET}")

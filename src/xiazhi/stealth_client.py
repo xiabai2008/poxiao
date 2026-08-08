@@ -25,9 +25,7 @@
 
 import asyncio
 import random
-import time
-from typing import Dict, List, Optional, Tuple
-from pathlib import Path
+from typing import Dict, List, Optional
 from urllib.parse import urlparse
 
 import httpx
@@ -209,7 +207,7 @@ class StealthClient:
 
             return resp
 
-        except (httpx.TimeoutException, httpx.ConnectError, httpx.ReadError) as e:
+        except (httpx.TimeoutException, httpx.ConnectError, httpx.ReadError):
             if proxy_url:
                 self.proxy_pool.report_fail(proxy_url)
                 self.stats["proxy_failed"] += 1
@@ -227,7 +225,7 @@ class StealthClient:
             self.stats["failed"] += 1
             raise
 
-        except Exception as e:
+        except Exception:
             self.stats["failed"] += 1
             raise
 
@@ -287,7 +285,7 @@ class StealthClient:
 
     def print_stats(self):
         """打印统计信息"""
-        print(f"\n  📊 隐匿客户端统计")
+        print("\n  📊 隐匿客户端统计")
         print(f"  {'─' * 50}")
         print(f"  总请求:     {self.stats['total_requests']}")
         print(f"  成功:       {self.stats['successful']}")
@@ -299,7 +297,7 @@ class StealthClient:
         print(f"  总等待:     {self.stats['total_wait_time']:.2f}s")
 
         if self._waf_detected_domains:
-            print(f"\n  🛡️  WAF 检测:")
+            print("\n  🛡️  WAF 检测:")
             for domain, waf in self._waf_detected_domains.items():
                 print(f"    {domain}: {waf}")
 

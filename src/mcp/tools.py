@@ -227,7 +227,10 @@ def _t_scan_targets(args: Dict[str, Any]) -> Dict[str, Any]:
         concurrency=concurrency,
         enable_sensitive=not args.get("no_sensitive", False),
     )
-    results = engine.scan_batch_sync(alive_urls) if alive_urls else []
+    try:
+        results = engine.scan_batch_sync(alive_urls) if alive_urls else []
+    finally:
+        asyncio.run(engine.aclose())
 
     return _ok({
         "total_targets": len(targets),

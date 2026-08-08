@@ -40,6 +40,8 @@ DEFAULT_CONFIG = {
         "auth": False,
         "username": "admin",
         "password": "",
+        "webhook_url": "",      # P1-B: 变化告警 webhook（飞书/钉钉/自建，留空关闭）
+        "webhook_type": "",     # P1-B: feishu|dingtalk|raw（留空按 URL 自动识别）
     },
     "recon": {
         "shodan_api_key": "",

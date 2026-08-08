@@ -11,7 +11,7 @@ from src.dawn.engine import ScanEngine
 from src.dawn.reporter import Reporter
 from src.dawn.src_reporter import SRCReporter
 from src.target.manager import TargetManager
-from src.utils.output import Out, C
+from src.utils.output import Out
 
 
 def cmd_scan(args):
@@ -76,6 +76,7 @@ def cmd_scan(args):
 
         tasks = [_do_one(t.url, i) for i, t in enumerate(alive_targets)]
         results = await asyncio.gather(*tasks)
+        await engine.aclose()  # E3: 释放共享连接池
         return results, alive_targets
 
     t_start = time.perf_counter()
@@ -97,6 +98,18 @@ def cmd_scan(args):
     Out.info(f"汇总 JSON: {summary_path}")
     Out.info(f"Markdown:  {md_path}")
     Out.info(f"单目标报告: {reporter.output_dir}/")
+
+    # SARIF 2.1.0（P1-A：对接 GitHub Code Scanning / GitLab SAST）
+    if getattr(args, "sarif", False):
+        try:
+            from src.utils.sarif import write_sarif
+            sarif_path = write_sarif(
+                json.loads(Path(summary_path).read_text(encoding="utf-8")),
+                str(Path(reporter.output_dir) / f"report_{reporter.session_id}.sarif"),
+            )
+            Out.success(f"SARIF: {sarif_path}")
+        except Exception as e:
+            Out.warning(f"SARIF 生成失败（已忽略）: {e}")
 
     # ── Full depth: 调用 RayScan 做 SQLi+XSS 深度扫描 ──
     if args.depth == "full" and alive_targets:

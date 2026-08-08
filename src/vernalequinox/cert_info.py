@@ -19,13 +19,11 @@
 
 import asyncio
 import ssl
-import json
 import socket
 import hashlib
-import re
 from datetime import datetime
 from dataclasses import dataclass, field, asdict
-from typing import List, Dict, Optional, Tuple
+from typing import List, Dict
 
 
 @dataclass
@@ -148,7 +146,6 @@ class CertAnalyzer:
                             info.cipher = cipher_info[0]
 
                         # DER → 解析
-                        import ssl as _ssl
                         # 从 DER 格式计算指纹
                         info.sha256_fingerprint = hashlib.sha256(cert).hexdigest()
                         info.sha1_fingerprint = hashlib.sha1(cert).hexdigest()
@@ -295,9 +292,7 @@ class CertAnalyzer:
                 related.add(d)
 
         # 3. 证书颁发者相同 (通过 crt.sh 的 issuer_ca_id)
-        if info.crt_sh_certs:
-            issuer_ids = set(c["issuer_ca_id"] for c in info.crt_sh_certs if c.get("issuer_ca_id"))
-            # 这里可以进一步查同 issuer 的其他证书
+        # 这里可以进一步查同 issuer 的其他证书
 
         return sorted(related)
 
@@ -308,7 +303,7 @@ class CertAnalyzer:
             print(f"  ❌ 证书获取失败: {info.error}")
             return
 
-        print(f"  🔒 SSL 证书信息")
+        print("  🔒 SSL 证书信息")
         print(f"  {'─' * 50}")
 
         if info.subject_cn:
@@ -322,9 +317,9 @@ class CertAnalyzer:
             exp_icon = "🔴" if info.is_expired else ("🟡" if expiry_days < 30 else "🟢")
             print(f"  过期:     {info.not_after} {exp_icon} {'已过期' if info.is_expired else f'{expiry_days}天后'}")
         if info.is_wildcard:
-            print(f"  类型:     ⭐ 通配符证书")
+            print("  类型:     ⭐ 通配符证书")
         if info.is_self_signed:
-            print(f"  ⚠️  自签名证书")
+            print("  ⚠️  自签名证书")
 
         # 密钥信息
         if info.key_type:

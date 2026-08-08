@@ -7,3 +7,19 @@ from .version_extract import VersionExtractor, VersionInfo
 from .cve_match import CVEMatcher, VulnMatch
 from .reporter import Reporter
 from .src_reporter import SRCReporter
+
+__all__ = [
+    "ScanEngine",
+    "ScanResult",
+    "TechStackDetector",
+    "TechFingerprint",
+    "SensitivePathDetector",
+    "PathFind",
+    "VersionExtractor",
+    "VersionInfo",
+    "CVEMatcher",
+    "VulnMatch",
+    "Reporter",
+    "SRCReporter"
+]
+

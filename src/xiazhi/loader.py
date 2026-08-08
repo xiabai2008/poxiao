@@ -10,9 +10,9 @@
 """
 
 import os
-import re
+import sys
 from pathlib import Path
-from typing import List, Dict, Optional, Tuple
+from typing import List, Dict, Optional
 
 try:
     import yaml
@@ -29,10 +29,19 @@ from .template import (
 class TemplateLoader:
     """YAML 模板加载器"""
 
+    @staticmethod
+    def _default_template_dir() -> Path:
+        """默认模板目录（B1: 兼容 PyInstaller 单文件打包的 _MEIPASS 解包路径）"""
+        env = os.environ.get("POXIAO_TEMPLATES_PATH", "")
+        if env:
+            return Path(env)
+        meipass = getattr(sys, "_MEIPASS", "")
+        if meipass:
+            return Path(meipass) / "templates"
+        return Path(__file__).parent.parent.parent / "templates"
+
     # 默认模板目录（支持环境变量覆盖）
-    DEFAULT_TEMPLATE_DIR = Path(
-        os.environ.get("POXIAO_TEMPLATES_PATH", "")
-    ) if os.environ.get("POXIAO_TEMPLATES_PATH") else Path(__file__).parent.parent.parent / "templates"
+    DEFAULT_TEMPLATE_DIR = _default_template_dir()
 
     def __init__(self, template_dir: str = "", extra_dirs: list = None):
         """
@@ -44,7 +53,9 @@ class TemplateLoader:
         self.extra_dirs = [Path(d) for d in (extra_dirs or []) if d]
 
     def load_all(self, tags: List[str] = None, severity: List[str] = None,
-                 ids: List[str] = None) -> List[Template]:
+                 ids: List[str] = None,
+                 verify_signatures: bool = False,
+                 public_key_path: str = "") -> List[Template]:
         """
         加载目录下的所有模板
 
@@ -52,6 +63,8 @@ class TemplateLoader:
             tags: 按标签过滤
             severity: 按严重级别过滤
             ids: 按模板 ID 过滤
+            verify_signatures: 启用模板 ECDSA 签名校验（P1-C，默认关）
+            public_key_path: 校验用公钥 PEM 路径（verify_signatures=True 时必填）
 
         Returns:
             List[Template]
@@ -59,6 +72,22 @@ class TemplateLoader:
         if not HAS_YAML:
             print("  [!] PyYAML not installed (pip install pyyaml)")
             return []
+
+        # P1-C: 预构建 目录→签名状态映射（未启用/无签名清单时为空）
+        sig_status: Dict[Path, Dict[str, str]] = {}
+        if verify_signatures:
+            try:
+                from .template_sign import verify_directory
+                if not public_key_path:
+                    print("  [!] verify_signatures=True 但未提供 public_key_path，跳过校验")
+                else:
+                    for template_dir in [self.template_dir] + self.extra_dirs:
+                        if template_dir.exists():
+                            sig_status[template_dir] = verify_directory(
+                                template_dir, public_key_path
+                            )
+            except Exception as e:
+                print(f"  [!] 签名校验初始化失败（跳过）: {e}")
 
         templates = []
         seen_ids = set()
@@ -70,9 +99,13 @@ class TemplateLoader:
             if not template_dir.exists():
                 continue
 
+            status_map = sig_status.get(template_dir, {})
+
             # 递归扫描 YAML 文件
             for yaml_file in sorted(template_dir.rglob("*.yaml")):
                 try:
+                    if not self._signature_ok(status_map, template_dir, yaml_file):
+                        continue
                     tmpl = self.load_file(yaml_file)
                     if tmpl and tmpl.id not in seen_ids:
                         templates.append(tmpl)
@@ -82,6 +115,8 @@ class TemplateLoader:
 
             for yml_file in sorted(template_dir.rglob("*.yml")):
                 try:
+                    if not self._signature_ok(status_map, template_dir, yml_file):
+                        continue
                     tmpl = self.load_file(yml_file)
                     if tmpl and tmpl.id not in seen_ids:
                         templates.append(tmpl)
@@ -113,6 +148,22 @@ class TemplateLoader:
 
         return self._parse_template(raw, str(file_path))
 
+    @staticmethod
+    def _signature_ok(status_map: Dict[str, str], template_dir: Path,
+                      yaml_file: Path) -> bool:
+        """P1-C: 按签名状态决定是否加载；未启用校验时恒放行"""
+        if not status_map:
+            return True
+        rel = yaml_file.relative_to(template_dir).as_posix()
+        status = status_map.get(rel, "unsigned")
+        if status == "bad":
+            print(f"  [!] 签名不匹配，已拒绝加载（可能被篡改）: {rel}")
+            return False
+        if status == "unsigned":
+            print(f"  [!] 未签名模板（校验模式）: {rel}")
+            return False
+        return True
+
     def _parse_template(self, raw: dict, file_path: str = "") -> Optional[Template]:
         """解析 YAML 字典为 Template 对象"""
         # 基本信息
@@ -122,14 +173,17 @@ class TemplateLoader:
 
         # info 块
         info_raw = raw.get("info", {})
+        if not isinstance(info_raw, dict):
+            info_raw = {}
+        sev = info_raw.get("severity") or "info"
         info = TemplateInfo(
-            name=info_raw.get("name", tmpl_id),
-            author=info_raw.get("author", "poxiao"),
-            severity=info_raw.get("severity", "info").lower(),
-            description=info_raw.get("description", ""),
+            name=info_raw.get("name", tmpl_id) or tmpl_id,
+            author=info_raw.get("author", "poxiao") or "poxiao",
+            severity=str(sev).lower(),
+            description=info_raw.get("description", "") or "",
             reference=self._ensure_list(info_raw.get("reference", [])),
             tags=self._parse_tags(info_raw.get("tags", "")),
-            classification=info_raw.get("classification", {}),
+            classification=info_raw.get("classification", {}) or {},
         )
 
         # requests 块 (兼容 http 块)
@@ -139,9 +193,22 @@ class TemplateLoader:
 
         requests = []
         for req_raw in requests_raw:
-            req = self._parse_request(req_raw)
-            if req:
-                requests.append(req)
+            # P2-1: raw 列表 → 每个报文独立请求，共享 http 块顶层 matchers/extractors
+            raw_list = req_raw.get("raw") if isinstance(req_raw, dict) else None
+            if isinstance(raw_list, list):
+                base = {k: v for k, v in req_raw.items() if k != "raw"}
+                for rtext in raw_list:
+                    if not isinstance(rtext, str) or not rtext.strip():
+                        continue
+                    merged = dict(base)
+                    merged["raw"] = rtext
+                    req = self._parse_request(merged)
+                    if req:
+                        requests.append(req)
+            else:
+                req = self._parse_request(req_raw)
+                if req:
+                    requests.append(req)
 
         if not requests:
             return None
@@ -161,9 +228,25 @@ class TemplateLoader:
         return template
 
     def _parse_request(self, raw: dict) -> Optional[HTTPRequest]:
-        """解析单个请求模板"""
+        """解析单个请求模板（P2-1: 支持 nuclei raw HTTP 报文格式）"""
         if not raw:
             return None
+
+        # ── raw 报文模式（nuclei http.raw；list 由 _parse_template 展开）──
+        raw_text = raw.get("raw", "")
+        if isinstance(raw_text, list):
+            raw_text = raw_text[0] if raw_text else ""
+        if raw_text:
+            parsed = self._parse_raw_http(raw_text)
+            if parsed:
+                raw["method"] = parsed["method"]
+                raw["path"] = [parsed["path"]]
+                if parsed["headers"]:
+                    merged = dict(raw.get("headers", {}) or {})
+                    merged.update(parsed["headers"])
+                    raw["headers"] = merged
+                if parsed["body"]:
+                    raw["body"] = parsed["body"]
 
         # 路径 (支持 path 和 paths)
         paths = raw.get("path", raw.get("paths", []))
@@ -198,11 +281,12 @@ class TemplateLoader:
             body = json.dumps(body)
 
         req = HTTPRequest(
-            method=raw.get("method", "GET").upper(),
+            method=str(raw.get("method") or "GET").upper(),
             path=paths,
             headers=headers,
             body=body,
             content_type=raw.get("content-type", raw.get("content_type", "")),
+            raw=raw_text,
             matchers_condition=raw.get("matchers-condition", raw.get("matchers_logic", "and")),
             matchers=matchers,
             extractors=extractors,
@@ -213,6 +297,57 @@ class TemplateLoader:
         )
 
         return req
+
+    @staticmethod
+    def _parse_raw_http(raw_text: str) -> Optional[dict]:
+        """解析 nuclei raw HTTP 报文为 {method, path, headers, body}
+
+        格式:
+          GET /path HTTP/1.1
+          Host: {{Hostname}}
+          User-Agent: xyz
+
+          <body>
+
+        变量占位符（{{...}}）原样保留，运行时展开。
+        """
+        if not raw_text:
+            return None
+        lines = raw_text.replace("\r\n", "\n").split("\n")
+        # 跳过空行
+        idx = 0
+        while idx < len(lines) and not lines[idx].strip():
+            idx += 1
+        if idx >= len(lines):
+            return None
+
+        request_line = lines[idx].strip()
+        parts = request_line.split(" ")
+        if len(parts) < 2:
+            return None
+        method = parts[0].upper()
+        path = parts[1]
+        headers: dict = {}
+        idx += 1
+        body_lines: list[str] = []
+        in_body = False
+        for line in lines[idx:]:
+            if not in_body:
+                if line.strip() == "":
+                    in_body = True
+                    continue
+                if ":" in line:
+                    k, _, v = line.partition(":")
+                    headers[k.strip()] = v.strip()
+            else:
+                body_lines.append(line)
+        body = "\n".join(body_lines)
+        return {
+            "method": method,
+            "path": path,
+            "headers": headers,
+            "body": body,
+        }
 
     def _parse_matcher(self, raw: dict) -> Optional[Matcher]:
         """解析单个匹配器"""

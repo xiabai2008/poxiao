@@ -1,7 +1,7 @@
 """版本号提取 — 从 HTTP 头、HTML、脚本路径和 Cookie 中提取精确版本"""
 
 import re
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 
 @dataclass
@@ -123,7 +123,6 @@ class VersionExtractor:
         "blogger":    [_compile(r"blogger")],
         "wix":        [_compile(r"wix\.com")],
         "squarespace":[_compile(r"squarespace")],
-        "drupal":     [_compile(r"drupal\s*([\d.]+)")],
         "dokuwiki":   [_compile(r"dokuwiki\s*([\d.]+)")],
         "twiki":      [_compile(r"twiki\s*([\d.]+)")],
         "confluence": [_compile(r"confluence\s*([\d.]+)")],

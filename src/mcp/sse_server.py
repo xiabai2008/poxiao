@@ -17,6 +17,7 @@ from __future__ import annotations
 import json
 import logging
 import queue
+import secrets
 import threading
 import uuid
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -34,22 +35,50 @@ _HEARTBEAT_SECS = 15
 _SESSIONS: Dict[str, "queue.Queue"] = {}
 _LOCK = threading.Lock()
 
+# 访问令牌：设置后 GET /sse 与 POST /messages 均须携带
+# Authorization: Bearer <token> 或 ?token=<token> 参数（secrets.compare_digest 恒时比较）
+_REQUIRED_TOKEN: str = ""
+
 
 class _Handler(BaseHTTPRequestHandler):
     """MCP HTTP+SSE 请求处理器"""
 
-    server_version = "poxiao-mcp/3.0.0"
+    server_version = "poxiao-mcp/3.1.0"
     protocol_version = "HTTP/1.1"
 
     # 日志走 logger（stderr），不污染 stdout
     def log_message(self, fmt: str, *args) -> None:  # noqa: A003
         logger.info("%s - %s", self.address_string(), fmt % args)
 
+    # ── 鉴权 ─────────────────────────────────────
+    def _check_auth(self) -> bool:
+        """校验 Bearer 令牌或 ?token= 参数；未启用令牌时恒通过"""
+        if not _REQUIRED_TOKEN:
+            return True
+        provided = ""
+        auth = self.headers.get("Authorization", "")
+        if auth.lower().startswith("bearer "):
+            provided = auth[7:].strip()
+        if not provided:
+            qs = parse_qs(urlparse(self.path).query)
+            provided = (qs.get("token") or [""])[0]
+        return secrets.compare_digest(provided, _REQUIRED_TOKEN)
+
+    def _send_unauthorized(self) -> None:
+        self.send_response(401)
+        self.send_header("WWW-Authenticate", 'Bearer realm="poxiao-mcp"')
+        self.send_header("Content-Length", "0")
+        self.end_headers()
+
     # ── GET /sse：建立 SSE 长连接 ──────────────────────
     def do_GET(self) -> None:  # noqa: N802
         parsed = urlparse(self.path)
         if parsed.path != "/sse":
             self.send_error(404, "Not Found")
+            return
+
+        if not self._check_auth():
+            self._send_unauthorized()
             return
 
         session_id = uuid.uuid4().hex
@@ -91,6 +120,10 @@ class _Handler(BaseHTTPRequestHandler):
             self.send_error(404, "Not Found")
             return
 
+        if not self._check_auth():
+            self._send_unauthorized()
+            return
+
         qs = parse_qs(parsed.query)
         session_id = (qs.get("sessionId") or [""])[0]
         with _LOCK:
@@ -99,7 +132,11 @@ class _Handler(BaseHTTPRequestHandler):
             self.send_error(404, "Unknown or expired sessionId")
             return
 
-        length = int(self.headers.get("Content-Length", 0) or 0)
+        try:
+            length = int(self.headers.get("Content-Length", 0) or 0)
+        except (TypeError, ValueError):
+            self.send_error(400, "Invalid Content-Length")
+            return
         raw = self.rfile.read(length) if length else b""
         try:
             msg = json.loads(raw.decode("utf-8"))
@@ -130,9 +167,11 @@ class _Handler(BaseHTTPRequestHandler):
 class SSEServer:
     """MCP SSE 服务端封装（基于 ThreadingHTTPServer）"""
 
-    def __init__(self, host: str = "127.0.0.1", port: int = 8765):
+    def __init__(self, host: str = "127.0.0.1", port: int = 8765, token: str = ""):
         self.host = host
         self.port = port
+        global _REQUIRED_TOKEN
+        _REQUIRED_TOKEN = token
         self._httpd: Optional[ThreadingHTTPServer] = None
 
     def _make(self) -> ThreadingHTTPServer:

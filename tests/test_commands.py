@@ -274,7 +274,8 @@ class _FakeReconEngine:
 def _recon_args(domain, quick, output):
     return Namespace(domain=domain, quick=quick, timeout=10.0, shodan_key="",
                      fofa_key="", fofa_email="", censys_id="", censys_secret="",
-                     github_token="", output=output)
+                     github_token="", quake_token="", hunter_key="",
+                     hunter_email="", output=output)
 
 
 def test_cmd_recon_full(tmp_path, monkeypatch):
@@ -477,11 +478,13 @@ def test_monitor_import(monkeypatch, capsys):
 def test_monitor_serve(monkeypatch):
     called = {}
 
-    def _serve(port=5099):
+    def _serve(host="127.0.0.1", port=5099):
+        called["host"] = host
         called["port"] = port
 
     monkeypatch.setattr("src.commands.monitor.start_server", _serve)
-    cmd_monitor(Namespace(mon_action="serve"))
+    cmd_monitor(Namespace(mon_action="serve", host="", port=0))
+    assert called["host"] == "127.0.0.1"
     assert called["port"] == 5099
 
 

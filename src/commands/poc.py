@@ -56,14 +56,39 @@ def cmd_poc(args):
 
 def _run_poc_scan(args, template_dir):
     """执行 POC 扫描 (支持历史对比 + 持续性扫描)"""
-    # 加载模板
     extra_dirs = []
     if hasattr(args, 'template_dir') and args.template_dir:
         extra_dirs.append(args.template_dir)
+
+    # P2-5: 社区模板库（默认 templates-community/，POXIAO_COMMUNITY_PATH 覆盖）
+    if getattr(args, "include_community", False):
+        import os
+        community = os.environ.get(
+            "POXIAO_COMMUNITY_PATH",
+            str(Path(__file__).parent.parent.parent / "templates-community"),
+        )
+        if Path(community).exists():
+            extra_dirs.append(community)
+            Out.info(f"社区模板库: {community}（实验性，未签名模板可能产生噪音）")
+        else:
+            Out.warning(f"社区模板库不存在（{community}），已跳过；"
+                        "可用 template_sync.py sync 拉取")
+
+    # 加载模板（P1-C: 可选签名校验）
+    verify_sigs = bool(getattr(args, "verify_signatures", False))
+    public_key = getattr(args, "public_key", "") or ""
+    if verify_sigs:
+        if not public_key:
+            Out.error("--verify-signatures 需要 --public-key <公钥 PEM 路径>")
+            return
+        Out.info(f"模板签名校验: 已启用（公钥 {public_key}）")
     loader = TemplateLoader(template_dir, extra_dirs=extra_dirs)
     tags = [t.strip() for t in args.tags.split(",") if t.strip()] if args.tags else None
     severity_filter = [s.strip() for s in args.severity.split(",") if s.strip()] if args.severity else None
-    templates = loader.load_all(tags=tags, severity=severity_filter)
+    templates = loader.load_all(
+        tags=tags, severity=severity_filter,
+        verify_signatures=verify_sigs, public_key_path=public_key,
+    )
 
     if not templates:
         Out.error("未找到模板。请确认 templates/ 目录存在且包含 YAML 文件")
@@ -84,7 +109,7 @@ def _run_poc_scan(args, template_dir):
     targets = []
     if Path(args.target).exists():
         raw = Path(args.target).read_text(encoding="utf-8").splitlines()
-        targets = [l.strip() for l in raw if l.strip() and not l.strip().startswith("#")]
+        targets = [ln.strip() for ln in raw if ln.strip() and not ln.strip().startswith("#")]
     else:
         targets = [args.target]
 
@@ -139,6 +164,7 @@ def _run_poc_scan(args, template_dir):
         proxy_file=args.proxies,
         qps=args.qps,
         per_domain_qps=args.domain_qps,
+        track_oast=bool(getattr(args, "oast", False)),
     )
 
     # 验证代理
@@ -154,7 +180,7 @@ def _run_poc_scan(args, template_dir):
 
             # 保存到数据库
             result_dicts = [r.to_dict() for r in results if r.matched]
-            scan_id = save_scan_results(
+            save_scan_results(
                 targets[0], result_dicts,
                 template_count=len(templates), elapsed=elapsed
             )
@@ -163,7 +189,7 @@ def _run_poc_scan(args, template_dir):
             matched = [r for r in results if r.matched]
             if matched:
                 Out.blank()
-                Out.section(f"扫描结果", "🔥")
+                Out.section("扫描结果", "🔥")
                 Out.success(f"发现 {len(matched)} 个漏洞  {C.DIM}({Out.elapsed(elapsed)}){C.RESET}")
 
                 # 按严重级别分组
@@ -212,7 +238,7 @@ def _run_poc_scan(args, template_dir):
             Out.success(f"耗时: {Out.elapsed(elapsed)}")
             total_findings = sum(len(v) for v in all_results.values())
             Out.blank()
-            Out.section(f"扫描结果", "🔥")
+            Out.section("扫描结果", "🔥")
             Out.success(f"发现 {total_findings} 个漏洞 (跨 {len(all_results)} 个目标)")
             for target, results in all_results.items():
                 Out.blank()
@@ -255,3 +281,29 @@ def _run_poc_scan(args, template_dir):
     if args.output and results:
         save_path = engine.save_results(results, args.output)
         Out.success(f"结果已保存: {save_path}")
+
+    # P1-D: OAST 带外验证（扫描后查询回调服务器）
+    if getattr(args, "oast_check", False):
+        try:
+            from src.oast.server import query_calls
+            domains = list(engine._oast_domains)
+            Out.blank()
+            Out.section("OAST 带外验证", "📡")
+            if not domains:
+                Out.info("本次扫描未生成 OAST 子域（需 --oast 启用变量）")
+                return
+            hits = 0
+            for d in domains:
+                calls = query_calls(domain=d)
+                if calls:
+                    hits += 1
+                    Out.success(f"回调命中: {d}")
+                    for c in calls[:3]:
+                        Out._print(f"    {c['method']} {c.get('path', '')} "
+                                   f"{C.DIM}({c['timestamp'][:19]}){C.RESET}")
+            if hits == 0:
+                Out.info(f"未检测到 {len(domains)} 个 OAST 子域的回调（确认带外验证结果）")
+            else:
+                Out.success(f"共 {hits}/{len(domains)} 个子域产生回调")
+        except Exception as e:
+            Out.warning(f"OAST 验证失败（已忽略）: {e}")

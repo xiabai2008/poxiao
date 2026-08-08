@@ -22,7 +22,8 @@ class _FakeLoader:
         templates = k.get("templates")
         self._templates = templates if templates is not None else [_Template("t1")]
 
-    def load_all(self, tags=None, severity=None):
+    def load_all(self, tags=None, severity=None, verify_signatures=False,
+                 public_key_path=""):
         return self._templates
 
     def count_by_severity(self, templates):

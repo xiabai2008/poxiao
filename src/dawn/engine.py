@@ -4,6 +4,7 @@ import asyncio
 import logging
 import time
 from dataclasses import dataclass, field
+from typing import Optional
 
 import httpx
 
@@ -13,6 +14,28 @@ from .version_extract import VersionExtractor, VersionInfo
 from .cve_match import CVEMatcher, VulnMatch
 
 logger = logging.getLogger("poxiao.scanner.engine")
+
+
+def normalize_tech_tag(tag: str) -> tuple[str, str]:
+    """技术栈标签 → (组件名, 版本)
+
+    标签可能带类别前缀或版本后缀:
+      "iis/10.0"        → ("iis", "10.0")
+      "nginx/1.18.0"    → ("nginx", "1.18.0")
+      "db:mysql"        → ("mysql", "")
+      "cdn:cloudflare"  → ("cloudflare", "")
+      "asp.net"         → ("asp.net", "")
+    返回空组件表示该标签不可用于 CVE 匹配（如 analytics 类）。
+    """
+    t = tag.strip()
+    for prefix in ("cdn:", "waf:", "platform:", "db:", "analytics:"):
+        if t.lower().startswith(prefix):
+            t = t[len(prefix):]
+            break
+    if "/" in t:
+        comp, _, ver = t.partition("/")
+        return comp.strip(), ver.strip()
+    return t, ""
 
 
 @dataclass
@@ -129,6 +152,14 @@ class ScanEngine:
         self.tech_detector = TechStackDetector()
         self.version_extractor = VersionExtractor()
         self.sensitive_detector = SensitivePathDetector(timeout=timeout)
+        # E3: 懒创建共享 HTTP 客户端（连接池复用 + 默认浏览器 UA），
+        # 由 aclose()/context manager 统一释放
+        self._client: Optional[httpx.AsyncClient] = None
+        self._default_headers = {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+                          "AppleWebKit/537.36 (KHTML, like Gecko) "
+                          "Chrome/126.0.0.0 Safari/537.36",
+        }
 
         # Load NVD API key from config system if available
         nvd_api_key = ""
@@ -138,6 +169,28 @@ class ScanEngine:
         except Exception:
             pass
         self.cve_matcher = CVEMatcher(nvd_api_key=nvd_api_key)
+
+    async def _get_client(self) -> httpx.AsyncClient:
+        """获取共享客户端（首次调用时创建）"""
+        if self._client is None:
+            self._client = httpx.AsyncClient(
+                verify=False,
+                timeout=self.timeout,
+                headers=self._default_headers,
+            )
+        return self._client
+
+    async def aclose(self) -> None:
+        """释放共享客户端连接池（任务结束必须调用）"""
+        if self._client is not None:
+            await self._client.aclose()
+            self._client = None
+
+    async def __aenter__(self) -> "ScanEngine":
+        return self
+
+    async def __aexit__(self, *exc) -> None:
+        await self.aclose()
 
     def _enrich_with_nvd(self, versions: dict) -> list[VulnMatch]:
         """
@@ -165,18 +218,18 @@ class ScanEngine:
         result.host = urlparse(url).netloc
 
         try:
-            # Step 1: HTTP GET 获取基础信息
-            async with httpx.AsyncClient(verify=False, timeout=self.timeout) as client:
-                resp = await client.get(url, follow_redirects=True)
-                result.alive = True
-                result.status_code = resp.status_code
+            # Step 1: HTTP GET 获取基础信息（复用共享客户端/连接池）
+            client = await self._get_client()
+            resp = await client.get(url, follow_redirects=True)
+            result.alive = True
+            result.status_code = resp.status_code
 
-                if resp.history:
-                    result.redirect_url = str(resp.url)
+            if resp.history:
+                result.redirect_url = str(resp.url)
 
-                headers = dict(resp.headers)
-                cookies = dict(resp.cookies)
-                html = resp.text
+            headers = dict(resp.headers)
+            cookies = dict(resp.cookies)
+            html = resp.text
 
             # Step 2: 技术栈识别
             result.tech = self.tech_detector.detect(
@@ -201,17 +254,22 @@ class ScanEngine:
                 all_cve_matches.extend(nvd_matches)
 
             # 即使没有精确版本，也根据识别的技术栈做本地匹配
+            # 技术栈标签可能带类别前缀 (cdn:/waf:/platform:/db:) 或版本 (iis/10.0)，
+            # 归一化为 (组件名, 版本) 后再匹配，避免 `match("iis/10.0")` 静默 0 命中。
             for tag in result.tech_tags:
-                all_cve_matches.extend(self.cve_matcher.match(tag))
+                comp, ver = normalize_tech_tag(tag)
+                if not comp:
+                    continue
+                all_cve_matches.extend(self.cve_matcher.match(comp, ver))
 
             # Deduplicate and set
             result.cve_matches = _dedupe_cve_matches(all_cve_matches)
 
-            # Step 4: 敏感路径检测（可选）
+            # Step 4: 敏感路径检测（可选；复用共享客户端连接池）
             if self.enable_sensitive:
                 tech_key = result.tech.cms or result.tech.language or ""
                 result.sensitive_paths = await self.sensitive_detector.scan(
-                    url, tech=tech_key
+                    url, tech=tech_key, client=client
                 )
 
         except httpx.ConnectError:

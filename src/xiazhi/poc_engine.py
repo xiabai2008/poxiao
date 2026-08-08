@@ -15,14 +15,13 @@ import random
 import string
 import time
 from pathlib import Path
-from typing import List, Dict, Optional, Tuple
+from typing import List, Dict, Optional
 from datetime import datetime
 
 import httpx
 
 from .template import (
-    Template, HTTPRequest, Matcher, Extractor,
-    MatchResult,
+    Template, HTTPRequest, MatchResult,
 )
 from .matcher import MatcherEngine
 from .extractor import ExtractorEngine
@@ -37,7 +36,8 @@ class POCEngine:
                  stealth: bool = False, enable_waf_bypass: bool = False,
                  proxy_file: str = "",
                  proxy_list: list = None, qps: float = 10.0,
-                 per_domain_qps: float = 3.0):
+                 per_domain_qps: float = 3.0,
+                 track_oast: bool = False):
         self.timeout = timeout
         self.concurrency = concurrency
         self.follow_redirects = follow_redirects
@@ -48,6 +48,9 @@ class POCEngine:
         self.stealth = stealth
         self.enable_waf_bypass = enable_waf_bypass
         self._stealth_client = None
+        # P1-D: OAST 追踪（track_oast=True 时记录本批生成的子域，供 --oast-check）
+        self._track_oast = track_oast
+        self._oast_domains: list = []
 
         # WAF 绕过需要 StealthClient 承载；显式 --waf-bypass 时即使未开 --stealth 也构造它
         if stealth or enable_waf_bypass:
@@ -154,9 +157,11 @@ class POCEngine:
         results = []
 
         # 全局变量
+        netloc = target_url.split("//")[-1].split("/")[0]
         variables = {
             "BaseURL": target_url.rstrip("/"),
-            "Hostname": target_url.split("//")[-1].split("/")[0].split(":")[0],
+            "Hostname": netloc.split(":")[0],
+            "Host": netloc,                      # P2-1: raw 模板常用（含端口）
             "Scheme": target_url.split("://")[0],
             "Port": self._extract_port(target_url),
             **tmpl.variables,
@@ -192,16 +197,16 @@ class POCEngine:
                         result = await self._execute_request(
                             active_client, target_url, tmpl, req, variables, raw_url
                         )
-                        if result and result.matched:
-                            results.append(result)
-
+                        if result:
                             # 将提取的值注入变量，供后续请求使用 {{name}} 语法
+                            # （extract-only 请求不产生匹配结果，但提取值照常注入）
                             if result.extracted:
                                 variables.update(result.extracted)
-
-                            if req.stop_at_first_match:
-                                template_matched = True
-                                break
+                            if result.matched:
+                                results.append(result)
+                                if req.stop_at_first_match:
+                                    template_matched = True
+                                    break
                     except Exception as e:
                         # 单个请求失败不影响其他请求
                         err_result = MatchResult(
@@ -229,8 +234,14 @@ class POCEngine:
                                variables: Dict[str, str],
                                raw_url: str = "") -> Optional[MatchResult]:
         """执行单个 HTTP 请求"""
+        # 运行时变量 (randstr/randbase64/timestamp) 每个请求生成一次，
+        # 保证 URL/Header/Body/Matcher 中引用的 {{randstr}} 等值一致
+        # （否则请求体与匹配词各得不同随机值，必然失配）。
+        runtime_vars = self._gen_runtime_vars()
+        ctx = {**variables, **runtime_vars}
+
         # 构建请求 URL
-        url = self._expand_variables(raw_url, variables) if raw_url else target_url.rstrip("/")
+        url = self._expand_variables(raw_url, variables, runtime_vars) if raw_url else target_url.rstrip("/")
 
         # 如果路径不是完整 URL，拼接到 base URL
         if not url.startswith("http"):
@@ -239,10 +250,10 @@ class POCEngine:
         # 构建 Headers
         headers = {}
         for k, v in req.headers.items():
-            headers[self._expand_variables(k, variables)] = self._expand_variables(str(v), variables)
+            headers[self._expand_variables(k, variables, runtime_vars)] = self._expand_variables(str(v), variables, runtime_vars)
 
         # 构建 Body
-        body = self._expand_variables(req.body, variables) if req.body else None
+        body = self._expand_variables(req.body, variables, runtime_vars) if req.body else None
 
         if req.content_type:
             headers["Content-Type"] = req.content_type
@@ -257,7 +268,8 @@ class POCEngine:
                     content=body, timeout=req.timeout,
                 )
             else:
-                # 使用模板定义的 follow_redirects / max_redirects
+                # 使用模板定义的 follow_redirects（P2-3: max_redirects 为
+                # AsyncClient 构造参数，在 cookie_client 创建时已生效）
                 resp = await client.request(
                     req.method, url, headers=headers,
                     content=body, timeout=req.timeout,
@@ -265,7 +277,7 @@ class POCEngine:
                 )
         except httpx.TimeoutException:
             return None
-        except Exception as e:
+        except Exception:
             return None
 
         elapsed = time.perf_counter() - t0
@@ -276,21 +288,26 @@ class POCEngine:
         resp_body = resp.text
         resp_body_bytes = resp.content
 
-        # 执行匹配
-        matched, match_desc = self.matcher_engine.match_all(
-            req.matchers, req.matchers_condition,
-            status_code, resp_headers, resp_body, resp_body_bytes
-        )
+        # 执行匹配（P2-4: 无 matchers 的 request 为 extract-only，
+        # 仅提取注入变量供后续请求使用，不产生匹配结果）
+        if req.matchers:
+            matched, match_desc = self.matcher_engine.match_all(
+                req.matchers, req.matchers_condition,
+                status_code, resp_headers, resp_body, resp_body_bytes,
+                variables=ctx,
+            )
+        else:
+            matched, match_desc = False, "extract-only (no matchers)"
 
-        if not matched:
-            return None
-
-        # 执行提取
+        # 执行提取（无论是否匹配都执行，供后续请求变量注入）
         extracted = {}
         if req.extractors:
             extracted = self.extractor_engine.extract(
                 req.extractors, status_code, resp_headers, resp_body
             )
+
+        if not matched and not extracted:
+            return None
 
         # 构建结果
         result = MatchResult(
@@ -298,7 +315,7 @@ class POCEngine:
             template_name=tmpl.info.name,
             severity=tmpl.info.severity,
             url=target_url,
-            matched=True,
+            matched=matched,
             matcher_name=match_desc,
             extracted=extracted,
             response_status=status_code,
@@ -312,7 +329,8 @@ class POCEngine:
 
         return result
 
-    def _expand_variables(self, text: str, variables: Dict[str, str]) -> str:
+    def _expand_variables(self, text: str, variables: Dict[str, str],
+                          runtime_vars: Optional[Dict[str, str]] = None) -> str:
         """替换模板变量 {{VariableName}}"""
         if not text or "{{" not in text:
             return text
@@ -321,9 +339,35 @@ class POCEngine:
             text = text.replace(f"{{{{{name}}}}}", str(value))
 
         # 运行时变量 (randstr, randbase64 等)
-        text = self._resolve_runtime_vars(text)
+        if runtime_vars is None:
+            # 旧路径（测试/无显式运行时变量时）：仍按单次调用展开
+            text = self._resolve_runtime_vars(text)
+        else:
+            for name, value in runtime_vars.items():
+                text = text.replace(f"{{{{{name}}}}}", str(value))
 
         return text
+
+    def _gen_runtime_vars(self) -> Dict[str, str]:
+        """每个请求生成一次运行时变量，保证同一请求内引用值一致"""
+        randstr = ''.join(random.choices(string.ascii_lowercase + string.digits, k=8))
+        randb64_raw = ''.join(random.choices(string.ascii_letters + string.digits, k=12))
+        # P1-D: OAST 带外回调变量（盲注/XXE/SSRF 验证）；随机子域并追踪
+        try:
+            from src.oast.server import gen_oast_domain
+            oast_domain = gen_oast_domain()
+            oast_url = f"http://{oast_domain}/"
+            if self._track_oast:
+                self._oast_domains.append(oast_domain)
+        except Exception:
+            oast_domain, oast_url = "", ""
+        return {
+            "randstr": randstr,
+            "randbase64": base64.b64encode(randb64_raw.encode()).decode(),
+            "timestamp": str(int(time.time())),
+            "oast-domain": oast_domain,
+            "oast-url": oast_url,
+        }
 
     def _resolve_runtime_vars(self, text: str) -> str:
         """解析运行时变量"""
@@ -360,7 +404,7 @@ class POCEngine:
     def print_results(self, results: List[MatchResult], target: str = ""):
         """格式化打印扫描结果"""
         if not results:
-            print(f"  ℹ️  未发现漏洞")
+            print("  ℹ️  未发现漏洞")
             return
 
         # 按严重级别排序
@@ -382,7 +426,7 @@ class POCEngine:
             if r.matcher_name:
                 print(f"    Match:  {r.matcher_name[:80]}")
             if r.extracted:
-                print(f"    Extract:")
+                print("    Extract:")
                 for k, v in r.extracted.items():
                     print(f"      {k}: {v[:100]}")
             if r.description:

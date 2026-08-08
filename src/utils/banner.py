@@ -4,8 +4,6 @@
 每个模块有自己的 banner，启动时显示
 """
 
-import sys
-import os
 from datetime import datetime
 
 

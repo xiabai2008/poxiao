@@ -2,21 +2,29 @@
 
 from pathlib import Path
 
+from src.config import get_config
 from src.guanxing import import_from_summary, start_server, get_stats
 from src.guanxing.db import export_data
-from src.utils.output import Out, C
+from src.utils.output import Out
 
 
 def cmd_monitor(args):
     """观星 资产监控"""
     if args.mon_action == "serve":
-        start_server(port=5099)
+        # 优先级: CLI 参数 > 配置文件 (monitor.host/port) > 默认值
+        cfg = get_config().get("monitor")
+        host = getattr(args, "host", "") or cfg.get("host", "127.0.0.1")
+        port = getattr(args, "port", 0) or int(cfg.get("port", 5099))
+        Out.info(f"启动观星面板: http://{host}:{port}")
+        if cfg.get("auth"):
+            Out.info("已启用认证 (monitor.auth=true)")
+        start_server(host=host, port=port)
     elif args.mon_action == "import":
         Out.info(f"导入: {args.path}")
         import_from_summary(args.path)
         stats = get_stats()
         Out.success(f"目标: {stats['total']} | 存活: {stats['alive']} | 有发现: {stats['with_findings']}")
-        Out.info(f"启动面板: poxiao monitor serve")
+        Out.info("启动面板: poxiao monitor serve")
     elif args.mon_action == "stats":
         stats = get_stats()
         Out.section("资产统计", "📊")

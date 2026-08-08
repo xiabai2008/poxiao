@@ -30,7 +30,6 @@ import time
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import List, Optional, Dict, Tuple
-from collections import defaultdict
 
 import httpx
 
@@ -360,7 +359,7 @@ class ProxyPool:
     def print_stats(self):
         """打印代理池统计"""
         s = self.stats()
-        print(f"  📊 代理池统计")
+        print("  📊 代理池统计")
         print(f"  {'─' * 40}")
         print(f"  总数:   {s['total']}")
         print(f"  可用:   {s['alive']}")
@@ -371,6 +370,6 @@ class ProxyPool:
         # 显示 Top 5
         top5 = self.list_proxies(only_alive=True)[:5]
         if top5:
-            print(f"\n  🏆 Top 5 代理:")
+            print("\n  🏆 Top 5 代理:")
             for p in top5:
                 print(f"    {p.url:40s} 延迟:{p.latency:.2f}s 成功率:{p.success_rate:.0%} 评分:{p.score:.0f}")

@@ -19,14 +19,11 @@ CLI:
 """
 
 import base64
-import binascii
 import hashlib
 import html
 import json
 import re
-import string
 import urllib.parse
-from typing import Optional, Tuple
 
 
 # ── Base 系列 ────────────────────────────────────────
@@ -252,7 +249,6 @@ def jwt_decode(token: str) -> dict:
 def jwt_encode(payload: dict, header: dict = None, secret: str = "secret") -> str:
     """JWT 编码 (使用 HS256)"""
     import hmac
-    import struct
 
     if header is None:
         header = {"alg": "HS256", "typ": "JWT"}
@@ -282,8 +278,8 @@ def jwt_encode(payload: dict, header: dict = None, secret: str = "secret") -> st
 def aes_encrypt_cbc(plaintext: str, key: str, iv: str = None) -> str:
     """AES-CBC 加密"""
     try:
-        from Crypto.Cipher import AES
-        from Crypto.Util.Padding import pad
+        from Crypto.Cipher import AES  # nosec B413 — pycryptodome 是 pyCrypto 维护分支，非弃用 pyCrypto；可选依赖
+        from Crypto.Util.Padding import pad  # nosec B413
     except ImportError:
         return "[ERROR] pip install pycryptodome"
 
@@ -296,8 +292,8 @@ def aes_encrypt_cbc(plaintext: str, key: str, iv: str = None) -> str:
 def aes_decrypt_cbc(ciphertext: str, key: str, iv: str = None) -> str:
     """AES-CBC 解密"""
     try:
-        from Crypto.Cipher import AES
-        from Crypto.Util.Padding import unpad
+        from Crypto.Cipher import AES  # nosec B413 — pycryptodome 是 pyCrypto 维护分支，非弃用 pyCrypto；可选依赖
+        from Crypto.Util.Padding import unpad  # nosec B413
     except ImportError:
         return "[ERROR] pip install pycryptodome"
 

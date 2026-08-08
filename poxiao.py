@@ -13,7 +13,7 @@ fix_windows_utf8()
 # 确保 src 目录在路径中
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from src.cli import main
+from src.cli import main  # noqa: E402 — 须先注入 sys.path 再导入 src
 
 if __name__ == "__main__":
     main()

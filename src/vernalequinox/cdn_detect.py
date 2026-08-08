@@ -14,10 +14,8 @@ CDN / WAF 检测 & 真实 IP 推断模块
 """
 
 import asyncio
-import re
-import json
 from dataclasses import dataclass, field, asdict
-from typing import List, Dict, Optional, Tuple
+from typing import List, Dict, Tuple
 
 try:
     import dns.resolver
@@ -292,13 +290,13 @@ class CDNDetector:
     @staticmethod
     def print_result(r: CDNResult):
         """格式化打印 CDN 检测结果"""
-        print(f"  🛡️ CDN / WAF 检测")
+        print("  🛡️ CDN / WAF 检测")
         print(f"  {'─' * 50}")
 
         if r.has_cdn:
             print(f"  CDN:      ✅ {r.cdn_provider}")
         else:
-            print(f"  CDN:      ❌ 未检测到")
+            print("  CDN:      ❌ 未检测到")
 
         if r.waf_detected:
             print(f"  WAF:      ✅ {r.waf_name}")
@@ -307,13 +305,13 @@ class CDNDetector:
             print(f"  CNAME:    {', '.join(r.cname_records[:3])}")
 
         if r.real_ips:
-            print(f"\n  🎯 推断真实 IP:")
+            print("\n  🎯 推断真实 IP:")
             for ip in r.real_ips[:5]:
                 source = r.real_ip_source.get(ip, "unknown")
                 print(f"    {ip}  ({source})")
         elif r.has_cdn:
-            print(f"\n  ⚠️  检测到 CDN，未能推断真实 IP")
-            print(f"  建议: 尝试 MX / 子域名 / 历史 DNS / SSL 证书指纹关联")
+            print("\n  ⚠️  检测到 CDN，未能推断真实 IP")
+            print("  建议: 尝试 MX / 子域名 / 历史 DNS / SSL 证书指纹关联")
 
         if r.mx_ips:
             print(f"\n  📧 MX IP: {', '.join(r.mx_ips[:3])}")

@@ -4,8 +4,8 @@ Enhanced: vulnerability-specific reproduction steps, evidence capture,
 severity auto-adjustment, per-type fix suggestions, Chinese severity labels.
 """
 
+import re
 from pathlib import Path
-from typing import Optional
 
 from src.i18n import _, get_locale
 
@@ -378,7 +378,7 @@ class SRCReporter:
 
         # 保存每个报告
         for i, r in enumerate(all_reports):
-            filename = f"{i+1:03d}_{r['title'][:40].replace('/', '_').replace(' ', '_')}.md"
+            filename = f"{i+1:03d}_{self._sanitize_filename(r['title'])}.md"
             filepath = out / filename
             filepath.write_text(r["report"], encoding="utf-8")
 
@@ -404,6 +404,18 @@ class SRCReporter:
         }
 
     # ── 辅助方法 ─────────────────────────────────
+
+    @staticmethod
+    def _sanitize_filename(name: str) -> str:
+        """清洗文件名字符，确保 Windows/Linux 均可写入
+
+        CVE 报告标题形如 `[host] 疑似 CVE-xxx: desc`，含 Windows
+        非法字符 `:`；清洗非法字符 + 控制字符 + 结尾点/空格。
+        """
+        name = re.sub(r'[<>:"/\\|?*]', "_", name)
+        name = re.sub(r"[\x00-\x1f]", "", name)
+        name = name.replace(" ", "_").rstrip("_").strip(". ")
+        return name[:40] or "report"
 
     def _finding_title(self, category: str, url: str) -> str:
         cat = {

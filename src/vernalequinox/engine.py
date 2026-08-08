@@ -17,7 +17,7 @@ CLI:
 import asyncio
 import json
 import time
-from dataclasses import dataclass, field, asdict
+from dataclasses import dataclass, field
 from typing import List, Dict, Optional
 from pathlib import Path
 
@@ -31,6 +31,8 @@ from .censys_query import CensysQuery, CensysResult
 from .wayback import WaybackQuery, WaybackResult
 from .github_leak import GitHubLeakScanner, GitHubLeakResult
 from .fofa_query import FofaQuery, FofaResult
+from .quake_query import QuakeQuery, QuakeResult
+from .hunter_query import HunterQuery, HunterResult
 
 
 @dataclass
@@ -51,6 +53,8 @@ class ReconReport:
     wayback: Optional[WaybackResult] = None
     github_leaks: Optional[GitHubLeakResult] = None
     fofa: Optional[FofaResult] = None
+    quake: Optional[QuakeResult] = None          # P1-F
+    hunter: Optional[HunterResult] = None        # P1-F
     wayback_interesting_urls: List[Dict] = field(default_factory=list)
 
     # 汇总信息
@@ -96,6 +100,10 @@ class ReconReport:
             d["github_leaks"] = self.github_leaks.to_dict()
         if self.fofa:
             d["fofa"] = self.fofa.to_dict()
+        if self.quake:
+            d["quake"] = self.quake.to_dict()
+        if self.hunter:
+            d["hunter"] = self.hunter.to_dict()
         if self.wayback_interesting_urls:
             d["wayback_interesting_urls"] = self.wayback_interesting_urls
         return d
@@ -108,7 +116,9 @@ class ReconEngine:
                  shodan_key: str = "", fofa_key: str = "",
                  skip_shodan: bool = False, skip_fofa: bool = False,
                  censys_id: str = "", censys_secret: str = "",
-                 github_token: str = "", fofa_email: str = ""):
+                 github_token: str = "", fofa_email: str = "",
+                 quake_token: str = "", hunter_key: str = "",
+                 hunter_email: str = ""):
         self.timeout = timeout
         self.whois = WhoisLookup(timeout=timeout)
         self.icp = ICPQuery(timeout=timeout)
@@ -128,6 +138,8 @@ class ReconEngine:
             key="" if skip_fofa else fofa_key,
             timeout=timeout,
         )
+        self.quake = QuakeQuery(token=quake_token, timeout=timeout)
+        self.hunter = HunterQuery(api_key=hunter_key, email=hunter_email, timeout=timeout)
 
     async def full_recon(self, domain: str) -> ReconReport:
         """全量被动信息收集"""
@@ -138,7 +150,7 @@ class ReconEngine:
         report.timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
         # ═══ 阶段 1: 并发查询 DNS + Whois + ICP + 证书 ═══
-        print(f"  [1/5] 并发收集基础情报...")
+        print("  [1/5] 并发收集基础情报...")
         phase1 = await asyncio.gather(
             self.dns.collect(domain),
             self.whois.query(domain),
@@ -173,7 +185,7 @@ class ReconEngine:
                 report.all_ips.extend(phase1[3].san_ips)
 
         # ═══ 阶段 2: CDN/WAF 检测 ═══
-        print(f"  [2/5] CDN/WAF 检测...")
+        print("  [2/5] CDN/WAF 检测...")
         report.cdn = await self.cdn.detect(domain, report.all_ips[0] if report.all_ips else "")
 
         # 合并真实 IP
@@ -195,8 +207,8 @@ class ReconEngine:
                 if ip_info.shodan_vulns:
                     report.vulns_summary[ip_info.ip] = ip_info.shodan_vulns
 
-        # ═══ 阶段 3.5: 扩展被动侦察 (Censys + Wayback + GitHub) ═══
-        print(f"  [4/5] 扩展被动侦察 (Censys / Wayback / GitHub)...")
+        # ═══ 阶段 3.5: 扩展被动侦察 (Censys + Wayback + GitHub + 测绘引擎) ═══
+        print("  [4/5] 扩展被动侦察 (Censys / Wayback / GitHub / 测绘引擎)...")
         ext_tasks = [self.wayback.search(domain)]
         if self.censys.has_credentials:
             ext_tasks.append(self.censys.search_hosts(f"services.tls.certificates.leaf_data.subject.common_name: {domain}"))
@@ -204,6 +216,10 @@ class ReconEngine:
             ext_tasks.append(self.github.search(domain))
         if self.fofa.has_credentials:
             ext_tasks.append(self.fofa.search(domain))
+        if self.quake.has_credentials:
+            ext_tasks.append(self.quake.search(domain))
+        if self.hunter.has_credentials:
+            ext_tasks.append(self.hunter.search(domain))
 
         ext_results = await asyncio.gather(*ext_tasks, return_exceptions=True)
 
@@ -270,8 +286,34 @@ class ReconEngine:
                     if host and host not in report.all_domains and "*" not in host:
                         report.all_domains.append(host)
 
+        # Quake (P1-F)
+        if self.quake.has_credentials:
+            idx += 1
+            if isinstance(ext_results[idx], QuakeResult):
+                report.quake = ext_results[idx]
+                for h in report.quake.hosts:
+                    ip = h.get("ip", "")
+                    if ip and ip not in report.all_ips:
+                        report.all_ips.append(ip)
+                    host = h.get("host", "")
+                    if host and host not in report.all_domains and "*" not in host:
+                        report.all_domains.append(host)
+
+        # Hunter (P1-F)
+        if self.hunter.has_credentials:
+            idx += 1
+            if isinstance(ext_results[idx], HunterResult):
+                report.hunter = ext_results[idx]
+                for h in report.hunter.hosts:
+                    ip = h.get("ip", "")
+                    if ip and ip not in report.all_ips:
+                        report.all_ips.append(ip)
+                    host = h.get("host", "")
+                    if host and host not in report.all_domains and "*" not in host:
+                        report.all_domains.append(host)
+
         # ═══ 阶段 5: 汇总分析 ═══
-        print(f"  [5/5] 汇总分析...")
+        print("  [5/5] 汇总分析...")
         self._analyze_risks(report)
         self._extract_emails(report)
 
@@ -395,7 +437,7 @@ class ReconEngine:
         """格式化打印完整报告"""
         print()
         print(f"{'═' * 60}")
-        print(f"  🔍 破晓 · 被动信息收集报告")
+        print("  🔍 破晓 · 被动信息收集报告")
         print(f"  目标: {report.domain}")
         print(f"  时间: {report.timestamp}  |  耗时: {report.scan_time:.1f}s")
         print(f"{'═' * 60}")
@@ -445,7 +487,7 @@ class ReconEngine:
         # Wayback interesting URLs
         if report.wayback_interesting_urls:
             print()
-            print(f"  Interesting URLs (Wayback)")
+            print("  Interesting URLs (Wayback)")
             print(f"  {'─' * 50}")
             for entry in report.wayback_interesting_urls[:10]:
                 print(f"    {entry.get('url', '')}")
@@ -462,16 +504,26 @@ class ReconEngine:
             print()
             FofaQuery.print_result(report.fofa)
 
+        # Quake (P1-F)
+        if report.quake:
+            print()
+            QuakeQuery.print_result(report.quake)
+
+        # Hunter (P1-F)
+        if report.hunter:
+            print()
+            HunterQuery.print_result(report.hunter)
+
         # 风险指标
         if report.risk_indicators:
-            print(f"  ⚡ 风险指标")
+            print("  ⚡ 风险指标")
             print(f"  {'─' * 50}")
             for risk in report.risk_indicators:
                 print(f"  {risk}")
             print()
 
         # 汇总
-        print(f"  📊 汇总")
+        print("  📊 汇总")
         print(f"  {'─' * 50}")
         print(f"  IP 地址:   {len(report.all_ips)} 个")
         if report.all_ips:

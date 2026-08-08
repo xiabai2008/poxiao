@@ -7,7 +7,7 @@ import asyncio
 import random
 import re
 from collections import defaultdict
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Optional
 
@@ -211,7 +211,6 @@ class ShuangYue:
         if wordlist is None:
             wordlist = COMMON_SUBDOMAINS
 
-        import concurrent.futures
 
         def _resolve_one(target: str) -> Optional[str]:
             try:
@@ -284,7 +283,7 @@ class ShuangYue:
         sources: dict[str, str] = {}
 
         # 0. 泛解析检测
-        has_wildcard = self._detect_wildcard(domain)
+        self._detect_wildcard(domain)
 
         # 1. 证书透明
         if use_crtsh:

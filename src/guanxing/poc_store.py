@@ -16,9 +16,8 @@
 import json
 import sqlite3
 from datetime import datetime
-from pathlib import Path
-from typing import List, Dict, Optional, Tuple
-from dataclasses import dataclass, field, asdict
+from typing import List, Dict
+from dataclasses import dataclass, field
 
 from .db import get_db
 
@@ -122,7 +121,7 @@ def save_scan_results(target: str, results: list, template_count: int = 0,
             else:
                 # 插入新记录
                 conn.execute(
-                    """INSERT INTO poc_findings 
+                    """INSERT INTO poc_findings
                     (scan_id, target, template_id, template_name, severity, url, matched,
                      matcher_name, extracted, response_status, response_size, request_url,
                      tags, description, first_seen, last_seen, is_new)
@@ -157,7 +156,7 @@ def get_history(target: str, limit: int = 10) -> List[Dict]:
     with get_db() as conn:
         _ensure_poc_tables(conn)
         rows = conn.execute(
-            "SELECT * FROM poc_scans WHERE target = ? ORDER BY scan_time DESC LIMIT ?",
+            "SELECT * FROM poc_scans WHERE target = ? ORDER BY scan_time DESC, id DESC LIMIT ?",
             (target, limit)
         ).fetchall()
         return [dict(r) for r in rows]
@@ -194,8 +193,10 @@ def compare_with_last(target: str, current_results: list) -> FindingDiff:
         _ensure_poc_tables(conn)
 
         # 获取上次扫描的发现
+        # 注意: 调用方通常在保存本次扫描后才调用本函数，因此"最近一次"
+        # 记录就是本次扫描本身；须跳过 (OFFSET 1) 取真正的上一次。
         last_scan = conn.execute(
-            "SELECT id FROM poc_scans WHERE target = ? ORDER BY scan_time DESC LIMIT 1",
+            "SELECT id FROM poc_scans WHERE target = ? ORDER BY scan_time DESC, id DESC LIMIT 1 OFFSET 1",
             (target,)
         ).fetchone()
 
@@ -253,7 +254,7 @@ def get_target_stats(target: str) -> Dict:
 
         # 最新扫描
         last_scan = conn.execute(
-            "SELECT * FROM poc_scans WHERE target = ? ORDER BY scan_time DESC LIMIT 1",
+            "SELECT * FROM poc_scans WHERE target = ? ORDER BY scan_time DESC, id DESC LIMIT 1",
             (target,)
         ).fetchone()
 

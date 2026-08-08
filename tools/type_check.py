@@ -41,6 +41,11 @@ CURATED_MODULES: List[str] = [
     "src/jingzhe/jingzhe.py",          # 漏洞验证核心（1 处注解补齐后零错误）
     "tools/gen_sbom.py",               # SBOM 生成（P3-1，自洽）
     "tools/template_sync.py",          # 模板工具链（P3-2，自洽）
+    # ── Phase 1 新增（2026-08-08）──
+    "src/utils/sarif.py",              # SARIF 2.1.0 输出（P1-A）
+    # 注：src/xiazhi/template_sign.py（P1-C）因 mypy 解析 `src.xiazhi.*` 会级联
+    # 整个 xiazhi 包（__init__ 导入全部子模块），暴露既有 23 处历史类型错误；
+    # 该模块由 tests/test_template_sign.py（12 用例）守护，暂不入门禁（R2 渐进）。
 ]
 
 

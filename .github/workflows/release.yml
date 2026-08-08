@@ -1,0 +1,133 @@
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  build-wheel:
+    name: Build wheel
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install build backend
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install build
+
+      - name: Build wheel
+        run: python -m build --wheel
+
+      - name: Upload wheel artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: wheel
+          path: dist/*.whl
+          if-no-files-found: error
+
+  build-binaries:
+    name: Build binary (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            asset: poxiao-win-x64.exe
+          - os: ubuntu-latest
+            asset: poxiao-linux-x64
+          - os: macos-latest
+            asset: poxiao-macos-x64
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]"
+          pip install pyinstaller
+
+      - name: Build with PyInstaller
+        run: pyinstaller poxiao.spec --noconfirm
+
+      - name: Smoke test
+        shell: bash
+        run: |
+          if [ "${{ runner.os }}" = "Windows" ]; then
+            ./dist/poxiao.exe --help > /dev/null
+            ./dist/poxiao.exe util encode base64 "hello" | grep -q aGVsbG8=
+          else
+            ./dist/poxiao --help > /dev/null
+            ./dist/poxiao util encode base64 "hello" | grep -q aGVsbG8=
+          fi
+
+      - name: Upload binary artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: binary-${{ matrix.os }}
+          path: |
+            dist/poxiao.exe
+            dist/poxiao
+          if-no-files-found: error
+
+  release:
+    name: Create GitHub Release
+    needs: [build-wheel, build-binaries]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Assemble release assets
+        shell: bash
+        run: |
+          mkdir -p release-assets
+          # wheel
+          cp artifacts/wheel/*.whl release-assets/
+          # 二进制（按平台重命名）
+          cp artifacts/binary-windows-latest/poxiao.exe release-assets/poxiao-win-x64.exe 2>/dev/null || true
+          cp artifacts/binary-ubuntu-latest/poxiao release-assets/poxiao-linux-x64 2>/dev/null || true
+          cp artifacts/binary-macos-latest/poxiao release-assets/poxiao-macos-x64 2>/dev/null || true
+          ls -la release-assets/
+
+      - name: Generate release notes
+        shell: bash
+        run: |
+          python - <<'EOF'
+          import re
+          from pathlib import Path
+          changelog = Path("CHANGELOG.md").read_text(encoding="utf-8")
+          tag = "${{ github.ref_name }}"
+          # 取当前版本条目（## vX.Y.Z 到下一个 ## 之间）
+          m = re.search(rf"##\s*{re.escape(tag)}\s*\n(.*?)(?=\n##\s|\Z)", changelog, re.S)
+          notes = m.group(1).strip() if m else "See CHANGELOG.md for details."
+          Path("release_notes.md").write_text(notes, encoding="utf-8")
+          EOF
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: "破晓 PoXiao ${{ github.ref_name }}"
+          body_path: release_notes.md
+          files: release-assets/*
+          draft: false
+          prerelease: false

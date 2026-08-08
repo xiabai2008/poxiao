@@ -2,3 +2,11 @@
 
 from .manager import TargetManager, Target
 from .discovery import DomainDiscovery, DomainCandidate
+
+__all__ = [
+    "TargetManager",
+    "Target",
+    "DomainDiscovery",
+    "DomainCandidate"
+]
+

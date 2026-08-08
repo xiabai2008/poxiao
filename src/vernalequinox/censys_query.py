@@ -100,7 +100,7 @@ class CensysQuery:
     @staticmethod
     def print_result(r: CensysResult):
         """Format and print Censys results"""
-        print(f"  Censys Search")
+        print("  Censys Search")
         print(f"  {'─' * 50}")
 
         if r.error:

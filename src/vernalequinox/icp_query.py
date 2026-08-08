@@ -13,7 +13,6 @@ ICP 备案查询模块
 
 import asyncio
 import re
-import json
 from dataclasses import dataclass, field, asdict
 from typing import Optional, List
 
@@ -185,7 +184,7 @@ class ICPQuery:
             return
 
         if not r.has_record:
-            print(f"  ℹ️  无 ICP 备案 (可能是境外域名)")
+            print("  ℹ️  无 ICP 备案 (可能是境外域名)")
             return
 
         print(f"  📋 ICP 备案信息 ({r.source})")
@@ -207,4 +206,4 @@ class ICPQuery:
 
         # 安全提示: 企业备案意味着国内运营，更容易提交 SRC
         if r.is_enterprise:
-            print(f"  🔥 企业备案 — 国内运营目标，SRC 价值高")
+            print("  🔥 企业备案 — 国内运营目标，SRC 价值高")

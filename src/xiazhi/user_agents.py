@@ -14,7 +14,7 @@ User-Agent 池 & 轮换
 """
 
 import random
-from typing import List, Optional
+from typing import List
 
 
 # ── 2024-2026 真实浏览器 UA ──

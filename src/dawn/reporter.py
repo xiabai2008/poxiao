@@ -1,10 +1,8 @@
 """报告系统 — JSON + Markdown 渐进式输出"""
 
 import json
-import os
 from datetime import datetime
 from pathlib import Path
-from typing import Optional
 
 
 class Reporter:
@@ -100,11 +98,11 @@ class Reporter:
         with_findings = [t for t in self._targets if t.get("sensitive_count", 0) > 0]
 
         lines = []
-        lines.append(f"# 破晓扫描报告")
+        lines.append("# 破晓扫描报告")
         lines.append(f"**扫描时间:** {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
         lines.append(f"**Session:** `{self.session_id}`")
         lines.append("")
-        lines.append(f"## 概要")
+        lines.append("## 概要")
         lines.append(f"- 总目标: {len(self._targets)}")
         lines.append(f"- 存活: {len(alive)}")
         lines.append(f"- 不可达: {len(dead)}")
