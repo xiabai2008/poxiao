@@ -116,8 +116,8 @@ jobs:
           from pathlib import Path
           changelog = Path("CHANGELOG.md").read_text(encoding="utf-8")
           tag = "${{ github.ref_name }}"
-          # 取当前版本条目（## vX.Y.Z 到下一个 ## 之间）
-          m = re.search(rf"##\s*{re.escape(tag)}\s*\n(.*?)(?=\n##\s|\Z)", changelog, re.S)
+          # 兼容 "## v3.1.0" 与 "## [3.1.0] - 日期" 两种标题格式
+          m = re.search(rf"##\s*\[?{re.escape(tag.lstrip('v'))}\]?[^\n]*\n(.*?)(?=\n##\s|\Z)", changelog, re.S)
           notes = m.group(1).strip() if m else "See CHANGELOG.md for details."
           Path("release_notes.md").write_text(notes, encoding="utf-8")
           EOF
