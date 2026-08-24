@@ -4,10 +4,17 @@ import asyncio
 
 from src.vernalequinox import ReconEngine
 from src.utils.output import Out, C
+from src.utils.scope import scope_enforced, check_scope
 
 
 def cmd_recon(args):
     """被动信息收集"""
+    # Phase 3 反滥用红线：越界阻断
+    if scope_enforced() and not check_scope(args.domain, reason="recon"):
+        Out.error(f"目标不在授权范围内，已阻断: {args.domain}")
+        Out.info("查看范围: poxiao scope list | 添加: poxiao scope add <target>")
+        return
+
     # 设置环境变量
     import os
     if args.shodan_key:

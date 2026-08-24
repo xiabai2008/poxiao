@@ -4,10 +4,17 @@ import asyncio
 
 from src.jingzhe import JingZhe
 from src.utils.output import Out, C
+from src.utils.scope import scope_enforced, check_scope
 
 
 def cmd_verify(args):
     """漏洞验证"""
+    # Phase 3 反滥用红线：单目标越界阻断
+    if scope_enforced() and not check_scope(args.target, reason="verify"):
+        Out.error(f"目标不在授权范围内，已阻断: {args.target}")
+        Out.info("查看范围: poxiao scope list | 添加: poxiao scope add <target>")
+        return
+
     jz = JingZhe(timeout=8.0)
 
     # 配置框

@@ -12,6 +12,7 @@ from src.dawn.reporter import Reporter
 from src.dawn.src_reporter import SRCReporter
 from src.target.manager import TargetManager
 from src.utils.output import Out
+from src.utils.scope import scope_enforced, filter_targets
 
 
 def cmd_scan(args):
@@ -42,6 +43,23 @@ def cmd_scan(args):
     # 2. 去重
     targets = mgr.deduplicate(raw_targets)
     Out.info(f"加载 {len(raw_targets)} 个目标，去重后 {len(targets)} 个")
+
+    # 2.5 授权范围过滤（Phase 3 反滥用红线）：越界目标阻断并可审计
+    if scope_enforced():
+        _target_strs = [t.url if hasattr(t, "url") else str(t) for t in targets]
+        allowed, denied = filter_targets(_target_strs)
+        if denied:
+            Out.warning(f"越界目标已阻断（不在授权范围内）: {len(denied)} 个")
+            for _d in denied[:5]:
+                Out.dim(f"    ✗ {_d}")
+            if len(denied) > 5:
+                Out.dim(f"    ... 共 {len(denied)} 个")
+        # 重建 targets 为授权子集
+        targets = [t for t in targets
+                   if (t.url if hasattr(t, "url") else str(t)) in set(allowed)]
+        if not targets:
+            Out.error("所有目标均不在授权范围内，中止扫描")
+            return
 
     # 3. 存活检测 + 信息收集（一个 event loop）
     Out.info("存活检测中...")

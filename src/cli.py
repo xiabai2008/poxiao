@@ -272,6 +272,20 @@ def main():
     config_sub.add_parser("show", help="显示当前配置")
     config_sub.add_parser("path", help="显示配置文件路径")
 
+    # ── scope 命令（授权范围管理，Phase 3）────────────
+    scope_parser = sub.add_parser("scope", help="授权范围管理（反滥用红线）",
+        epilog='示例:\n  poxiao scope add example.com\n  poxiao scope rm example.com\n  poxiao scope list\n  poxiao scope check http://foo.example.com\n  poxiao scope status',
+        formatter_class=argparse.RawDescriptionHelpFormatter)
+    scope_sub = scope_parser.add_subparsers(dest="scope_action")
+    scope_sub.add_parser("list", help="列出授权范围")
+    scope_check = scope_sub.add_parser("check", help="检查目标是否在范围内")
+    scope_check.add_argument("target", help="目标 URL / 域名 / IP")
+    scope_add = scope_sub.add_parser("add", help="添加范围条目（域名/IP/CIDR/URL）")
+    scope_add.add_argument("entry", help="范围条目")
+    scope_rm = scope_sub.add_parser("rm", help="移除范围条目")
+    scope_rm.add_argument("entry", help="范围条目")
+    scope_sub.add_parser("status", help="查看范围文件与校验状态")
+
     args = parser.parse_args()
 
     # 应用语言设置（i18n / D13）：--lang 优先于环境变量 POXIAO_LANG
@@ -290,6 +304,15 @@ def main():
     # 命令分发
     handler = CMD_MAP.get(args.command)
     if handler:
+        # Poc 单目标 & 子目标集的 scope 预检（Phase 3 反滥用红线）
+        if args.command == "poc" and getattr(args, "poc_action", "") == "scan":
+            _target = getattr(args, "target", "")
+            if _target and not os.path.exists(_target):
+                from src.utils.scope import check_scope
+                if not check_scope(_target, reason="poc_scan"):
+                    Out.error(f"目标不在授权范围内，已阻断: {_target}")
+                    Out.info("查看范围: poxiao scope list | 添加: poxiao scope add <target>")
+                    return
         # mcp 模式 stdout 必须专用于 JSON-RPC 协议流，跳过一切 stdout 输出（含 redline 告警）
         if args.command != "mcp":
             # 启动安全红线自检（仅告警，不阻断）— P1-3 / D5 / R1

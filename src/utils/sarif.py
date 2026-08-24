@@ -14,11 +14,13 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List
 
+from src._version import VERSION
+
 # SARIF 2.1.0 官方 schema
 SARIF_SCHEMA = "https://json.schemastore.org/sarif-2.1.0.json"
 SARIF_VERSION = "2.1.0"
 TOOL_NAME = "poxiao"
-TOOL_VERSION = "3.1.0"
+TOOL_VERSION = VERSION
 
 # 严重级别 → SARIF level
 _SEVERITY_TO_LEVEL = {

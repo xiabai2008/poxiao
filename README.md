@@ -1,14 +1,14 @@
-# 破晓 (PoXiao) v3.0.0
+# 破晓 (PoXiao) v3.1.0
 
-**二十四节气安全工具链** — SRC 挖洞全流程自动化
+**二十四节气安全工具链** — SRC 挖洞全流程自动化工作台
 
 [![CI](https://img.shields.io/github/actions/workflow/status/xiabai2008/poxiao/ci.yml?label=CI&logo=github)](https://github.com/xiabai2008/poxiao/actions)
 [![Python](https://img.shields.io/badge/python-3.10%2B-blue)](https://www.python.org/)
 [![License](https://img.shields.io/github/license/xiabai2008/poxiao)](LICENSE)
 [![Release](https://img.shields.io/github/v/release/xiabai2008/poxiao)](https://github.com/xiabai2008/poxiao/releases)
 [![Code style: ruff](https://img.shields.io/badge/code_style-ruff-000000.svg)](https://github.com/astral-sh/ruff)
-[![Tests](https://img.shields.io/badge/tests-749%20passed-green)](https://github.com/xiabai2008/poxiao/actions)
-[![Coverage](https://img.shields.io/badge/coverage-71%25-brightgreen)](https://github.com/xiabai2008/poxiao/actions)
+[![Tests](https://img.shields.io/badge/tests-852%20passed-green)](https://github.com/xiabai2008/poxiao/actions)
+[![Coverage](https://img.shields.io/badge/coverage-73%25-brightgreen)](https://github.com/xiabai2008/poxiao/actions)
 [![Platform](https://img.shields.io/badge/windows%20%7C%20linux%20%7C%20macos-1f425f)](https://github.com/xiabai2008/poxiao/releases)
 
 > 破晓是凌晨的第一道光，霜月是清冷的收集，春分是全面的侦察，惊蛰是万物的验证，观星是持续的监控，夏至是隐匿的扫描。
@@ -21,11 +21,29 @@
 
 ## 核心理念
 
-**先识别技术栈，再匹配 CVE，三层降噪消除假阳性。**
+**破晓不是又一个扫描器，而是一个 SRC 挖洞工作台** —— 它把从「资产侦察」到「报告提交」的完整漏洞挖掘链路收进一条命令。
 
-不盲目 payload 轰炸，不追求模板数量，只追求高置信度结果。
+| 阶段 | 工具 | 一句话 |
+|---|---|---|
+| 资产侦察 | 霜月/春分/破晓 | 域名发现、子域收集、技术栈+版本指纹 |
+| 研判降噪 | 三层降噪 + CVE 精确匹配 | 先识别技术栈，再匹配 CVE，砍掉假阳性 |
+| 主动验证 | 惊蛰 / POC 引擎 | 默认凭据、Git 泄露、Swagger/Actuator、模板库扫描 |
+| 带外验证 | OAST | 盲注 / XXE / SSRF 回调确认 |
+| 持续监控 | 观星 | 资产变更告警 + Web 面板 |
+| 报告提交 | 补天 / SRC / SARIF | 一键生成厂商可读报告 |
 
----
+**三层降噪 + CVE 精确匹配消除假阳性**——不盲目 payload 轰炸，不追求模板数量，只追求高置信度、可直接提交的结果。
+
+## 授权红线（区别于其他工具的关键）
+
+作为一款安全工具，破晓把「免责声明」升级为**可执行的授权控制**：
+
+- `poxiao scope add example.com` 声明已授权范围
+- 启用后，所有扫描命令会对越界目标**硬阻断**并写入审计日志
+- 配套 §6.2 API Key 加密落盘、§7.2 五维度审计日志、§2.1 面板表单认证
+
+> ⚠️ **法律与道德声明**：PoXiao 是安全研究工具，**仅限对您拥有合法授权或已获书面许可的目标使用**。
+> 未授权扫描可能违反当地法律，使用者须自行承担全部责任。请先 `poxiao scope add` 声明范围。
 
 ## 快速开始
 
@@ -39,6 +57,7 @@ pip install -e ".[dev]"
 # 从 Release 下载 poxiao-win-x64.exe / poxiao-linux-x64 / poxiao-macos-x64
 
 # 核心扫描
+poxiao scope add example.com            # （推荐）先声明授权范围，启用的越界阻断
 poxiao scan targets.txt                    # 扫描目标列表
 poxiao scan example.com --report butian    # 生成补天报告
 poxiao scan example.com --sarif            # 同时输出 SARIF（对接 GitHub Code Scanning）
