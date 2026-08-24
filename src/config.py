@@ -10,6 +10,8 @@ import yaml
 from pathlib import Path
 from typing import Any, Optional
 
+from src.utils import secret_store
+
 # Default config values
 DEFAULT_CONFIG = {
     "scan": {
@@ -86,6 +88,7 @@ class Config:
         try:
             with open(path, "r", encoding="utf-8") as f:
                 user_config = yaml.safe_load(f) or {}
+            self._decrypt_sensitive_values(user_config)
             self._deep_merge(self._config, user_config)
         except yaml.YAMLError as e:
             import sys
@@ -93,6 +96,28 @@ class Config:
             print("[!] 使用默认配置继续", file=sys.stderr)
         except Exception:
             pass  # Silently fall back to defaults if config file is malformed
+
+    def _decrypt_sensitive_values(self, user_config: dict):
+        """尝试用主密码解密配置中的 L4 密文字段（安全设计 §6.2）。
+
+        主密码来自环境变量 POXIAO_MASTER_PASSWORD。若未设置或解密失败，
+        保留密文原值（兼容外部队列 / 非交互场景，由调用方决定是否阻断）。
+        """
+        master = os.environ.get("POXIAO_MASTER_PASSWORD", "")
+        if not master:
+            return
+        for section, keys in secret_store.SENSITIVE_FIELDS.items():
+            sec = user_config.get(section)
+            if not isinstance(sec, dict):
+                continue
+            for key in keys:
+                val = sec.get(key)
+                if isinstance(val, str) and secret_store._is_encrypted(val):
+                    try:
+                        sec[key] = secret_store.decrypt_secret(val, master)
+                    except ValueError:
+                        # 主密码错误：保留密文，不阻断（可后续用正确主密码重试）
+                        pass
 
     def _load_from_env(self):
         """Load config from environment variables (POXIAO_* prefix)"""

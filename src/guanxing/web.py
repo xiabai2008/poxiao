@@ -2,7 +2,8 @@
 
 import functools
 import os
-from flask import Flask, request, Response
+from flask import Flask, request, Response, redirect, url_for, make_response
+import werkzeug
 from markupsafe import escape
 from pathlib import Path
 
@@ -10,26 +11,75 @@ from .db import (
     get_targets, get_target_by_id, get_scans, get_changes,
     get_stats, import_from_summary, export_data,
 )
+from . import auth
+from src.utils.audit import audit
 
 app = Flask(__name__)
 
 
-# ── 基础认证 ──────────────────────────────────────
+# ── 认证与访问控制（安全设计 §2.1 / §4.1）──────────────
+
+# 两套认证路径，向后兼容：
+#   A) 表单 session 认证：启用时（设置了 auth 凭据）走 /login + session token
+#   B) 遗留 Basic Auth：保留 POXIAO_MONITOR_USER/PASS 环境变量行为
+# 优先级 A > B；均未配置则不启用认证（默认，兼容现状，仅限本机回环 §5.2）。
+
+_SESSION_COOKIE = auth._SESSION_COOKIE
+_USER_COOKIE = auth._USER_COOKIE
+
+
+def _form_auth_enabled() -> bool:
+    """表单认证是否启用：环境变量允许时且 user/pass 均已设置。"""
+    user, pw = auth.get_credentials()
+    return bool(user and pw)
+
+
+def _current_user() -> str | None:
+    """基于会话 cookie 取当前登录用户。"""
+    token = request.cookies.get(_SESSION_COOKIE)
+    return auth.verify_session_token(token)
+
 
 def _check_auth(username: str | None, password: str | None) -> bool:
-    """校验用户名密码"""
-    return (
-        username == os.environ.get("POXIAO_MONITOR_USER", "")
-        and password == os.environ.get("POXIAO_MONITOR_PASS", "")
-    )
+    """校验用户名密码（Basic Auth 遗留路径 + 表单路径共用）"""
+    user, stored = auth.get_credentials()
+    if not user:
+        return False
+    if username != user:
+        return False
+    # 支持 bcrypt 哈希与明文（明文兼容旧环境变量）
+    if stored and auth.verify_password(password or "", stored):
+        return True
+    return hmac_compare(password or "", stored or "")
 
 
-def _require_auth() -> Response | None:
-    """若设置了认证环境变量则校验，返回 401 Response 或 None"""
+def hmac_compare(a: str, b: str) -> bool:
+    """恒定时间比较（防时序攻击），兼容明文凭据对比。"""
+    import hmac as _hmac
+    if a is None or b is None:
+        return False
+    return _hmac.compare_digest(a, b)
+
+
+def _require_auth() -> "werkzeug.Response | None":
+    """认证中间件：返回 401/重定向响应 或 None（通过）。
+
+    顺序：
+      1. 若表单认证启用 -> 校验会话；未登录则重定向 /login。
+      2. 否则若 Legacy Basic Auth 启用 -> 校验 Authorization 头。
+    """
+    if _form_auth_enabled():
+        if _current_user():
+            return None
+        # API 请求返回 401，页面请求重定向登录页
+        if request.path.startswith("/api/"):
+            return Response("Unauthorized", 401)
+        return redirect(url_for("login"))
+    # 兼容 Basic Auth
     if not (os.environ.get("POXIAO_MONITOR_USER") and os.environ.get("POXIAO_MONITOR_PASS")):
         return None
-    auth = request.authorization
-    if not auth or not _check_auth(auth.username, auth.password):
+    authz = request.authorization
+    if not authz or not _check_auth(authz.username, authz.password):
         return Response(
             "Unauthorized — set POXIAO_MONITOR_USER / POXIAO_MONITOR_PASS",
             401,
@@ -39,12 +89,25 @@ def _require_auth() -> Response | None:
 
 
 def requires_auth(f):
-    """认证装饰器 (仅在环境变量存在时生效)"""
+    """认证装饰器（表单 session 优先，回退 Basic Auth）"""
     @functools.wraps(f)
     def decorated(*args, **kwargs):
         resp = _require_auth()
         if resp is not None:
             return resp
+        return f(*args, **kwargs)
+    return decorated
+
+
+def csrf_protect(f):
+    """CSRF 保护装饰器：仅对启用表单认证时的写请求生效（§4.1 CSRF）。"""
+    @functools.wraps(f)
+    def decorated(*args, **kwargs):
+        if request.method in ("POST",) and _form_auth_enabled():
+            user = _current_user()
+            token = request.form.get("csrf_token") or request.headers.get("X-CSRF-Token")
+            if not user or not auth.verify_csrf_token(token, user):
+                return Response("CSRF verification failed", 400)
         return f(*args, **kwargs)
     return decorated
 
@@ -95,6 +158,7 @@ _LAYOUT_HEAD = """<!DOCTYPE html>
             <a href="/targets" class="btn btn-outline-light btn-sm me-2">目标</a>
             <a href="/changes" class="btn btn-outline-light btn-sm me-2">变更</a>
             <a href="/import" class="btn btn-outline-warning btn-sm">导入</a>
+            {logout_btn}
         </div>
     </div>
 </nav>
@@ -109,10 +173,100 @@ _LAYOUT_FOOT = """</div>
 
 def _layout(title: str, content_html: str) -> str:
     """组装标准页面布局 (head + nav + content + footer)"""
-    return _LAYOUT_HEAD.format(title=title) + content_html + _LAYOUT_FOOT
+    # 表单认证启用时导航栏追加登出入口（§2.1）
+    logout_btn = (' <a href="/logout" class="btn btn-outline-danger btn-sm">登出</a>'
+                  if _form_auth_enabled() else "")
+    return _LAYOUT_HEAD.format(title=title, logout_btn=logout_btn) + content_html + _LAYOUT_FOOT
 
 
 # ── 路由 ───────────────────────────────────────
+
+@app.route("/login", methods=["GET", "POST"])
+def login():
+    """表单登录（§2.1 表单认证 + session token）。未启用认证时直接跳仪表盘。"""
+    if not _form_auth_enabled():
+        return redirect("/")
+    user = _current_user()
+    if user:
+        return redirect("/")
+    error = ""
+    if request.method == "POST":
+        username = (request.form.get("username") or "").strip()
+        password = request.form.get("password") or ""
+        if user_value := auth.get_credentials()[0]:
+            if (username == user_value) and (_validate_login(user_value, password)):
+                auth.reset_failed(user_value)
+                audit("web", "login_success", msg=f"用户登录成功 {username}",
+                      user_id=username, level="info")
+                resp = make_response(redirect("/"))
+                # 会话 + CSRF cookie（HttpOnly / SameSite=Lax，§4.1）
+                resp.set_cookie(_SESSION_COOKIE, auth.issue_session_token(username),
+                                httponly=True, samesite="Lax",
+                                max_age=auth._SESSION_MAX_AGE)
+                resp.set_cookie(_USER_COOKIE, username, httponly=True, samesite="Lax")
+                resp.set_cookie(auth._CSRF_COOKIE, auth.issue_csrf_token(username),
+                                httponly=False, samesite="Lax",
+                                max_age=auth._SESSION_MAX_AGE)
+                return resp
+            else:
+                auth.record_failed(user_value)
+                audit("web", "login_failed", msg=f"用户登录失败 {username}",
+                      user_id=username, level="warn")
+                error = "用户名或密码错误"
+        else:
+            error = "用户名或密码错误"
+
+    content = f"""
+    <div class="row justify-content-center mt-5">
+      <div class="col-md-4"><div class="card p-4">
+        <h4 class="mb-3">🔭 观星 · 登录</h4>
+        {f'<div class="alert alert-danger">{escape(error)}</div>' if error else ''}
+        <form method="POST">
+          <div class="mb-3">
+            <label class="form-label">用户名</label>
+            <input type="text" name="username" class="form-control" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">密码</label>
+            <input type="password" name="password" class="form-control" required>
+          </div>
+          <button type="submit" class="btn btn-primary w-100">登录</button>
+        </form>
+      </div></div>
+    </div>
+    """
+    return _layout("观星 · 登录", content)
+
+
+def _validate_login(username: str, password: str) -> bool:
+    """表单登录校验：优先 bcrypt 哈希，兼容明文（§2.1 / §3.3.2）。"""
+    _, stored = auth.get_credentials()
+    if not stored:
+        return False
+    return auth.verify_password(password, stored) or hmac_compare(password, stored)
+
+
+@app.route("/logout", methods=["GET", "POST"])
+@requires_auth
+def logout():
+    """登出：清空会话 cookie 并记审计。"""
+    user = _current_user() or "local-user"
+    audit("web", "logout", msg=f"用户登出 {user}", user_id=user, level="info")
+    resp = make_response(redirect("/login"))
+    resp.set_cookie(_SESSION_COOKIE, "", expires=0)
+    resp.set_cookie(_USER_COOKIE, "", expires=0)
+    resp.set_cookie(auth._CSRF_COOKIE, "", expires=0)
+    return resp
+
+
+def _csrf_hidden_input() -> str:
+    """表单认证启用时输出 CSRF 隐藏域。"""
+    if not _form_auth_enabled():
+        return ""
+    user = _current_user()
+    token = auth.issue_csrf_token(user) if user else ""
+    return f'<input type="hidden" name="csrf_token" value="{escape(token)}">'
+
 
 @app.route("/")
 @requires_auth
@@ -380,6 +534,7 @@ def changes_list():
 
 @app.route("/import", methods=["GET", "POST"])
 @requires_auth
+@csrf_protect
 def import_page():
     msg = ""
     if request.method == "POST":
@@ -387,6 +542,9 @@ def import_page():
         if path and Path(path).exists():
             try:
                 import_from_summary(path)
+                user = _current_user() or "local-user"
+                audit("web", "import_summary", msg=f"面板导入扫描汇总 {path}",
+                      user_id=user, level="info", **{"path": path})
                 msg = f'<div class="alert alert-success">✅ 导入成功: {_esc(path)}</div>'
             except Exception as e:
                 msg = f'<div class="alert alert-danger">❌ 导入失败: {_esc(e)}</div>'
@@ -405,6 +563,7 @@ def import_page():
     <h4>📥 导入扫描结果</h4>
     <div class="card"><div class="card-body">
     <form method="POST">
+        {_csrf_hidden_input()}
         <div class="mb-3">
             <label class="form-label">扫描汇总 JSON 文件</label>
             <select name="path" class="form-select">
@@ -442,6 +601,10 @@ def api_export() -> Response:
     if fmt not in ("csv", "json"):
         fmt = "json"
     content, mimetype, filename = export_data(fmt)
+    user = _current_user() or "local-user"
+    # §7.1 敏感操作：导出须记录审计
+    audit("web", "export_data", msg=f"面板导出资产 {filename}",
+          user_id=user, level="info", **{"format": fmt})
     return Response(
         content,
         mimetype=mimetype,
