@@ -1,0 +1,147 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mxfile host="tcloud-arch-diagram" version="21.0.0">
+  <diagram id="poxiao-deploy-topo" name="破晓PoXiao部署拓扑">
+    <mxGraphModel dx="1422" dy="762" grid="1" gridSize="10" guides="1"
+      tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1"
+      pageWidth="1654" pageHeight="1169" math="0" shadow="0">
+      <root>
+        <mxCell id="0"/>
+        <mxCell id="1" parent="0"/>
+
+        <!-- 外部用户层（游离节点） -->
+        <mxCell id="usr_hunter" value="漏洞赏金猎人&#xa;(终端 CLI)" style="rounded=1;arcSize=15;fillColor=#F5F5F5;strokeColor=#9E9E9E;fontSize=12;fontColor=#333333;html=0;" vertex="1" parent="1">
+          <mxGeometry x="180" y="40" width="160" height="60" as="geometry"/>
+        </mxCell>
+        <mxCell id="usr_soc" value="企业安全运营 SOC&#xa;(浏览器)" style="rounded=1;arcSize=15;fillColor=#F5F5F5;strokeColor=#9E9E9E;fontSize=12;fontColor=#333333;html=0;" vertex="1" parent="1">
+          <mxGeometry x="430" y="40" width="160" height="60" as="geometry"/>
+        </mxCell>
+
+        <!-- 用户本机容器（本地单机：无云 / 无 VPC / 无多 AZ） -->
+        <mxCell id="host" value="用户本机（本地单机：无云 / 无 VPC / 无多 AZ）" style="swimlane;startSize=30;fillColor=#E6F4EA;strokeColor=#00875A;fontColor=#00875A;fontStyle=1;fontSize=13;html=0;" vertex="1" parent="1">
+          <mxGeometry x="30" y="190" width="1594" height="540" as="geometry"/>
+        </mxCell>
+
+        <!-- 接入层 -->
+        <mxCell id="cli" value="poxiao CLI&#xa;+ 5 工具命令 (argparse)" style="rounded=1;arcSize=15;fillColor=#E8F0FE;strokeColor=#0052D9;fontSize=11;fontColor=#333333;html=0;" vertex="1" parent="host">
+          <mxGeometry x="717" y="40" width="240" height="60" as="geometry"/>
+        </mxCell>
+
+        <!-- 应用层 6 模块 -->
+        <mxCell id="m1" value="破晓 Dawn&#xa;(M1 核心扫描)" style="rounded=1;arcSize=15;fillColor=#E8F0FE;strokeColor=#0052D9;fontSize=11;fontColor=#333333;html=0;" vertex="1" parent="host">
+          <mxGeometry x="120" y="150" width="180" height="60" as="geometry"/>
+        </mxCell>
+        <mxCell id="m2" value="霜月 FrostMoon&#xa;(M2 子域)" style="rounded=1;arcSize=15;fillColor=#E8F0FE;strokeColor=#0052D9;fontSize=11;fontColor=#333333;html=0;" vertex="1" parent="host">
+          <mxGeometry x="330" y="150" width="160" height="60" as="geometry"/>
+        </mxCell>
+        <mxCell id="m3" value="春分 Vernal&#xa;(M3 被动侦察)" style="rounded=1;arcSize=15;fillColor=#E8F0FE;strokeColor=#0052D9;fontSize=11;fontColor=#333333;html=0;" vertex="1" parent="host">
+          <mxGeometry x="520" y="150" width="160" height="60" as="geometry"/>
+        </mxCell>
+        <mxCell id="m4" value="惊蛰 JingZhe&#xa;(M4 验证)" style="rounded=1;arcSize=15;fillColor=#E8F0FE;strokeColor=#0052D9;fontSize=11;fontColor=#333333;html=0;" vertex="1" parent="host">
+          <mxGeometry x="710" y="150" width="160" height="60" as="geometry"/>
+        </mxCell>
+        <mxCell id="m5" value="观星 GuanXing&#xa;(M5 监控)" style="rounded=1;arcSize=15;fillColor=#E8F0FE;strokeColor=#0052D9;fontSize=11;fontColor=#333333;html=0;" vertex="1" parent="host">
+          <mxGeometry x="900" y="150" width="160" height="60" as="geometry"/>
+        </mxCell>
+        <mxCell id="m6" value="夏至 XiaZhi&#xa;(M6 POC)" style="rounded=1;arcSize=15;fillColor=#E8F0FE;strokeColor=#0052D9;fontSize=11;fontColor=#333333;html=0;" vertex="1" parent="host">
+          <mxGeometry x="1090" y="150" width="160" height="60" as="geometry"/>
+        </mxCell>
+
+        <!-- 数据层 -->
+        <mxCell id="sqlite" value="SQLite&#xa;(guanxing.db WAL)" style="rounded=1;arcSize=15;fillColor=#EDE7F6;strokeColor=#7B2FA0;fontSize=11;fontColor=#333333;html=0;" vertex="1" parent="host">
+          <mxGeometry x="400" y="270" width="240" height="60" as="geometry"/>
+        </mxCell>
+        <mxCell id="fs" value="文件系统&#xa;(报告 / 模板 / 品牌库)" style="rounded=1;arcSize=15;fillColor=#EDE7F6;strokeColor=#7B2FA0;fontSize=11;fontColor=#333333;html=0;" vertex="1" parent="host">
+          <mxGeometry x="760" y="270" width="260" height="60" as="geometry"/>
+        </mxCell>
+
+        <!-- GuanXing Web（本地回环） -->
+        <mxCell id="web" value="GuanXing Web&#xa;(127.0.0.1:5099 回环)" style="rounded=1;arcSize=15;fillColor=#E8F0FE;strokeColor=#0052D9;fontSize=11;fontColor=#333333;html=0;" vertex="1" parent="host">
+          <mxGeometry x="650" y="400" width="300" height="60" as="geometry"/>
+        </mxCell>
+
+        <!-- 外部情报源容器 -->
+        <mxCell id="ext" value="外部情报源 E-xx（出站 HTTPS，ACL 适配）" style="swimlane;startSize=30;fillColor=#E3F2FD;strokeColor=#1565C0;fontColor=#1565C0;fontStyle=1;fontSize=13;html=0;" vertex="1" parent="1">
+          <mxGeometry x="30" y="790" width="1594" height="200" as="geometry"/>
+        </mxCell>
+        <mxCell id="ex_cve" value="NVD / OSV&#xa;(CVE 在线补全)" style="rounded=1;arcSize=15;fillColor=#E3F2FD;strokeColor=#1565C0;fontSize=11;fontColor=#333333;html=0;" vertex="1" parent="ext">
+          <mxGeometry x="120" y="50" width="300" height="60" as="geometry"/>
+        </mxCell>
+        <mxCell id="ex_intel" value="Shodan / Censys / FOFA&#xa;(资产 / IP 情报)" style="rounded=1;arcSize=15;fillColor=#E3F2FD;strokeColor=#1565C0;fontSize=11;fontColor=#333333;html=0;" vertex="1" parent="ext">
+          <mxGeometry x="460" y="50" width="340" height="60" as="geometry"/>
+        </mxCell>
+        <mxCell id="ex_sub" value="crt.sh / certspotter / OTX&#xa;(子域证书)" style="rounded=1;arcSize=15;fillColor=#E3F2FD;strokeColor=#1565C0;fontSize=11;fontColor=#333333;html=0;" vertex="1" parent="ext">
+          <mxGeometry x="840" y="50" width="340" height="60" as="geometry"/>
+        </mxCell>
+        <mxCell id="ex_hist" value="Wayback / GitHub&#xa;(历史 URL / 代码泄露)" style="rounded=1;arcSize=15;fillColor=#E3F2FD;strokeColor=#1565C0;fontSize=11;fontColor=#333333;html=0;" vertex="1" parent="ext">
+          <mxGeometry x="1220" y="50" width="300" height="60" as="geometry"/>
+        </mxCell>
+
+        <!-- 出站汇聚 Bus（≥4 出线） -->
+        <mxCell id="bus_ext" value="" style="ellipse;fillColor=#000000;strokeColor=none;html=0;" vertex="1" parent="1">
+          <mxGeometry x="823" y="750" width="8" height="8" as="geometry"/>
+        </mxCell>
+        <!-- CLI 分发 Bus -->
+        <mxCell id="bus_cli" value="" style="ellipse;fillColor=#000000;strokeColor=none;html=0;" vertex="1" parent="host">
+          <mxGeometry x="823" y="118" width="8" height="8" as="geometry"/>
+        </mxCell>
+
+        <!-- 连线 -->
+        <mxCell id="e1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=0;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;strokeColor=#0052D9;strokeWidth=2;endArrow=block;endFill=1;" edge="1" parent="1" source="usr_hunter" target="cli">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="260" y="160"/>
+              <mxPoint x="837" y="160"/>
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e2" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=0;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;strokeColor=#0052D9;strokeWidth=2;endArrow=block;endFill=1;" edge="1" parent="1" source="usr_soc" target="web">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="510" y="720"/>
+              <mxPoint x="800" y="720"/>
+            </Array>
+          </mxGeometry>
+        </mxCell>
+
+        <!-- CLI -> Bus -> 6 模块 -->
+        <mxCell id="e3" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=0;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;strokeColor=#0052D9;strokeWidth=1.5;endArrow=block;endFill=1;" edge="1" parent="host" source="cli" target="bus_cli">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="e4" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=0;exitX=0.25;exitY=0;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;strokeColor=#0052D9;strokeWidth=1.5;endArrow=block;endFill=1;" edge="1" parent="host" source="bus_cli" target="m1"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="e5" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=0;exitX=0.4;exitY=0;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;strokeColor=#0052D9;strokeWidth=1.5;endArrow=block;endFill=1;" edge="1" parent="host" source="bus_cli" target="m2"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="e6" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=0;exitX=0.55;exitY=0;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;strokeColor=#0052D9;strokeWidth=1.5;endArrow=block;endFill=1;" edge="1" parent="host" source="bus_cli" target="m3"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="e7" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=0;exitX=0.7;exitY=0;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;strokeColor=#0052D9;strokeWidth=1.5;endArrow=block;endFill=1;" edge="1" parent="host" source="bus_cli" target="m4"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="e8" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=0;exitX=0.85;exitY=0;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;strokeColor=#0052D9;strokeWidth=1.5;endArrow=block;endFill=1;" edge="1" parent="host" source="bus_cli" target="m5"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="e9" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=0;exitX=1;exitY=0;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;strokeColor=#0052D9;strokeWidth=1.5;endArrow=block;endFill=1;" edge="1" parent="host" source="bus_cli" target="m6"><mxGeometry relative="1" as="geometry"/></mxCell>
+
+        <!-- M5 -> SQLite ; M1 -> 文件系统 -->
+        <mxCell id="e10" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=0;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;strokeColor=#7B2FA0;strokeWidth=1.5;endArrow=block;endFill=1;dashed=0;" edge="1" parent="host" source="m5" target="sqlite">
+          <mxGeometry relative="1" as="geometry"><Array as="points"><mxPoint x="980" y="240"/><mxPoint x="520" y="240"/></Array></mxGeometry>
+        </mxCell>
+        <mxCell id="e11" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=0;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;strokeColor=#7B2FA0;strokeWidth=1.5;endArrow=block;endFill=1;" edge="1" parent="host" source="m1" target="fs">
+          <mxGeometry relative="1" as="geometry"><Array as="points"><mxPoint x="210" y="240"/><mxPoint x="890" y="240"/></Array></mxGeometry>
+        </mxCell>
+        <!-- M1 -> M6 (Shared Kernel POC) -->
+        <mxCell id="e12" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=0;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;strokeColor=#7B2FA0;strokeWidth=1.5;endArrow=block;endFill=1;dashed=1;" edge="1" parent="host" source="m1" target="m6">
+          <mxGeometry relative="1" as="geometry"><Array as="points"><mxPoint x="900" y="180"/><mxPoint x="1090" y="180"/></Array></mxGeometry>
+        </mxCell>
+
+        <!-- 出站：M1/M2/M3 -> bus_ext -> E-xx -->
+        <mxCell id="e13" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=0;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;strokeColor=#00875A;strokeWidth=1.5;endArrow=block;endFill=1;dashed=1;" edge="1" parent="1" source="m1" target="bus_ext">
+          <mxGeometry relative="1" as="geometry"><Array as="points"><mxPoint x="210" y="750"/><mxPoint x="827" y="750"/></Array></mxGeometry>
+        </mxCell>
+        <mxCell id="e14" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=0;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;strokeColor=#00875A;strokeWidth=1.5;endArrow=block;endFill=1;dashed=1;" edge="1" parent="1" source="m2" target="bus_ext">
+          <mxGeometry relative="1" as="geometry"><Array as="points"><mxPoint x="410" y="750"/><mxPoint x="827" y="750"/></Array></mxGeometry>
+        </mxCell>
+        <mxCell id="e15" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=0;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;strokeColor=#00875A;strokeWidth=1.5;endArrow=block;endFill=1;dashed=1;" edge="1" parent="1" source="m3" target="bus_ext">
+          <mxGeometry relative="1" as="geometry"><Array as="points"><mxPoint x="600" y="750"/><mxPoint x="827" y="750"/></Array></mxGeometry>
+        </mxCell>
+        <mxCell id="e16" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=0;exitX=0.25;exitY=0;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;strokeColor=#00875A;strokeWidth=1.5;endArrow=block;endFill=1;dashed=1;" edge="1" parent="ext" source="bus_ext" target="ex_cve"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="e17" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=0;exitX=0.45;exitY=0;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;strokeColor=#00875A;strokeWidth=1.5;endArrow=block;endFill=1;dashed=1;" edge="1" parent="ext" source="bus_ext" target="ex_intel"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="e18" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=0;exitX=0.65;exitY=0;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;strokeColor=#00875A;strokeWidth=1.5;endArrow=block;endFill=1;dashed=1;" edge="1" parent="ext" source="bus_ext" target="ex_sub"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="e19" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=0;exitX=0.85;exitY=0;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;strokeColor=#00875A;strokeWidth=1.5;endArrow=block;endFill=1;dashed=1;" edge="1" parent="ext" source="bus_ext" target="ex_hist"><mxGeometry relative="1" as="geometry"/></mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

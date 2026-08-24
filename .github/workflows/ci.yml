@@ -19,6 +19,14 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      # 仓库布局守卫：禁止嵌套 poxiao/ 副本复发（Phase 1 仓库抢救，2026-08）
+      - name: Repo layout guard (no nested poxiao/ copy)
+        run: |
+          if [ -d poxiao ]; then
+            echo "::error::检测到嵌套 poxiao/ 目录 — 仓库只允许根目录单套副本，请勿重新引入"
+            exit 1
+          fi
+
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v5
         with:
