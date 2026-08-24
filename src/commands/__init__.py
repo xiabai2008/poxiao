@@ -16,6 +16,7 @@ from .config import cmd_config
 from .oast import cmd_oast
 from .proxy import cmd_proxy
 from .scope import cmd_scope
+from .audit import cmd_audit
 
 # 命令映射表
 CMD_MAP = {
@@ -35,6 +36,7 @@ CMD_MAP = {
     "oast": cmd_oast,
     "proxy": cmd_proxy,
     "scope": cmd_scope,
+    "audit": cmd_audit,
 }
 
 # Banner 映射表

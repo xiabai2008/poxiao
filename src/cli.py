@@ -286,6 +286,17 @@ def main():
     scope_rm.add_argument("entry", help="范围条目")
     scope_sub.add_parser("status", help="查看范围文件与校验状态")
 
+    # ── audit 命令（审计日志管理与 hash 链校验，§7.2）──────
+    audit_parser = sub.add_parser("audit", help="审计日志管理（hash 链校验 / 清理）",
+        epilog='示例:\n  poxiao audit verify\n  poxiao audit cleanup\n  poxiao audit path',
+        formatter_class=argparse.RawDescriptionHelpFormatter)
+    audit_sub = audit_parser.add_subparsers(dest="audit_action")
+    audit_sub.add_parser("verify", help="校验审计 hash 链完整性（不可篡改）")
+    audit_cleanup = audit_sub.add_parser("cleanup", help="清理超过保留期的审计文件")
+    audit_cleanup.add_argument("--days", type=int, default=0,
+                               help="保留天数（默认 365）")
+    audit_sub.add_parser("path", help="显示审计目录")
+
     args = parser.parse_args()
 
     # 应用语言设置（i18n / D13）：--lang 优先于环境变量 POXIAO_LANG

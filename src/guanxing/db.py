@@ -3,6 +3,7 @@
 import csv
 import io
 import json
+import re
 import sqlite3
 import os
 from contextlib import contextmanager
@@ -11,6 +12,7 @@ from pathlib import Path
 from typing import Optional
 
 from . import notify
+from src.utils.audit import audit
 
 
 def _get_db_path() -> Path:
@@ -23,6 +25,61 @@ def _get_db_path() -> Path:
 
 DB_PATH = _get_db_path()
 _initialized = False
+
+
+# ── SQLite DML 审计（§7.2 数据库审计维度）──────────
+#
+# 在连接层拦截 INSERT/UPDATE/DELETE 写入并记审计，补齐"对每次 SQL 写入
+# 打审计"的留痕。设计约束：
+#   * 仅审计写操作（DML），跳过 SELECT / PRAGMA / DDL（迁移建表）。
+#   * 跳过系统表（_meta / sqlite_*），避免 schema 哨兵写入刷屏。
+#   * SQL 匿名化（值替换为 ?）后入日志，防敏感数据泄露（§6.3）。
+#   * 审计失败静默，绝不中断 DB 操作与主流程。
+#   * 开关：环境变量 POXIAO_AUDIT_DB_WRITES，默认 '1' 开启。
+_AUDIT_DB_WRITES_ENV = "POXIAO_AUDIT_DB_WRITES"
+_DB_SKIP_TABLES = {"_meta", "sqlite_sequence", "sqlite_master"}
+
+
+def _db_audit_enabled() -> bool:
+    return os.environ.get(_AUDIT_DB_WRITES_ENV, "1") == "1"
+
+
+_WRITE_HEAD_RE = re.compile(r"^\s*(INSERT|UPDATE|DELETE|REPLACE)\b", re.IGNORECASE)
+_TABLE_RE = re.compile(
+    r"(?:INSERT(?:\s+OR\s+\w+)?\s+INTO|UPDATE|DELETE\s+FROM)\s+"
+    r"([A-Za-z_][A-Za-z0-9_]*)",
+    re.IGNORECASE,
+)
+
+
+def _anonymize_sql(sql: str) -> str:
+    """把 SQL 中的字符串/数字字面量替换为 ?，保留表/列与语句骨架。"""
+    s = re.sub(r"'[^']*'", "'?'", sql)
+    s = re.sub(r'"[^"]*"', '"?"', s)
+    s = re.sub(r"\b\d+\b", "?", s)
+    s = re.sub(r"\s+", " ", s).strip()
+    return s[:400]
+
+
+def _db_write_trace(sql: Optional[str]) -> None:
+    """sqlite trace 回调：对 DML 写入打 DB 审计（失败静默）。"""
+    if not sql:
+        return
+    s = sql.strip()
+    if s.upper().startswith(("PRAGMA", "BEGIN", "COMMIT", "ROLLBACK", "SAVEPOINT")):
+        return
+    if not _WRITE_HEAD_RE.match(s):
+        return
+    m = _TABLE_RE.search(s)
+    table = m.group(1) if m else ""
+    if not table or table.lower() in _DB_SKIP_TABLES:
+        return
+    try:
+        audit(module="guanxing_db", event="db_write",
+              msg=f"SQL 写入: {table}", table=table,
+              sql=_anonymize_sql(s))
+    except Exception:
+        pass
 
 
 @contextmanager
@@ -44,6 +101,13 @@ def get_db():
         conn.execute("PRAGMA journal_mode=WAL")  # 并发读写优化
     except sqlite3.Error:
         pass  # WAL 模式不是必需的，某些系统可能不支持
+
+    # 注入 SQLite DML 审计（§7.2 数据库审计维度）；失败不影响连接使用
+    if _db_audit_enabled():
+        try:
+            conn.set_trace_callback(_db_write_trace)
+        except Exception:
+            pass
 
     try:
         if not _initialized:

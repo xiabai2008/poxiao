@@ -145,3 +145,67 @@ class TestImportFromSummary:
         assert rows[0]["status"] == "alive"
         scans = db.get_scans(rows[0]["id"])
         assert len(scans) == 1
+
+
+class TestDbAudit:
+    """§7.2 数据库审计维度：SQLite DML 写入审计"""
+
+    def _records(self, audit_tmp):
+        recs = []
+        for f in audit_tmp.glob("*.jsonl"):
+            for line in f.read_text(encoding="utf-8").splitlines():
+                if not line.strip():
+                    continue
+                recs.append(json.loads(line))
+        return recs
+
+    def test_db_write_generates_audit(self, tmp_path, monkeypatch):
+        monkeypatch.setenv("POXIAO_AUDIT_DIR", str(tmp_path))
+        monkeypatch.setattr(db, "DB_PATH", tmp_path / "a.db")
+        monkeypatch.setattr(db, "_initialized", False)
+        db.init_db()
+        db.upsert_target("http://a.com", "a.com", "alive", ["nginx"])
+        writes = [r for r in self._records(tmp_path)
+                  if r.get("module") == "guanxing_db" and r.get("event") == "db_write"]
+        assert writes, "DB 写入应产生审计"
+        assert any(w.get("table") == "targets" for w in writes)
+        # SQL 已匿名化，不含具体 URL 值（§6.3 防敏感泄露）
+        for w in writes:
+            assert "http://a.com" not in w["sql"]
+            assert "'?'" in w["sql"]
+
+    def test_db_write_audit_has_chain_fields(self, tmp_path, monkeypatch):
+        monkeypatch.setenv("POXIAO_AUDIT_DIR", str(tmp_path))
+        monkeypatch.setattr(db, "DB_PATH", tmp_path / "b.db")
+        monkeypatch.setattr(db, "_initialized", False)
+        db.init_db()
+        db.upsert_target("http://a.com", "a.com", "alive")
+        writes = [r for r in self._records(tmp_path)
+                  if r.get("module") == "guanxing_db" and r.get("event") == "db_write"]
+        assert writes
+        assert all(len(w.get("row_hash", "")) == 64 for w in writes)
+        assert all(len(w.get("prev_hash", "")) == 64 for w in writes)
+
+    def test_db_audit_can_be_disabled(self, tmp_path, monkeypatch):
+        monkeypatch.setenv("POXIAO_AUDIT_DB_WRITES", "0")
+        monkeypatch.setenv("POXIAO_AUDIT_DIR", str(tmp_path))
+        monkeypatch.setattr(db, "DB_PATH", tmp_path / "c.db")
+        monkeypatch.setattr(db, "_initialized", False)
+        db.init_db()
+        db.upsert_target("http://a.com", "a.com", "alive")
+        writes = [r for r in self._records(tmp_path)
+                  if r.get("module") == "guanxing_db"]
+        assert writes == [], "关闭开关后不应产生 DB 审计"
+
+    def test_anonymize_sql(self):
+        s = db._anonymize_sql(
+            "INSERT INTO targets (url, id) VALUES ('http://x.com/a?p=1', 42)"
+        )
+        assert "http://x.com" not in s
+        assert "'?'" in s
+
+    def test_table_extractor(self):
+        assert db._TABLE_RE.search("UPDATE targets SET x=1").group(1) == "targets"
+        assert db._TABLE_RE.search("INSERT INTO scans (a) VALUES (1)").group(1) == "scans"
+        assert db._TABLE_RE.search("DELETE FROM changes WHERE 1").group(1) == "changes"
+        assert db._TABLE_RE.search("INSERT OR REPLACE INTO _meta").group(1) == "_meta"
