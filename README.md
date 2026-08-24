@@ -7,7 +7,7 @@
 [![License](https://img.shields.io/github/license/xiabai2008/poxiao)](LICENSE)
 [![Release](https://img.shields.io/github/v/release/xiabai2008/poxiao)](https://github.com/xiabai2008/poxiao/releases)
 [![Code style: ruff](https://img.shields.io/badge/code_style-ruff-000000.svg)](https://github.com/astral-sh/ruff)
-[![Tests](https://img.shields.io/badge/tests-852%20passed-green)](https://github.com/xiabai2008/poxiao/actions)
+[![Tests](https://img.shields.io/badge/tests-866%20passed-green)](https://github.com/xiabai2008/poxiao/actions)
 [![Coverage](https://img.shields.io/badge/coverage-73%25-brightgreen)](https://github.com/xiabai2008/poxiao/actions)
 [![Platform](https://img.shields.io/badge/windows%20%7C%20linux%20%7C%20macos-1f425f)](https://github.com/xiabai2008/poxiao/releases)
 
