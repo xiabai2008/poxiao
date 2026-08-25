@@ -6,12 +6,15 @@ from dataclasses import dataclass, field
 
 @dataclass
 class GitHubLeakResult:
+    """GitHub 代码泄露扫描结果"""
+
     domain: str = ""
     leaks: list = field(default_factory=list)
     error: str = ""
     source: str = "github"
 
     def to_dict(self):
+        """GitHub 泄露扫描结果序列化"""
         return {
             "domain": self.domain,
             "leaks": self.leaks,
@@ -26,11 +29,13 @@ class GitHubLeakScanner:
     API_BASE = "https://api.github.com"
 
     def __init__(self, token: str = "", timeout: float = 10.0):
+        """初始化 GitHub 泄露扫描器（Token/超时）"""
         self.token = token or os.environ.get("GITHUB_TOKEN", "")
         self.timeout = timeout
 
     @property
     def has_token(self) -> bool:
+        """是否已配置 GitHub Token"""
         return bool(self.token)
 
     async def search(self, domain: str) -> GitHubLeakResult:

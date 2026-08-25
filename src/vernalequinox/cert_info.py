@@ -61,6 +61,7 @@ class CertInfo:
     error: str = ""
 
     def to_dict(self):
+        """证书分析结果序列化"""
         return asdict(self)
 
     @property
@@ -88,6 +89,7 @@ class CertAnalyzer:
     CRT_SH_URL = "https://crt.sh/?q={domain}&output=json"
 
     def __init__(self, timeout: float = 15.0):
+        """初始化证书分析器（超时/SNI）"""
         self.timeout = timeout
 
     async def analyze(self, domain: str, port: int = 443) -> CertInfo:
@@ -131,6 +133,7 @@ class CertAnalyzer:
         loop = asyncio.get_event_loop()
 
         def _connect():
+            """建立 TLS 连接并获取证书链"""
             ctx = ssl.create_default_context()
             ctx.check_hostname = False
             ctx.verify_mode = ssl.CERT_NONE

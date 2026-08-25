@@ -200,6 +200,7 @@ def _split(value: Optional[str]) -> List[str]:
 
 # ── 工具处理器 ────────────────────────────────────────────
 def _t_scan_targets(args: Dict[str, Any]) -> Dict[str, Any]:
+    """MCP 工具：核心扫描（存活+指纹+CVE+敏感路径）"""
     from src.target.manager import TargetManager
     from src.dawn.engine import ScanEngine
 
@@ -241,6 +242,7 @@ def _t_scan_targets(args: Dict[str, Any]) -> Dict[str, Any]:
 
 
 def _t_check_alive(args: Dict[str, Any]) -> Dict[str, Any]:
+    """MCP 工具：快速存活检测"""
     from src.target.manager import TargetManager
 
     timeout = float(args.get("timeout", 5.0))
@@ -268,6 +270,7 @@ def _t_check_alive(args: Dict[str, Any]) -> Dict[str, Any]:
 
 
 def _t_subdomain_enum(args: Dict[str, Any]) -> Dict[str, Any]:
+    """MCP 工具：子域名收集（证书透明+爆破+泛解析）"""
     from src.frostmoon.collector import ShuangYue
 
     domain = (args.get("domain") or "").strip()
@@ -302,6 +305,7 @@ def _t_subdomain_enum(args: Dict[str, Any]) -> Dict[str, Any]:
 
 
 def _t_passive_recon(args: Dict[str, Any]) -> Dict[str, Any]:
+    """MCP 工具：被动情报收集（WHOIS/备案/DNS/证书/IP/测绘）"""
     from src.vernalequinox.engine import ReconEngine
 
     domain = (args.get("domain") or "").strip()
@@ -334,6 +338,7 @@ def _t_passive_recon(args: Dict[str, Any]) -> Dict[str, Any]:
 
 
 def _t_verify_target(args: Dict[str, Any]) -> Dict[str, Any]:
+    """MCP 工具：漏洞自动验证（默认口令/Git/Swagger/Actuator）"""
     from src.jingzhe.jingzhe import JingZhe
 
     target = (args.get("target") or "").strip()
@@ -350,6 +355,7 @@ def _t_verify_target(args: Dict[str, Any]) -> Dict[str, Any]:
 
 
 def _t_poc_scan(args: Dict[str, Any]) -> Dict[str, Any]:
+    """MCP 工具：POC 模板扫描"""
     from src.xiazhi.loader import TemplateLoader
     from src.xiazhi.poc_engine import POCEngine
 
@@ -400,6 +406,7 @@ def _t_poc_scan(args: Dict[str, Any]) -> Dict[str, Any]:
 
 
 def _t_util_codec(args: Dict[str, Any]) -> Dict[str, Any]:
+    """MCP 工具：编解码/加解密工具"""
     from src.utils.crypto_tools import OPERATIONS, auto_decode, jwt_decode
 
     action = (args.get("action") or "").strip().lower()

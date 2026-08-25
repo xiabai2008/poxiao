@@ -418,6 +418,7 @@ class SRCReporter:
         return name[:40] or "report"
 
     def _finding_title(self, category: str, url: str) -> str:
+        """生成漏洞发现标题（按类别映射中文/英文）"""
         cat = {
             "git": _("Git 仓库信息泄露"),
             "config": _("配置文件可访问"),
@@ -521,6 +522,7 @@ class SRCReporter:
         return "LOW"
 
     def _finding_description(self, category: str, path_url: str, target_url: str) -> str:
+        """生成漏洞描述文本（含目标与路径占位符）"""
         templates = {
             "git": _(
                 "目标站点 {0} 的 {1} 可被外部访问，存在 Git 版本控制信息泄露风险。"
@@ -754,6 +756,7 @@ class SRCReporter:
         return "\n".join(evidence)
 
     def _default_suggestion(self, vuln_type: str) -> str:
+        """生成默认修复建议文本"""
         suggestions = {
             "git": _(
                 "1. 从生产环境删除 .git 目录\n"

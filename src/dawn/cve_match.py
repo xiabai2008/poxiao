@@ -24,11 +24,13 @@ class VulnMatch:
     cpe: str = ""             # e.g. "cpe:2.3:a:nginx:nginx:*:*:*:*:*:*:*:*"
 
     def __post_init__(self):
+        """初始化后置处理：确保 cvss 数值类型"""
         if self.references is None:
             self.references = []
 
     @property
     def is_critical(self) -> bool:
+        """判断是否为严重级别漏洞"""
         return self.severity in ("CRITICAL", "HIGH") or self.cvss_score >= 7.0
 
 
@@ -2689,6 +2691,7 @@ class CVEMatcher:
     """CVE 匹配器"""
 
     def __init__(self, nvd_api_key: str = ""):
+        """初始化 CVE 匹配器（加载内置库 + 可选 NVD API Key）"""
         self._db = BUILTIN_VULNS
         self._nvd_api_key = nvd_api_key or os.environ.get("POXIAO_NVD_API_KEY", "")
         self._nvd_last_request: float = 0.0
@@ -2721,6 +2724,7 @@ class CVEMatcher:
         return all_matches
 
     def _to_vuln(self, entry: dict) -> VulnMatch:
+        """将内置库条目转换为 VulnMatch 结果对象"""
         return VulnMatch(
             cve_id=entry["cve"],
             component=entry["component"],
@@ -2814,6 +2818,7 @@ class CVEMatcher:
     @classmethod
     def _version_equal(cls, ver_parts: list[int], ver_penalty: int,
                        limit_parts: list[int], limit_penalty: int = 0) -> bool:
+        """版本精确相等比较（含预发布/补丁后缀语义）"""
         p, lmt = cls._pad_versions(ver_parts, limit_parts)
         return p == lmt and ver_penalty == limit_penalty
 
@@ -3040,6 +3045,7 @@ class CVEMatcher:
 
     @property
     def db_size(self) -> int:
+        """内置 CVE 库条目总数"""
         return len(self._db)
 
     def db_components(self) -> list[str]:

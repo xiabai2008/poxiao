@@ -69,6 +69,7 @@ class ReconReport:
     error: str = ""
 
     def to_dict(self):
+        """侦察报告序列化（全模块结果 + 汇总字段）"""
         d = {
             "domain": self.domain,
             "scan_time": round(self.scan_time, 2),
@@ -119,6 +120,7 @@ class ReconEngine:
                  github_token: str = "", fofa_email: str = "",
                  quake_token: str = "", hunter_key: str = "",
                  hunter_email: str = ""):
+        """初始化被动侦察编排引擎（各侦察源）"""
         self.timeout = timeout
         self.whois = WhoisLookup(timeout=timeout)
         self.icp = ICPQuery(timeout=timeout)

@@ -16,6 +16,8 @@ import httpx
 
 @dataclass
 class DomainCandidate:
+    """候选域名结果（来源/验证状态）"""
+
     domain: str
     source: str = ""
     verified: bool = False
@@ -28,6 +30,7 @@ class DomainDiscovery:
     """域名发现器 v2"""
 
     def __init__(self, timeout: float = 5.0, enable_search: bool = True):
+        """初始化域名发现器（搜索/证书/拼音策略）"""
         self.timeout = timeout
         self.enable_search = enable_search
         self.KNOWN_BRANDS = self._load_brands()
@@ -152,6 +155,7 @@ class DomainDiscovery:
 
     async def _verify_one(self, domain: str,
                           client: httpx.AsyncClient) -> Optional[DomainCandidate]:
+        """验证单个候选域名（DNS 解析）"""
         try:
             resp = await client.get(f"https://{domain}", timeout=self.timeout)
             title = ""
@@ -167,6 +171,7 @@ class DomainDiscovery:
             return None
 
     async def _verify_batch(self, domains: list[str]) -> list[DomainCandidate]:
+        """批量验证候选域名（并发）"""
         async with httpx.AsyncClient(verify=False, timeout=self.timeout,
                                      follow_redirects=True) as client:
             tasks = [self._verify_one(d, client) for d in domains]
@@ -176,6 +181,7 @@ class DomainDiscovery:
     # ── 主流程 ───────────────────────────────────
 
     def discover(self, company_name: str) -> list[DomainCandidate]:
+        """根据公司品牌名发现候选域名（拼音/搜索/证书）"""
         candidates = []
 
         # Step 1: 已知品牌表
@@ -210,6 +216,7 @@ class DomainDiscovery:
         return candidates
 
     def discover_best(self, company_name: str) -> Optional[str]:
+        """综合评分返回最可能的域名"""
         candidates = self.discover(company_name)
         return candidates[0].domain if candidates else None
 

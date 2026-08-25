@@ -20,6 +20,7 @@ class Target:
     category: str = "unknown"  # gov/edu/bank/insurance/ecommerce/enterprise
 
     def __post_init__(self):
+        """初始化后置处理：从 URL 提取主机名"""
         if not self.host:
             parsed = urlparse(self.url)
             self.host = parsed.netloc or parsed.path.split("/")[0]
@@ -44,6 +45,7 @@ class TargetManager:
     """目标管理器"""
 
     def __init__(self, timeout: float = 5.0, concurrency: int = 10):
+        """初始化目标管理器（超时/并发）"""
         self.timeout = timeout
         self.concurrency = concurrency
 
@@ -115,6 +117,7 @@ class TargetManager:
         sem = asyncio.Semaphore(self.concurrency)
 
         async def _bounded(t: Target, client: httpx.AsyncClient) -> Target:
+            """并发控制包装：存活检测单目标"""
             async with sem:
                 return await self._check_one(t, client)
 

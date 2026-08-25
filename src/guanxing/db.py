@@ -41,6 +41,7 @@ _DB_SKIP_TABLES = {"_meta", "sqlite_sequence", "sqlite_master"}
 
 
 def _db_audit_enabled() -> bool:
+    """是否启用数据库审计（环境变量开关）"""
     return os.environ.get(_AUDIT_DB_WRITES_ENV, "1") == "1"
 
 
@@ -143,6 +144,7 @@ def _get_schema_version(conn: sqlite3.Connection) -> int:
 
 
 def _set_schema_version(conn: sqlite3.Connection, version: int) -> None:
+    """写入当前 schema 版本号（幂等）"""
     conn.execute(
         "INSERT OR REPLACE INTO _meta(key, value) VALUES ('schema_version', ?)",
         (str(version),),

@@ -48,6 +48,7 @@ class _Handler(BaseHTTPRequestHandler):
 
     # 日志走 logger（stderr），不污染 stdout
     def log_message(self, fmt: str, *args) -> None:  # noqa: A003
+        """请求日志写入 logger（stderr），不污染协议流"""
         logger.info("%s - %s", self.address_string(), fmt % args)
 
     # ── 鉴权 ─────────────────────────────────────
@@ -65,6 +66,7 @@ class _Handler(BaseHTTPRequestHandler):
         return secrets.compare_digest(provided, _REQUIRED_TOKEN)
 
     def _send_unauthorized(self) -> None:
+        """返回 401 + WWW-Authenticate 头"""
         self.send_response(401)
         self.send_header("WWW-Authenticate", 'Bearer realm="poxiao-mcp"')
         self.send_header("Content-Length", "0")
@@ -72,6 +74,7 @@ class _Handler(BaseHTTPRequestHandler):
 
     # ── GET /sse：建立 SSE 长连接 ──────────────────────
     def do_GET(self) -> None:  # noqa: N802
+        """处理 GET /sse（鉴权 → 建立 SSE 长连接 → 心跳保活）"""
         parsed = urlparse(self.path)
         if parsed.path != "/sse":
             self.send_error(404, "Not Found")
@@ -115,6 +118,7 @@ class _Handler(BaseHTTPRequestHandler):
 
     # ── POST /messages：接收 JSON-RPC 请求 ─────────────
     def do_POST(self) -> None:  # noqa: N802
+        """处理 POST /messages（鉴权 → 解析 JSON-RPC → 202 应答 → SSE 回推）"""
         parsed = urlparse(self.path)
         if parsed.path != "/messages":
             self.send_error(404, "Not Found")
@@ -159,6 +163,7 @@ class _Handler(BaseHTTPRequestHandler):
 
     # ── 辅助：写一个 SSE 事件帧 ────────────────────────
     def _write_event(self, event: str, data: str) -> None:
+        """写入一个 SSE 事件帧（event + data）"""
         chunk = f"event: {event}\ndata: {data}\n\n".encode("utf-8")
         self.wfile.write(chunk)
         self.wfile.flush()
@@ -168,6 +173,7 @@ class SSEServer:
     """MCP SSE 服务端封装（基于 ThreadingHTTPServer）"""
 
     def __init__(self, host: str = "127.0.0.1", port: int = 8765, token: str = ""):
+        """初始化 SSE 服务器（地址/端口/token 鉴权）"""
         self.host = host
         self.port = port
         global _REQUIRED_TOKEN
@@ -181,6 +187,7 @@ class SSEServer:
         return self._httpd
 
     def serve_forever(self) -> None:
+        """启动 HTTP 服务（阻塞运行）"""
         httpd = self._httpd or self._make()
         try:
             httpd.serve_forever()

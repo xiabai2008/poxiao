@@ -86,6 +86,7 @@ class UserAgentPool:
     }
 
     def __init__(self):
+        """初始化 UA 池（加载内置浏览器 UA 列表）"""
         self._used = set()  # 避免连续重复
 
     def get(self, category: str = "random") -> str:

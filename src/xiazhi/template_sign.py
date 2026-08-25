@@ -31,6 +31,7 @@ SIG_FILENAME = ".signatures.json"
 
 
 def _require_crypto():
+    """检查 cryptography 依赖，缺失时给出明确错误"""
     if not HAS_CRYPTO:  # pragma: no cover
         raise RuntimeError(
             "模板签名需要 cryptography 库: pip install cryptography"
@@ -59,11 +60,13 @@ def generate_keypair(private_path: str, public_path: str) -> Tuple[str, str]:
 
 
 def _load_private_key(pem_path: str):
+    """从 PEM 文件加载 ECDSA 私钥"""
     _require_crypto()
     return serialization.load_pem_private_key(Path(pem_path).read_bytes(), password=None)
 
 
 def _load_public_key(pem_path: str):
+    """从 PEM 文件加载 ECDSA 公钥"""
     _require_crypto()
     return serialization.load_pem_public_key(Path(pem_path).read_bytes())
 
@@ -96,10 +99,12 @@ def verify_file(yaml_path: Path, signature_hex: str, public_pem_path: str) -> bo
 # ── 目录级签名清单 ───────────────────────────────────
 
 def _iter_yaml_files(directory: Path) -> List[Path]:
+    """递归列出目录下所有 YAML 模板文件（排序）"""
     return sorted(p for p in directory.rglob("*.yaml") if p.is_file())
 
 
 def _sig_manifest_path(templates_dir: Path) -> Path:
+    """签名清单 .signatures.json 的路径"""
     return templates_dir / SIG_FILENAME
 
 

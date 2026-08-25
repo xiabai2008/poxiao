@@ -22,6 +22,7 @@ class QuakeResult:
     source: str = "quake"
 
     def to_dict(self):
+        """查询结果序列化（domain/hosts/error/source）"""
         return {
             "domain": self.domain,
             "hosts": self.hosts,
@@ -37,6 +38,7 @@ class QuakeQuery:
 
     def __init__(self, token: str = "", timeout: float = 10.0,
                  min_interval: float = 1.0):
+        """初始化 Quake 查询器（Token/超时/限流）"""
         self.token = token or os.environ.get("QUAKE_TOKEN", "")
         self.timeout = timeout
         self.min_interval = min_interval
@@ -44,9 +46,11 @@ class QuakeQuery:
 
     @property
     def has_credentials(self) -> bool:
+        """是否已配置 Quake Token"""
         return bool(self.token)
 
     async def _ratelimit(self):
+        """相邻请求最小间隔限流"""
         now = time.monotonic()
         elapsed = now - self._last_req
         if elapsed < self.min_interval:
@@ -103,6 +107,7 @@ class QuakeQuery:
 
     @staticmethod
     def print_result(r: QuakeResult):
+        """格式化打印 Quake 查询结果"""
         print("  Quake 资产")
         print(f"  {'─' * 50}")
         if r.error:

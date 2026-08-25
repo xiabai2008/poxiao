@@ -92,6 +92,7 @@ def requires_auth(f):
     """认证装饰器（表单 session 优先，回退 Basic Auth）"""
     @functools.wraps(f)
     def decorated(*args, **kwargs):
+        """权限装饰器包装函数"""
         resp = _require_auth()
         if resp is not None:
             return resp
@@ -103,6 +104,7 @@ def csrf_protect(f):
     """CSRF 保护装饰器：仅对启用表单认证时的写请求生效（§4.1 CSRF）。"""
     @functools.wraps(f)
     def decorated(*args, **kwargs):
+        """CSRF 校验包装：表单认证启用时对写请求校验令牌"""
         if request.method in ("POST",) and _form_auth_enabled():
             user = _current_user()
             token = request.form.get("csrf_token") or request.headers.get("X-CSRF-Token")
@@ -271,6 +273,7 @@ def _csrf_hidden_input() -> str:
 @app.route("/")
 @requires_auth
 def dashboard():
+    """仪表盘页面（统计/技术栈分布/最近变更）"""
     stats = get_stats()
     targets, _ = get_targets(limit=10)
     changes = get_changes(limit=10)
@@ -344,6 +347,7 @@ def dashboard():
 @app.route("/targets")
 @requires_auth
 def targets_list():
+    """目标列表页（搜索/状态筛选/分页）"""
     q = request.args.get("q", "").strip()
     status = request.args.get("status", "")
     try:
@@ -377,6 +381,7 @@ def targets_list():
 
     # 分页控件
     def _page_url(p: int) -> str:
+        """生成分页链接 URL（保留当前筛选条件）"""
         from urllib.parse import urlencode
         return "/targets?" + urlencode({"q": q, "status": status, "page": p, "per_page": per_page})
 
@@ -420,6 +425,7 @@ def targets_list():
 @app.route("/target/<int:target_id>")
 @requires_auth
 def target_detail(target_id):
+    """目标详情页（发现/CVE/扫描历史）"""
     t = get_target_by_id(target_id)
     if not t:
         return "Target not found", 404
@@ -509,6 +515,7 @@ def target_detail(target_id):
 @app.route("/changes")
 @requires_auth
 def changes_list():
+    """变更记录列表页"""
     changes = get_changes(limit=100)
     rows = "".join(
         f"""<tr>
@@ -536,6 +543,7 @@ def changes_list():
 @requires_auth
 @csrf_protect
 def import_page():
+    """扫描结果导入页面（JSON 上传）"""
     msg = ""
     if request.method == "POST":
         path = request.form.get("path", "")

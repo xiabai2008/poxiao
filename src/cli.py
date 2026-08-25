@@ -49,6 +49,7 @@ def safe_run(func, *args, **kwargs):
 
 def main():
     # 显示主 Banner (仅无参数时)
+    """破晓 CLI 入口（解析参数 → 分发命令 → 统一异常处理）"""
     if len(sys.argv) == 1:
         print_banner("main")
         Out.dim("用法: poxiao <command> [options]")

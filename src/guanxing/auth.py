@@ -55,6 +55,7 @@ def set_credentials(username: str, password_or_hash: str | None) -> None:
 
 
 def _logger() -> logging.Logger:
+    """模块日志器（避免重复创建）"""
     return logging.getLogger(_MODULE)
 
 
@@ -146,10 +147,12 @@ def auth_enabled() -> bool:
 # ── 会话 Token ─────────────────────────────────────
 
 def _serializer() -> URLSafeTimedSerializer:
+    """登录令牌序列化器（itsdangerous）"""
     return URLSafeTimedSerializer(_master_secret(), salt="gx-session")
 
 
 def _csrf_serializer() -> URLSafeTimedSerializer:
+    """CSRF 令牌序列化器"""
     return URLSafeTimedSerializer(_master_secret(), salt="gx-csrf")
 
 
@@ -215,5 +218,6 @@ def reset_failed(username: str) -> None:
 
 
 def time_now() -> float:
+    """当前 UTC 时间（datetime 对象）"""
     import time
     return time.time()

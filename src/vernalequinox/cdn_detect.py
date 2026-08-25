@@ -47,10 +47,12 @@ class CDNResult:
     error: str = ""
 
     def to_dict(self):
+        """CDN 检测结果序列化"""
         return asdict(self)
 
     @property
     def is_behind_cdn(self) -> bool:
+        """判断是否处于 CDN/WAF 之后"""
         return self.has_cdn and not self.real_ips
 
 
@@ -100,6 +102,7 @@ class CDNDetector:
     ]
 
     def __init__(self, timeout: float = 8.0):
+        """初始化 CDN 检测器（超时）"""
         self.timeout = timeout
 
     async def detect(self, domain: str, ip: str = "") -> CDNResult:
@@ -169,6 +172,7 @@ class CDNDetector:
         cdn_hits = {}
 
         def _resolve():
+            """DNS 解析变体（A/CNAME/NS 记录）"""
             try:
                 resolver = dns.resolver.Resolver()
                 resolver.timeout = self.timeout
@@ -223,6 +227,7 @@ class CDNDetector:
         loop = asyncio.get_event_loop()
 
         def _resolve():
+            """线程池执行：解析 MX 服务器 A 记录"""
             ips = []
             try:
                 resolver = dns.resolver.Resolver()
@@ -256,6 +261,7 @@ class CDNDetector:
             base_domain = ".".join(parts[-2:])
 
         def _resolve():
+            """线程池执行：解析常见非 CDN 子域名的 A 记录"""
             ips = []
             resolver = dns.resolver.Resolver()
             resolver.timeout = 2.0

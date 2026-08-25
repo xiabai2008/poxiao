@@ -72,6 +72,7 @@ class JingZhe:
     """惊蛰 — 漏洞自动验证器"""
 
     def __init__(self, timeout: float = 8.0):
+        """初始化漏洞验证器（HTTP 客户端与超时）"""
         self.timeout = timeout
 
     # ═══════════════════════════════════════════════
@@ -580,6 +581,7 @@ class JingZhe:
 
             # ── 辅助函数: 判断是否 catch-all ──
             def _is_catchall(resp) -> bool:
+                """判断响应是否为 CDN/统一错误页（降噪）"""
                 if not catchall_preview or resp.status_code != 200:
                     return False
                 preview = resp.text[:200].lower()
@@ -617,6 +619,7 @@ class JingZhe:
             semaphore = asyncio.Semaphore(5)
 
             async def _limited_scan(path: str) -> list[VerifiedFinding]:
+                """带并发限制的验证扫描"""
                 async with semaphore:
                     return await self._scan_single_path(
                         base, path, client, _is_catchall

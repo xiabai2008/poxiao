@@ -127,6 +127,7 @@ def mask_pii(text: str) -> str:
 
 
 def _mask_email(email: str) -> str:
+    """邮箱脱敏（保留前缀与域名后缀）"""
     local, _, domain = email.partition("@")
     if len(local) <= 2:
         masked_local = local[0] + "**"
@@ -152,6 +153,7 @@ def new_trace_id() -> str:
 
 
 def _utcnow() -> str:
+    """当前 UTC 时间（naive datetime）"""
     return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
 
 

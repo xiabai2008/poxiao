@@ -74,6 +74,7 @@ def cmd_scan(args):
 
     async def _run_all():
         # 存活检测
+        """异步执行存活检测与信息收集（共享事件循环）"""
         checked = await mgr.check_alive(targets)
         mgr.classify(checked)
         alive_targets = [t for t in checked if t.is_alive]
@@ -85,6 +86,7 @@ def cmd_scan(args):
         sem = asyncio.Semaphore(args.concurrency)
 
         async def _do_one(url: str, idx: int):
+            """并发工作协程：扫描单目标并保存/打印进度"""
             async with sem:
                 r = await engine.scan_one(url)
                 d = r.to_dict()
@@ -167,6 +169,7 @@ def cmd_scan(args):
                     target = ScanTarget(url=t.url)
 
                     async def _scan_once():
+                        """RayScan 深度扫描单目标（异步包装）"""
                         return await scanner.scan(target)
 
                     result = asyncio.run(_scan_once())
@@ -199,6 +202,7 @@ def cmd_scan(args):
                         encoding="utf-8",
                     )
                     async def _close_session():
+                        """关闭 RayScan HTTP 会话（异步包装）"""
                         await session.close()
                     asyncio.run(_close_session())
                 except Exception as e:

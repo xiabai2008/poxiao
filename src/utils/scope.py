@@ -67,6 +67,7 @@ class ScopeManager:
     """授权范围管理器。"""
 
     def __init__(self, file: Optional[Path] = None):
+        """初始化授权范围（目标/资产列表）"""
         self.file = Path(file) if file else scope_file()
         self._domains: list[str] = []      # 精确域名（匹配自身及子域）
         self._wildcards: list[str] = []    # 通配域名 *.x 仅子域
@@ -93,6 +94,7 @@ class ScopeManager:
             self._add(line)
 
     def _add(self, entry: str) -> None:
+        """添加单个授权目标（规范化）"""
         e = entry.strip().lower()
         if not e:
             return
@@ -112,6 +114,7 @@ class ScopeManager:
 
     @staticmethod
     def _is_ip(value: str) -> bool:
+        """判断字符串是否为 IP 地址"""
         try:
             ipaddress.ip_address(value)
             return True
@@ -138,6 +141,7 @@ class ScopeManager:
         return self._url_match(target)
 
     def _domain_match(self, host: str, scope_domain: str) -> bool:
+        """域名精确/子域匹配判断"""
         if host == scope_domain:
             return True
         if host.endswith("." + scope_domain):
@@ -146,9 +150,11 @@ class ScopeManager:
 
     def _wildcard_match(self, host: str, scope_domain: str) -> bool:
         # 通配 *.example.com 仅匹配子域，不含裸域 example.com
+        """通配符域名匹配判断"""
         return host.endswith("." + scope_domain)
 
     def _url_match(self, target: str) -> bool:
+        """URL 授权匹配（协议/端口/路径）"""
         t = (target or "").strip().strip("/").lower()
         if not t:
             return False
@@ -168,6 +174,7 @@ class ScopeManager:
         return out
 
     def count(self) -> int:
+        """授权目标数量"""
         return (len(self._domains) + len(self._wildcards) + len(self._ips)
                 + len(self._networks) + len(self._urls))
 

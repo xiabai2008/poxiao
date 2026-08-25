@@ -27,6 +27,7 @@ def cmd_scope(args):
 
 
 def _list():
+    """列出当前授权范围"""
     f = scope_file()
     mgr = ScopeManager(f)
     Out.section(f"授权范围 ({mgr.file})", "🎯")
@@ -41,6 +42,7 @@ def _list():
 
 
 def _check(target: str):
+    """检查目标是否在授权范围内"""
     from src.utils.scope import target_in_scope
     if not target:
         Out.error("请指定要检查的目标")
@@ -56,6 +58,7 @@ def _check(target: str):
 
 
 def _add(entry: str):
+    """添加授权目标"""
     f = scope_file()
     f.parent.mkdir(parents=True, exist_ok=True)
     # 避免重复
@@ -71,6 +74,7 @@ def _add(entry: str):
 
 
 def _rm(entry: str):
+    """移除授权目标"""
     f = scope_file()
     if not f.exists():
         Out.error("范围文件不存在")
@@ -85,6 +89,7 @@ def _rm(entry: str):
 
 
 def _status():
+    """显示授权范围状态（启用/条目数）"""
     f = scope_file()
     Out.section("范围状态", "🛡")
     Out.kv_row("范围文件", str(f))

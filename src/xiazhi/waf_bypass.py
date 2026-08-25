@@ -72,6 +72,7 @@ class WAFBypass:
     ]
 
     def __init__(self):
+        """初始化 WAF 绕过模块（默认关闭，仅显式启用时生效）"""
         self._request_count = 0
 
     def detect_waf(self, headers: Dict[str, str], body: str = "") -> Optional[str]:

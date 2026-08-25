@@ -57,6 +57,7 @@ class ScanResult:
     error: str = ""
 
     def to_dict(self) -> dict:
+        """扫描结果序列化为字典（供报告/JSON 输出）"""
         return {
             "target_url": self.target_url,
             "host": self.host,
@@ -145,6 +146,7 @@ class ScanEngine:
         enable_sensitive: bool = True,
         enable_nvd: bool = False,
     ):
+        """初始化扫描引擎（超时/并发/敏感检测开关/NVD 增强）"""
         self.timeout = timeout
         self.concurrency = concurrency
         self.enable_sensitive = enable_sensitive
@@ -187,9 +189,11 @@ class ScanEngine:
             self._client = None
 
     async def __aenter__(self) -> "ScanEngine":
+        """异步上下文管理器进入（支持 async with ScanEngine() 用法）"""
         return self
 
     async def __aexit__(self, *exc) -> None:
+        """异步上下文管理器退出（释放共享 HTTP 连接池）"""
         await self.aclose()
 
     def _enrich_with_nvd(self, versions: dict) -> list[VulnMatch]:
@@ -289,6 +293,7 @@ class ScanEngine:
         sem = asyncio.Semaphore(self.concurrency)
 
         async def _worker(u: str) -> ScanResult:
+            """并发工作协程：扫描单目标（信号量限流）"""
             async with sem:
                 return await self.scan_one(u)
 

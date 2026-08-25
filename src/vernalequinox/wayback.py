@@ -5,6 +5,8 @@ from dataclasses import dataclass, field
 
 @dataclass
 class WaybackResult:
+    """Wayback 历史查询结果（URL 列表）"""
+
     domain: str = ""
     urls: list = field(default_factory=list)
     unique_urls: list = field(default_factory=list)
@@ -12,6 +14,7 @@ class WaybackResult:
     source: str = "wayback"
 
     def to_dict(self):
+        """Wayback 历史查询结果序列化"""
         return {
             "domain": self.domain,
             "total_urls": len(self.urls),
@@ -28,6 +31,7 @@ class WaybackQuery:
     API_BASE = "https://web.archive.org/cdx/search/cdx"
 
     def __init__(self, timeout: float = 15.0):
+        """初始化 Wayback 查询器（超时）"""
         self.timeout = timeout
 
     async def search(self, domain: str, limit: int = 500,

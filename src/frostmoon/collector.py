@@ -27,6 +27,7 @@ class Subdomain:
     category: str = ""  # admin / dev / api / portal / cdn / mail / unknown
 
     def to_url(self) -> str:
+        """子域名记录转换为完整 URL（http/https）"""
         return f"https://{self.domain}"
 
 
@@ -110,6 +111,7 @@ class ShuangYue:
     """霜月 — 子域名收集器 v2"""
 
     def __init__(self, timeout: float = 5.0):
+        """初始化子域名收集器（超时/并发/DNS 解析器）"""
         self.timeout = timeout
         self.resolver = dns.resolver.Resolver()
         self.resolver.timeout = 3
@@ -213,6 +215,7 @@ class ShuangYue:
 
 
         def _resolve_one(target: str) -> Optional[str]:
+            """解析单个子域名的 A/AAAA 记录"""
             try:
                 answers = self.resolver.resolve(target, "A")
                 ips = [str(a) for a in answers]
@@ -227,6 +230,7 @@ class ShuangYue:
         sem = asyncio.Semaphore(20)  # 并发 DNS 查询
 
         async def worker(prefix: str):
+            """并发工作协程：批量解析子域名"""
             async with sem:
                 target = f"{prefix}.{domain}"
                 result = await loop.run_in_executor(None, _resolve_one, target)
@@ -306,6 +310,7 @@ class ShuangYue:
                 sem = asyncio.Semaphore(15)
 
                 async def verify(sub: str):
+                    """验证子域名存活（HTTP 探测）"""
                     async with sem:
                         alive = await self._check_alive(sub, client)
                         if alive:
@@ -332,6 +337,7 @@ class ShuangYue:
         return results
 
     def collect_sync(self, domain: str, **kwargs) -> list[Subdomain]:
+        """同步版子域名收集（asyncio 包装）"""
         return asyncio.run(self.collect(domain, **kwargs))
 
     # ── 导出 ────────────────────────────────────

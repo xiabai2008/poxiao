@@ -34,6 +34,7 @@ class DNSRecord:
     priority: int = 0   # 优先级 (MX/SRV)
 
     def to_dict(self):
+        """DNS 收集结果序列化"""
         return asdict(self)
 
 
@@ -54,6 +55,8 @@ class DNSResult:
     error: str = ""
 
     def to_dict(self):
+        """DNS 收集结果序列化（手动构建，规避 defaultdict asdict 陷阱）
+        """
         # 注意：不能直接用 dataclasses.asdict(self)——records/doh_records 是
         # defaultdict，asdict 会用 type(obj)(items) 重建，把 items 误当 default_factory，
         # 导致 `TypeError: first argument must be callable or None`。这里手动构建并转普通 dict。
@@ -113,6 +116,7 @@ class DNSCollector:
     }
 
     def __init__(self, timeout: float = 5.0, doh: bool = True):
+        """初始化 DNS 收集器（超时/解析器）"""
         self.timeout = timeout
         self.use_doh = doh
 
@@ -170,6 +174,7 @@ class DNSCollector:
         loop = asyncio.get_event_loop()
 
         def _resolve():
+            """解析域名 A/AAAA/TXT/MX/NS 记录"""
             resolver = dns.resolver.Resolver()
             resolver.timeout = self.timeout
             resolver.lifetime = self.timeout
@@ -229,6 +234,7 @@ class DNSCollector:
         loop = asyncio.get_event_loop()
 
         def _resolve_cname(d):
+            """解析 CNAME 链"""
             try:
                 resolver = dns.resolver.Resolver()
                 resolver.timeout = self.timeout
@@ -251,6 +257,7 @@ class DNSCollector:
         loop = asyncio.get_event_loop()
 
         def _check():
+            """检查单条 DNS 记录有效性"""
             try:
                 resolver = dns.resolver.Resolver()
                 resolver.timeout = self.timeout

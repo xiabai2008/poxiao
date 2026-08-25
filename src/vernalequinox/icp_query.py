@@ -36,10 +36,12 @@ class ICPResult:
     error: str = ""
 
     def to_dict(self):
+        """ICP 备案查询结果序列化"""
         return asdict(self)
 
     @property
     def is_enterprise(self):
+        """备案主体是否为企业"""
         return "企业" in self.company_type or "公司" in self.company_name
 
     @property
@@ -65,6 +67,7 @@ class ICPQuery:
     }
 
     def __init__(self, timeout: float = 10.0):
+        """初始化 ICP 备案查询器（超时）"""
         self.timeout = timeout
 
     async def query(self, domain: str) -> ICPResult:
@@ -170,6 +173,7 @@ class ICPQuery:
         sem = asyncio.Semaphore(concurrency)
 
         async def _query_one(d):
+            """查询单个域名备案信息"""
             async with sem:
                 return await self.query(d)
 

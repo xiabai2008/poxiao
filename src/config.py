@@ -65,11 +65,13 @@ class Config:
     _config: dict = None  # type: ignore[assignment]  # 延迟初始化为 dict(DEFAULT_CONFIG)；用 None 作为"未初始化"哨兵
 
     def __new__(cls):
+        """单例模式：返回唯一实例"""
         if cls._instance is None:
             cls._instance = super().__new__(cls)
         return cls._instance
 
     def __init__(self):
+        """初始化配置（默认值 → 配置文件 → 环境变量）"""
         if self._config is None:
             self._config = dict(DEFAULT_CONFIG)
             self._config_file = self._find_config_file()
@@ -80,6 +82,7 @@ class Config:
     def _find_config_file(self) -> Path:
         # Windows: %USERPROFILE%\.poxiao\config.yaml
         # Linux/Mac: ~/.poxiao/config.yaml
+        """定位配置文件路径（~/.poxiao/config.yaml）"""
         home = Path.home()
         return home / ".poxiao" / "config.yaml"
 
@@ -161,6 +164,7 @@ class Config:
         return sec.get(key, default)
 
     def __getitem__(self, section: str) -> dict:
+        """按 section 获取配置字典"""
         return self._config.get(section, {})
 
     @staticmethod
@@ -178,4 +182,5 @@ class Config:
 
 # Convenience function
 def get_config() -> Config:
+    """获取配置单例"""
     return Config()

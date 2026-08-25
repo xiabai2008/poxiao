@@ -173,6 +173,7 @@ def _run_poc_scan(args, template_dir):
 
     # 扫描函数
     def run_single_scan():
+        """执行单轮 POC 扫描（保存结果 + 历史对比）"""
         t0 = time.perf_counter()
         if len(targets) == 1:
             results = asyncio.run(engine.scan_target(targets[0], templates))

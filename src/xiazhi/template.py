@@ -65,6 +65,7 @@ class Matcher:
     condition: str = "or"               # or / and (多个 words/regex 之间的关系)
 
     def to_dict(self):
+        """请求配置转换为字典（供报告/序列化）"""
         return {k: v for k, v in self.__dict__.items()
                 if v and v != [] and v is not False and v != "word" and v != "body" and v != "or"}
 
@@ -86,6 +87,7 @@ class Extractor:
     name: str = ""
 
     def to_dict(self):
+        """转换为字典（过滤空值，便于序列化与调试）"""
         return {k: v for k, v in self.__dict__.items() if v and v != [] and v != "regex" and v != "body"}
 
 
@@ -113,6 +115,7 @@ class HTTPRequest:
     matchers_logic: str = ""             # 高级 DSL 逻辑
 
     def to_dict(self):
+        """请求配置转换为字典（供报告/序列化）"""
         return {
             "method": self.method,
             "path": self.path,
@@ -138,11 +141,13 @@ class TemplateInfo:
 
     @property
     def severity_icon(self) -> str:
+        """严重级别图标（属性版）"""
         icons = {"critical": "[!!!]", "high": "[!!]", "medium": "[!]", "low": "[-]", "info": "[.]"}
         return icons.get(self.severity, "[.]")
 
     @property
     def severity_score(self) -> int:
+        """严重级别对应的数值分数（越小越严重）"""
         scores = {"critical": 4, "high": 3, "medium": 2, "low": 1, "info": 0}
         return scores.get(self.severity, 0)
 
@@ -161,13 +166,16 @@ class Template:
 
     @property
     def severity(self) -> str:
+        """规范化的严重级别（小写）"""
         return self.info.severity
 
     @property
     def tags_str(self) -> str:
+        """标签列表的逗号拼接字符串"""
         return ",".join(self.info.tags)
 
     def to_dict(self):
+        """模板对象转换为字典（含 info 与请求列表）"""
         return {
             "id": self.id,
             "info": {
@@ -202,10 +210,12 @@ class MatchResult:
 
     @property
     def severity_icon(self) -> str:
+        """严重级别图标（属性版）"""
         icons = {"critical": "[!!!]", "high": "[!!]", "medium": "[!]", "low": "[-]", "info": "[.]"}
         return icons.get(self.severity, "[.]")
 
     def to_dict(self):
+        """匹配结果转换为字典（供报告/JSON 输出）"""
         return {
             "template_id": self.template_id,
             "template_name": self.template_name,

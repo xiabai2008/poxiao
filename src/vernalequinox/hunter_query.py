@@ -22,6 +22,7 @@ class HunterResult:
     source: str = "hunter"
 
     def to_dict(self):
+        """查询结果序列化（domain/hosts/error/source）"""
         return {
             "domain": self.domain,
             "hosts": self.hosts,
@@ -37,6 +38,7 @@ class HunterQuery:
 
     def __init__(self, api_key: str = "", email: str = "",
                  timeout: float = 10.0, min_interval: float = 1.0):
+        """初始化 Hunter 查询器（API Key/邮箱/超时/限流）"""
         self.api_key = api_key or os.environ.get("HUNTER_API_KEY", "")
         self.email = email or os.environ.get("HUNTER_EMAIL", "")
         self.timeout = timeout
@@ -45,9 +47,11 @@ class HunterQuery:
 
     @property
     def has_credentials(self) -> bool:
+        """是否已配置 Hunter 凭证"""
         return bool(self.api_key and self.email)
 
     async def _ratelimit(self):
+        """相邻请求最小间隔限流"""
         now = time.monotonic()
         elapsed = now - self._last_req
         if elapsed < self.min_interval:
@@ -104,6 +108,7 @@ class HunterQuery:
 
     @staticmethod
     def print_result(r: HunterResult):
+        """格式化打印 Hunter 查询结果"""
         print("  Hunter 资产")
         print(f"  {'─' * 50}")
         if r.error:

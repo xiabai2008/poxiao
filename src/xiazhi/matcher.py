@@ -22,10 +22,12 @@ from .template import Matcher
 
 
 def _b64encode(s: str) -> str:
+    """UTF-8 字符串 base64 编码"""
     return base64.b64encode(s.encode("utf-8")).decode()
 
 
 def _b64decode(s: str) -> str:
+    """base64 解码为 UTF-8 字符串（失败返回空串）"""
     try:
         return base64.b64decode(s).decode("utf-8", errors="ignore")
     except Exception:

@@ -327,7 +327,9 @@ class StealthClient:
         self._clients.clear()
 
     async def __aenter__(self):
+        """异步上下文管理器进入"""
         return self
 
     async def __aexit__(self, *args):
+        """异步上下文管理器退出（关闭客户端）"""
         await self.close()

@@ -61,6 +61,7 @@ class IPInfo:
     error: str = ""
 
     def to_dict(self):
+        """IP 情报结果序列化"""
         return asdict(self)
 
 
@@ -94,6 +95,7 @@ class IPCollector:
 
     def __init__(self, timeout: float = 10.0,
                  shodan_key: str = "", fofa_key: str = ""):
+        """初始化 IP 情报收集器（Shodan/PTR/归属）"""
         self.timeout = timeout
         self.shodan_key = shodan_key or os.environ.get("SHODAN_API_KEY", "")
         self.fofa_key = fofa_key or os.environ.get("FOFA_KEY", "")
@@ -205,6 +207,7 @@ class IPCollector:
         loop = asyncio.get_event_loop()
 
         def _ptr():
+            """查询 IP 反向解析（PTR 记录）"""
             try:
                 hostname = socket.gethostbyaddr(ip)
                 return [hostname[0]] + list(hostname[1])
@@ -286,6 +289,7 @@ class IPCollector:
         sem = asyncio.Semaphore(concurrency)
 
         async def _collect_one(ip):
+            """收集单个 IP 的完整情报"""
             async with sem:
                 return await self.collect(ip)
 

@@ -47,6 +47,7 @@ _SENSITIVE_DEFAULT_LEVEL = {
 
 
 def _level_for_severity(severity: str) -> str:
+    """漏洞严重级别 → SARIF level 映射"""
     return _SEVERITY_TO_LEVEL.get((severity or "info").lower(), "note")
 
 

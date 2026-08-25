@@ -18,6 +18,7 @@ from src.config import get_config
 
 
 def _log_path() -> Path:
+    """变更 JSONL 日志路径（支持环境变量覆盖）"""
     return Path(os.environ.get("POXIAO_GUANXING_LOG", "scan_results/guanxing_changes.log"))
 
 

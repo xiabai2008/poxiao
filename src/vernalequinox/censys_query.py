@@ -6,6 +6,8 @@ from dataclasses import dataclass, field
 
 @dataclass
 class CensysResult:
+    """Censys 查询结果（主机/证书列表）"""
+
     domain: str = ""
     hosts: list = field(default_factory=list)
     certificates: list = field(default_factory=list)
@@ -14,6 +16,7 @@ class CensysResult:
     source: str = "censys"
 
     def to_dict(self):
+        """Censys 查询结果序列化"""
         return {
             "domain": self.domain,
             "hosts": self.hosts,
@@ -29,12 +32,14 @@ class CensysQuery:
     API_BASE = "https://search.censys.io/api/v2"
 
     def __init__(self, api_id: str = "", api_secret: str = "", timeout: float = 10.0):
+        """初始化 Censys 查询器（API ID/密钥/超时）"""
         self.api_id = api_id or os.environ.get("CENSYS_API_ID", "")
         self.api_secret = api_secret or os.environ.get("CENSYS_API_SECRET", "")
         self.timeout = timeout
 
     @property
     def has_credentials(self) -> bool:
+        """是否已配置 API 凭证"""
         return bool(self.api_id and self.api_secret)
 
     async def search_hosts(self, query: str, limit: int = 50) -> CensysResult:

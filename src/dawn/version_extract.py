@@ -13,6 +13,7 @@ class VersionInfo:
     raw: str = ""       # 原始匹配文本
 
     def __str__(self):
+        """版本信息的人类可读表示（component@version）"""
         return f"{self.component}@{self.version}"
 
 

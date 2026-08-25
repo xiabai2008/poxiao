@@ -34,10 +34,12 @@ class WhoisResult:
     error: str = ""
 
     def to_dict(self):
+        """WHOIS 查询结果序列化"""
         return asdict(self)
 
     @property
     def has_info(self):
+        """是否获取到 WHOIS 信息"""
         return bool(self.registrar or self.creation_date)
 
 
@@ -95,6 +97,7 @@ class WhoisLookup:
     STATUS_PATTERN = re.compile(r"Domain Status:\s*(\S+)", re.I)
 
     def __init__(self, timeout: float = 10.0):
+        """初始化 WHOIS 查询器（超时）"""
         self.timeout = timeout
 
     async def query(self, domain: str) -> WhoisResult:
@@ -125,6 +128,7 @@ class WhoisLookup:
         loop = asyncio.get_event_loop()
 
         def _sync_query():
+            """同步执行 WHOIS 查询（备用服务）"""
             w = whois.whois(domain)
             return w
 
@@ -134,6 +138,7 @@ class WhoisLookup:
 
         # python-whois 返回的对象属性
         def _get(attr, default=""):
+            """HTTP 获取 WHOIS 服务响应"""
             val = getattr(w, attr, default)
             if isinstance(val, list):
                 return val
@@ -191,6 +196,7 @@ class WhoisLookup:
         loop = asyncio.get_event_loop()
 
         def _sync_query():
+            """线程池执行：TCP 连接 WHOIS 服务器查询"""
             sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             sock.settimeout(self.timeout)
             sock.connect((server, 43))

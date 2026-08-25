@@ -25,6 +25,7 @@ class FofaResult:
     source: str = "fofa"
 
     def to_dict(self):
+        """查询结果序列化（domain/hosts/error/source）"""
         return {
             "domain": self.domain,
             "hosts": self.hosts,
@@ -43,6 +44,7 @@ class FofaQuery:
     def __init__(self, email: str = "", key: str = "", timeout: float = 10.0,
                  min_interval: float = 1.0):
         # 密钥仅读取自身环境变量，按源隔离
+        """初始化 FOFA 查询器（凭证/超时/限流间隔）"""
         self.email = email or os.environ.get("FOFA_EMAIL", "")
         self.key = key or os.environ.get("FOFA_KEY", "")
         self.timeout = timeout
@@ -51,6 +53,7 @@ class FofaQuery:
 
     @property
     def has_credentials(self) -> bool:
+        """是否已配置 FOFA 凭证"""
         return bool(self.email and self.key)
 
     async def _ratelimit(self):
@@ -120,6 +123,7 @@ class FofaQuery:
 
     @staticmethod
     def print_result(r: FofaResult):
+        """格式化打印 FOFA 查询结果"""
         print("  FOFA 资产")
         print(f"  {'─' * 50}")
         if r.error:

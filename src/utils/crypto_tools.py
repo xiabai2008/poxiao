@@ -29,10 +29,12 @@ import urllib.parse
 # ── Base 系列 ────────────────────────────────────────
 
 def base64_encode(text: str) -> str:
+    """base64 编码字符串"""
     return base64.b64encode(text.encode()).decode()
 
 def base64_decode(text: str) -> str:
     # 补齐 padding
+    """base64 解码字符串"""
     text = text.strip()
     padding = 4 - len(text) % 4
     if padding != 4:
@@ -40,9 +42,11 @@ def base64_decode(text: str) -> str:
     return base64.b64decode(text).decode(errors="ignore")
 
 def base32_encode(text: str) -> str:
+    """base32 编码字符串"""
     return base64.b32encode(text.encode()).decode()
 
 def base32_decode(text: str) -> str:
+    """base32 解码字符串"""
     text = text.strip().upper()
     padding = 8 - len(text) % 8
     if padding != 8:
@@ -87,9 +91,11 @@ def base58_decode(text: str) -> str:
 # ── Hex ──────────────────────────────────────────────
 
 def hex_encode(text: str) -> str:
+    """十六进制编码字符串"""
     return text.encode().hex()
 
 def hex_decode(text: str) -> str:
+    """十六进制解码字符串"""
     text = text.strip().replace(" ", "").replace("0x", "")
     return bytes.fromhex(text).decode(errors="ignore")
 
@@ -97,9 +103,11 @@ def hex_decode(text: str) -> str:
 # ── URL 编码 ─────────────────────────────────────────
 
 def url_encode(text: str) -> str:
+    """URL 百分号编码"""
     return urllib.parse.quote(text, safe="")
 
 def url_decode(text: str) -> str:
+    """URL 百分号解码"""
     return urllib.parse.unquote(text)
 
 def url_encode_full(text: str) -> str:
@@ -114,9 +122,11 @@ def double_url_encode(text: str) -> str:
 # ── HTML 编码 ────────────────────────────────────────
 
 def html_encode(text: str) -> str:
+    """HTML 实体编码"""
     return html.escape(text)
 
 def html_decode(text: str) -> str:
+    """HTML 实体解码"""
     return html.unescape(text)
 
 def html_entity_encode(text: str) -> str:
@@ -126,6 +136,7 @@ def html_entity_encode(text: str) -> str:
 def html_entity_decode(text: str) -> str:
     """HTML 实体解码"""
     def replace_entity(match):
+        """替换字符串中的 HTML 实体为原始字符"""
         entity = match.group(0)
         if entity.startswith("&#x"):
             return chr(int(entity[3:-1], 16))
@@ -174,6 +185,7 @@ def caesar_encode(text: str, shift: int = 3) -> str:
     return "".join(result)
 
 def caesar_decode(text: str, shift: int = 3) -> str:
+    """凯撒密码解码（移位）"""
     return caesar_encode(text, -shift)
 
 
@@ -194,6 +206,7 @@ MORSE_CODE = {
 MORSE_DECODE = {v: k for k, v in MORSE_CODE.items()}
 
 def morse_encode(text: str) -> str:
+    """摩斯电码编码"""
     words = text.upper().split()
     return " / ".join(
         " ".join(MORSE_CODE.get(c, c) for c in word)
@@ -201,6 +214,7 @@ def morse_encode(text: str) -> str:
     )
 
 def morse_decode(text: str) -> str:
+    """摩斯电码解码"""
     words = text.split(" / ")
     return " ".join(
         "".join(MORSE_DECODE.get(c, c) for c in word.split())
@@ -211,15 +225,19 @@ def morse_decode(text: str) -> str:
 # ── 哈希 ─────────────────────────────────────────────
 
 def md5_hash(text: str) -> str:
+    """MD5 哈希（检测场景）"""
     return hashlib.md5(text.encode()).hexdigest()
 
 def sha1_hash(text: str) -> str:
+    """SHA1 哈希（检测场景）"""
     return hashlib.sha1(text.encode()).hexdigest()
 
 def sha256_hash(text: str) -> str:
+    """SHA256 哈希（检测场景）"""
     return hashlib.sha256(text.encode()).hexdigest()
 
 def sha512_hash(text: str) -> str:
+    """SHA512 哈希（检测场景）"""
     return hashlib.sha512(text.encode()).hexdigest()
 
 

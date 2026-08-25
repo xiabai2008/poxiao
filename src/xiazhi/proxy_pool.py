@@ -60,6 +60,7 @@ class ProxyInfo:
     tags: List[str] = field(default_factory=list)
 
     def __post_init__(self):
+        """初始化后置处理：加载代理列表"""
         if not self.host and self.url:
             self._parse_url()
 
@@ -115,6 +116,7 @@ class ProxyInfo:
         return max(0, base + latency_bonus - fail_penalty + freshness)
 
     def to_dict(self):
+        """代理池状态摘要（总数/可用/失败数）"""
         return {
             "url": self.url,
             "protocol": self.protocol,
@@ -140,6 +142,7 @@ class ProxyPool:
 
     def __init__(self, max_fails: int = 5, validate_timeout: float = 10.0,
                  min_score: float = 20.0):
+        """初始化代理池（加载/验证/统计）"""
         self.proxies: Dict[str, ProxyInfo] = {}   # url → ProxyInfo
         self.max_fails = max_fails                  # 最大连续失败次数
         self.validate_timeout = validate_timeout
@@ -223,6 +226,7 @@ class ProxyPool:
         results = {}
 
         async def _check(proxy: ProxyInfo):
+            """校验单个代理可用性（连接测试）"""
             async with sem:
                 alive, latency = await self._check_one(proxy)
                 results[proxy.url] = alive

@@ -24,6 +24,7 @@ from urllib.parse import parse_qs, urlparse
 
 
 def _log_path() -> Path:
+    """回调日志路径（支持 POXIAO_OAST_LOG 覆盖）"""
     return Path(os.environ.get("POXIAO_OAST_LOG", "scan_results/oast_calls.log"))
 
 
@@ -49,13 +50,17 @@ def gen_oast_url() -> str:
 # ── 回调记录服务器 ──────────────────────────────────
 
 class _OastHandler(BaseHTTPRequestHandler):
+    """OAST 回调请求处理器：记录所有到达的 HTTP 请求并统一 200 应答"""
+
     server_version = "poxiao-oast/1.0"
     protocol_version = "HTTP/1.1"
 
     def log_message(self, fmt: str, *args) -> None:  # noqa: A003
+        """静默请求日志（回调内容已落盘）"""
         return  # 静默（回调日志已落盘）
 
     def _record(self) -> None:
+        """记录到达的回调请求并落盘 JSONL"""
         length = 0
         try:
             length = int(self.headers.get("Content-Length", 0) or 0)
@@ -91,18 +96,23 @@ class _OastHandler(BaseHTTPRequestHandler):
         self.wfile.write(resp)
 
     def do_GET(self) -> None:  # noqa: N802
+        """记录 GET 回调请求"""
         self._record()
 
     def do_POST(self) -> None:  # noqa: N802
+        """记录 POST 回调请求"""
         self._record()
 
     def do_PUT(self) -> None:  # noqa: N802
+        """记录 PUT 回调请求"""
         self._record()
 
     def do_DELETE(self) -> None:  # noqa: N802
+        """记录 DELETE 回调请求"""
         self._record()
 
     def do_HEAD(self) -> None:  # noqa: N802
+        """记录 HEAD 回调请求"""
         self._record()
 
 
@@ -110,16 +120,19 @@ class OastServer:
     """OAST 回调服务器封装"""
 
     def __init__(self, host: str = "0.0.0.0", port: int = 8899):
+        """初始化 OAST 回调服务器（地址/端口）"""
         self.host = host
         self.port = port
         self._httpd: Optional[ThreadingHTTPServer] = None
 
     def _make(self) -> ThreadingHTTPServer:
+        """创建底层 HTTP 服务并回填实际端口"""
         self._httpd = ThreadingHTTPServer((self.host, self.port), _OastHandler)
         self.port = self._httpd.server_address[1]
         return self._httpd
 
     def serve_forever(self) -> None:
+        """启动回调服务器（阻塞运行）"""
         httpd = self._httpd or self._make()
         try:
             httpd.serve_forever()
@@ -127,6 +140,7 @@ class OastServer:
             httpd.server_close()
 
     def shutdown(self) -> None:
+        """停止回调服务器"""
         if self._httpd is not None:
             self._httpd.shutdown()
 

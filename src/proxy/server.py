@@ -28,10 +28,12 @@ SENSITIVE_PARAMS = {
 
 
 def _log_path() -> Path:
+    """代理日志路径（支持 POXIAO_PROXY_LOG 覆盖）"""
     return Path(os.environ.get("POXIAO_PROXY_LOG", "scan_results/proxy_calls.log"))
 
 
 def _record(entry: dict) -> None:
+    """记录代理流量条目到 JSONL"""
     try:
         log = _log_path()
         log.parent.mkdir(parents=True, exist_ok=True)
@@ -56,14 +58,18 @@ def analyze_url(url: str) -> dict:
 
 
 class _ProxyHandler(BaseHTTPRequestHandler):
+    """被动代理请求处理器：HTTP 转发 + CONNECT 隧道 + 流量记录"""
+
     server_version = "poxiao-proxy/1.1"
     protocol_version = "HTTP/1.1"
 
     def log_message(self, fmt: str, *args) -> None:  # noqa: A003
+        """静默请求日志（流量已记录）"""
         return  # 静默
 
     # ── HTTP 转发 ────────────────────────────────
     def _forward(self) -> None:
+        """转发 HTTP 请求并记录流量"""
         length = 0
         try:
             length = int(self.headers.get("Content-Length", 0) or 0)
@@ -108,6 +114,7 @@ class _ProxyHandler(BaseHTTPRequestHandler):
 
     # ── CONNECT 隧道（HTTPS 透传）─────────────────
     def do_CONNECT(self) -> None:  # noqa: N802
+        """处理 HTTPS 隧道（CONNECT 透传）"""
         try:
             host, _, port = self.path.partition(":")
             port = int(port or 443)
@@ -127,6 +134,7 @@ class _ProxyHandler(BaseHTTPRequestHandler):
         upstream.settimeout(60.0)
 
         def _pipe(src: socket.socket, dst: socket.socket) -> None:
+            """双向 TCP 数据透传（隧道用）"""
             try:
                 while True:
                     data = src.recv(65536)
@@ -150,21 +158,27 @@ class _ProxyHandler(BaseHTTPRequestHandler):
         upstream.close()
 
     def do_GET(self) -> None:  # noqa: N802
+        """转发并记录 GET 请求"""
         self._forward()
 
     def do_POST(self) -> None:  # noqa: N802
+        """转发并记录 POST 请求"""
         self._forward()
 
     def do_PUT(self) -> None:  # noqa: N802
+        """转发并记录 PUT 请求"""
         self._forward()
 
     def do_DELETE(self) -> None:  # noqa: N802
+        """转发并记录 DELETE 请求"""
         self._forward()
 
     def do_PATCH(self) -> None:  # noqa: N802
+        """转发并记录 PATCH 请求"""
         self._forward()
 
     def do_OPTIONS(self) -> None:  # noqa: N802
+        """转发并记录 OPTIONS 请求"""
         self._forward()
 
 
@@ -172,16 +186,19 @@ class ProxyServer:
     """被动代理服务器封装"""
 
     def __init__(self, host: str = "127.0.0.1", port: int = 8080):
+        """初始化被动代理服务器（地址/端口）"""
         self.host = host
         self.port = port
         self._httpd: Optional[ThreadingHTTPServer] = None
 
     def _make(self) -> ThreadingHTTPServer:
+        """创建底层 HTTP 服务并回填实际端口"""
         self._httpd = ThreadingHTTPServer((self.host, self.port), _ProxyHandler)
         self.port = self._httpd.server_address[1]
         return self._httpd
 
     def serve_forever(self) -> None:
+        """启动代理服务器（阻塞运行）"""
         httpd = self._httpd or self._make()
         try:
             httpd.serve_forever()
@@ -189,6 +206,7 @@ class ProxyServer:
             httpd.server_close()
 
     def shutdown(self) -> None:
+        """停止代理服务器"""
         if self._httpd is not None:
             self._httpd.shutdown()
 

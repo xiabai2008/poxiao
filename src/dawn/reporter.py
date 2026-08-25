@@ -9,6 +9,7 @@ class Reporter:
     """报告生成器 — 渐进式输出"""
 
     def __init__(self, output_dir: str = "scan_results"):
+        """初始化报告生成器（输出目录 + 会话 ID）"""
         self.output_dir = Path(output_dir)
         self.output_dir.mkdir(parents=True, exist_ok=True)
         self.session_id = datetime.now().strftime("%Y%m%d_%H%M%S")

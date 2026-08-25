@@ -27,6 +27,7 @@ class PathFind:
 
     @property
     def is_interesting(self) -> bool:
+        """判断发现是否值得关注（排除 catchall 噪音）"""
         if self.category == "info":
             return False
         if self.is_catchall:
@@ -148,6 +149,7 @@ class SensitivePathDetector:
     """敏感路径检测器"""
 
     def __init__(self, timeout: float = 3.0, concurrency: int = 8):
+        """初始化敏感路径检测器（超时/并发）"""
         self.timeout = timeout
         self.concurrency = concurrency
 
@@ -249,6 +251,7 @@ class SensitivePathDetector:
 
         async def _run():
             # ── Layer 3 增强: 多探针校准 ──
+            """执行探针校准与路径检测（返回降噪统计值供后续分层使用）"""
             probe_results: list[tuple[int, float, str]] = []  # (size, elapsed, preview)
             probe_status_counts: dict[int, int] = {}
             for suffix in _probe_suffixes:
@@ -279,6 +282,7 @@ class SensitivePathDetector:
             catchall_avg_time = statistics.mean(probe_times) if probe_times else 0.0
 
             async def _worker(p: str, cat: str):
+                """并发工作协程：检测单一路径并收集结果"""
                 async with sem:
                     found = await self._check_one(base_url, p, cat, client)
                     if found:

@@ -38,6 +38,7 @@ class POCEngine:
                  proxy_list: list = None, qps: float = 10.0,
                  per_domain_qps: float = 3.0,
                  track_oast: bool = False):
+        """初始化 POC 扫描引擎（超时/并发/隐匿/代理/限速/OAST 追踪）"""
         self.timeout = timeout
         self.concurrency = concurrency
         self.follow_redirects = follow_redirects
@@ -95,7 +96,9 @@ class POCEngine:
         all_results = []
 
         async def _collect(client: httpx.AsyncClient):
+            """并发执行单个模板的所有请求并收集结果"""
             async def _run_template(tmpl: Template):
+                """在共享客户端上执行模板（含 cookie 复用客户端管理）"""
                 async with sem:
                     return await self._execute_template(client, target_url, tmpl)
 
@@ -136,6 +139,7 @@ class POCEngine:
             follow_redirects=self.follow_redirects,
         ) as client:
             async def _scan_one(target: str):
+                """并发控制包装：扫描单个目标"""
                 async with sem:
                     return target, await self.scan_target(target, templates, tags, severity, client=client)
 

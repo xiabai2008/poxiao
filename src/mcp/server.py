@@ -34,16 +34,19 @@ class MCPServer:
     def __init__(self, instream: Optional[TextIO] = None, outstream: Optional[TextIO] = None):
         # 捕获原始 stdout 引用：即使工具执行时 redirect_stdout，
         # 我们仍向真实 stdout 写出 JSON-RPC 响应。
+        """初始化 stdio MCP 服务器（输入/输出流）"""
         self.instream = instream if instream is not None else sys.stdin
         self.outstream = outstream if outstream is not None else sys.stdout
 
     # ── 底层 IO ──────────────────────────────────────
     def _send(self, obj: Dict[str, Any]) -> None:
+        """发送 JSON-RPC 响应到输出流"""
         line = json.dumps(obj, ensure_ascii=False, default=str)
         self.outstream.write(line + "\n")
         self.outstream.flush()
 
     def _send_error(self, msg_id: Any, code: int, message: str, data: Any = None) -> None:
+        """发送 JSON-RPC 错误响应"""
         err: Dict[str, Any] = {"code": code, "message": message}
         if data is not None:
             err["data"] = data
